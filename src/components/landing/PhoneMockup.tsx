@@ -21,7 +21,7 @@ export function PhoneMockup({
 }) {
   return (
     <div
-      className={`relative mx-auto w-[290px] sm:w-[320px] rounded-[2.75rem] border-[10px] border-[#0f1f18] bg-[#0f1f18] shadow-2xl ${className}`}
+      className={`relative mx-auto w-[240px] sm:w-[270px] rounded-[2.75rem] border-[10px] border-[#0f1f18] bg-[#0f1f18] shadow-2xl ${className}`}
     >
       <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-[#0f1f18]" />
       <div className="overflow-hidden rounded-[2.1rem] bg-white">

@@ -65,7 +65,7 @@ export function Hero() {
             >
               Registrera ert företag
             </Button>
-            <Button href="/logga-in" variant="outline" size="lg">
+            <Button href="/logga-in" variant="secondary" size="lg">
               Redan partner? Logga in
             </Button>
           </div>

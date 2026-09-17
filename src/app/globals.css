@@ -7,7 +7,8 @@
   /* Collaktiv brand */
   --color-brand-primary: #166849; /* primära knappar / CTA */
   --color-brand-primary-hover: #114f38;
-  --color-brand-secondary: #f2faf7; /* sekundära knappar / ytor */
+  --color-brand-secondary: #f2faf7; /* ljusa ytor */
+  --color-brand-mint: #c3ecd9; /* sekundära knappar */
   --color-brand-accent: #8fd34f; /* slagkraftiga rubriker */
   --color-brand-ink: #0f2a1f;
   --color-brand-muted: #5b7168;
@@ -21,6 +22,7 @@
   --color-brand-primary: var(--color-brand-primary);
   --color-brand-primary-hover: var(--color-brand-primary-hover);
   --color-brand-secondary: var(--color-brand-secondary);
+  --color-brand-mint: var(--color-brand-mint);
   --color-brand-accent: var(--color-brand-accent);
   --color-brand-ink: var(--color-brand-ink);
   --color-brand-muted: var(--color-brand-muted);

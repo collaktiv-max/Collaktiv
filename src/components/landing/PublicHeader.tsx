@@ -68,7 +68,7 @@ export function PublicHeader() {
             ))}
           </nav>
           <div className="mt-5 flex flex-col gap-3">
-            <Button href="/logga-in" variant="outline">
+            <Button href="/logga-in" variant="secondary">
               Redan partner? Logga in
             </Button>
             <Button href="/registrera" variant="primary">
