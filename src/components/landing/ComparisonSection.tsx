@@ -14,7 +14,7 @@ const rows = [
   },
   {
     label: "Betalningsmodell",
-    ads: "5 000–10 000 kr för en tidningsannons eller osäkra klickavgifter.",
+    ads: "5 000–10 000 kr för traditionella annonser eller osäkra klickavgifter.",
     collaktivBold: "Fast, låg månadskostnad",
     collaktivRest: ` (från ${CHEAPEST_MONTHLY_PRICE} kr/mån för de 50 första företagen). Ingen bindningstid.`,
   },
@@ -138,24 +138,24 @@ export function ComparisonSection() {
               ))}
             </div>
 
-            <div className="mt-5 flex-1 rounded-xl bg-[#0f1f18] p-5">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-white/60">
+            <div className="mt-5 flex-1 rounded-xl bg-[var(--color-brand-mint)] p-5">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]/70">
                 Med Collaktiv ({standard.name} från {collaktivMonthly} kr/mån) sparar ni
               </p>
               <p className="mt-1 text-3xl font-extrabold leading-none text-[#e0432c]">
                 {formatKr(monthlySavings)}
-                <span className="text-sm font-bold text-white/60"> /mån</span>
+                <span className="text-sm font-bold text-[var(--color-brand-ink)]/60"> /mån</span>
               </p>
-              <p className="mt-1 text-xs font-bold text-white/70">
+              <p className="mt-1 text-xs font-bold text-[var(--color-brand-ink)]/70">
                 = {formatKr(yearSavings)} per år
               </p>
 
-              <div className="mt-4 flex items-start gap-2 border-t border-white/15 pt-4">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-accent)]" />
-                <p className="text-[12.5px] font-semibold leading-relaxed text-white">
+              <div className="mt-4 flex items-start gap-2 border-t border-[var(--color-brand-primary)]/15 pt-4">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
+                <p className="text-[12.5px] font-semibold leading-relaxed text-[var(--color-brand-ink)]">
                   Och ni får mer värde för pengarna: exakt statistik på vem som
                   faktiskt handlar, synlighet dygnet runt och inga tryck- eller
-                  designkostnader – sånt en tidningsannons aldrig kan ge.
+                  designkostnader – sånt traditionella annonser aldrig kan ge.
                 </p>
               </div>
             </div>

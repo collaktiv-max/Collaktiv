@@ -180,7 +180,7 @@ export function PricingSection() {
         </div>
 
         <p className="mx-auto mt-8 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
-          En vanlig tidningsannons kostar 5 000–10 000 kr för en enda publicering. Med Standard
+          Traditionella annonser kostar 5 000–10 000 kr för en enda publicering. Med Standard
           är ni synliga i appen dygnet runt i {BILLING_LABELS[period].toLowerCase()} – från{" "}
           {getDiscountedMonthly(PLANS[0], period)} kr/mån.
         </p>
