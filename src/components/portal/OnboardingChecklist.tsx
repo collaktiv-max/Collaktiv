@@ -26,7 +26,7 @@ export function OnboardingChecklist({
       href: "/portal/erbjudanden/nytt",
     },
     {
-      label: "Publicera ett erbjudande i appen",
+      label: "Skicka in ett erbjudande för publicering",
       done: company.onboardingChecklist.firstPublish,
       href: "/portal/erbjudanden",
     },

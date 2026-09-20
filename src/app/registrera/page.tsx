@@ -2,15 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Mail,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -49,11 +43,11 @@ const initialForm: FormState = {
 };
 
 export default function RegistreraPage() {
-  const { registerCompany } = useAppState();
+  const { registerCompany, login } = useAppState();
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -82,6 +76,7 @@ export default function RegistreraPage() {
   async function handleSubmit() {
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 900));
+    const email = form.accountEmail || form.contactEmail;
     registerCompany({
       name: form.name,
       logoDataUrl: form.logoDataUrl,
@@ -89,15 +84,11 @@ export default function RegistreraPage() {
       description: form.description,
       category: form.category,
       contactName: form.contactName,
-      contactEmail: form.accountEmail || form.contactEmail,
+      contactEmail: email,
       contactPhone: form.contactPhone,
     });
-    setSubmitting(false);
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return <SuccessScreen companyName={form.name} email={form.accountEmail || form.contactEmail} />;
+    login(email, form.password);
+    router.push("/portal");
   }
 
   return (
@@ -234,8 +225,9 @@ export default function RegistreraPage() {
                     </Field>
                     <div className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-secondary)] p-4 text-xs font-semibold text-[var(--color-brand-muted)]">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
-                      Kontot skapas direkt, men blir inte synligt i appen
-                      förrän er ansökan är granskad och godkänd.
+                      Ni loggas in direkt och kan börja skapa erbjudanden.
+                      Publicering kräver att vi godkänt både kontot och
+                      erbjudandet.
                     </div>
                   </>
                 )}
@@ -281,7 +273,7 @@ export default function RegistreraPage() {
                   )
                 }
               >
-                {submitting ? "Skickar in..." : "Skicka in ansökan"}
+                {submitting ? "Skapar konto..." : "Skapa konto och logga in"}
               </Button>
             )}
           </div>
@@ -341,48 +333,11 @@ function SummaryStep({
         ))}
       </div>
       <p className="mt-4 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
-        När ni skickar in går ansökan till vårt team för granskning. Ni får
-        besked via e-post inom 1–2 dagar. Det är helt kostnadsfritt att
-        registrera sig och skapa ett utkast till erbjudande.
+        Ni loggas in i portalen direkt och kan skapa erbjudanden helt
+        kostnadsfritt. Er ansökan går samtidigt till vårt team för
+        granskning – publicering kräver att vi godkänt både kontot och
+        erbjudandet.
       </p>
-    </div>
-  );
-}
-
-function SuccessScreen({
-  companyName,
-  email,
-}: {
-  companyName: string;
-  email: string;
-}) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-brand-secondary)]/40 px-5 py-16">
-      <div className="w-full max-w-md rounded-[1.75rem] border border-[var(--color-brand-border)] bg-white p-8 text-center shadow-sm sm:p-10">
-        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
-          <CheckCircle2 className="h-9 w-9" />
-        </span>
-        <h1 className="mt-5 text-2xl font-extrabold text-[var(--color-brand-ink)]">
-          Tack{companyName ? `, ${companyName}` : ""}!
-        </h1>
-        <p className="mt-3 text-[15px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-          Er ansökan är inskickad och vårt team granskar den nu. Det brukar ta
-          1–2 dagar. Så fort ni är godkända kan ni logga in och skapa era
-          första erbjudanden.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-secondary)] px-4 py-3 text-xs font-bold text-[var(--color-brand-primary)]">
-          <Mail className="h-4 w-4" />
-          Vi mejlar {email || "er"} så fort ni är godkända
-        </div>
-        <div className="mt-8 flex flex-col gap-3">
-          <Button href="/logga-in" variant="primary">
-            Gå till inloggning
-          </Button>
-          <Button href="/" variant="ghost">
-            Till startsidan
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

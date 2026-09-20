@@ -32,7 +32,7 @@ import {
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { state, currentCompany, publishOffer, updateCompany } = useAppState();
+  const { state, currentCompany, submitOfferForReview, updateCompany } = useAppState();
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
@@ -59,14 +59,16 @@ export default function PubliceraErbjudandePage() {
 
   const exposure = estimateExposure(offer.id, selectedTier);
 
+  const companyApproved = currentCompany.applicationStatus === "godkand";
+
   async function handlePublish() {
     setProcessing(true);
     await new Promise((r) => setTimeout(r, 1200));
     updateCompany(currentCompany!.id, { packageTier: selectedTier });
-    publishOffer(offer!.id);
+    submitOfferForReview(offer!.id);
     setProcessing(false);
     setDone(true);
-    setTimeout(() => router.push("/portal/erbjudanden"), 1800);
+    setTimeout(() => router.push("/portal/erbjudanden"), 2400);
   }
 
   if (done) {
@@ -77,10 +79,12 @@ export default function PubliceraErbjudandePage() {
             <Check className="h-7 w-7" />
           </span>
           <h2 className="mt-4 text-lg font-extrabold text-[var(--color-brand-ink)]">
-            Erbjudandet är publicerat!
+            Skickat in för granskning!
           </h2>
           <p className="mt-2 text-sm font-medium text-[var(--color-brand-muted)]">
-            Det är nu live i appen för resenärer i {REGION}.
+            {companyApproved
+              ? "Vi granskar erbjudandet innan det går live i appen för resenärer i " + REGION + ". Godkända partners brukar få besked snabbt."
+              : "Vi granskar både er ansökan och erbjudandet. Så fort ni är godkända går det live i appen för resenärer i " + REGION + " – ni får besked via e-post."}
           </p>
         </div>
       </div>
@@ -210,7 +214,9 @@ export default function PubliceraErbjudandePage() {
       <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:flex-row sm:justify-between">
         <p className="text-xs font-medium text-[var(--color-brand-muted)]">
           Ingen bindningstid – pausa eller avsluta när ni vill från portalen.
-          Betalning hanteras säkert i nästa steg.
+          {companyApproved
+            ? " Vi granskar erbjudandet innan det går live."
+            : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
         </p>
         <Button
           onClick={handlePublish}
@@ -220,8 +226,8 @@ export default function PubliceraErbjudandePage() {
           icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
         >
           {processing
-            ? "Publicerar..."
-            : `Publicera för ${formatKr(
+            ? "Skickar in..."
+            : `Skicka in för ${formatKr(
                 getDiscountedTotal(
                   PLANS.find((p) => p.id === selectedTier)!,
                   period

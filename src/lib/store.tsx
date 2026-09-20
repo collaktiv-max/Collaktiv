@@ -133,7 +133,7 @@ interface Ctx {
   addOffer: (offer: Omit<Offer, "id" | "createdAt" | "stats">) => string;
   updateOffer: (id: string, partial: Partial<Offer>) => void;
   deleteOffer: (id: string) => void;
-  publishOffer: (id: string) => void;
+  submitOfferForReview: (id: string) => void;
   inviteReferral: (email: string) => void;
 }
 
@@ -192,17 +192,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           result = {
             ok: false,
             reason: "Er ansökan har tyvärr avvisats. Kontakta support för mer info.",
-          };
-          return s;
-        }
-        if (
-          existing.applicationStatus === "inskickad" ||
-          existing.applicationStatus === "under_granskning"
-        ) {
-          result = {
-            ok: false,
-            reason:
-              "Er ansökan granskas fortfarande (1–2 dagar). Ni får ett mejl så fort ni är godkända.",
           };
           return s;
         }
@@ -273,17 +262,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, offers: s.offers.filter((o) => o.id !== id) }));
   }, []);
 
-  const publishOffer = useCallback((id: string) => {
+  // Företaget kan skapa och betala för ett erbjudande direkt, men det
+  // går live först när vi godkänt både kontot och erbjudandet – så det
+  // hamnar i granskning istället för att publiceras direkt.
+  const submitOfferForReview = useCallback((id: string) => {
     setState((s) => {
       const offer = s.offers.find((o) => o.id === id);
       return {
         ...s,
-        offers: s.offers.map((o) => (o.id === id ? { ...o, status: "publicerad" } : o)),
-        companies: s.companies.map((c) =>
-          offer && c.id === offer.companyId
-            ? { ...c, onboardingChecklist: { ...c.onboardingChecklist, firstPublish: true } }
-            : c
-        ),
+        offers: s.offers.map((o) => (o.id === id ? { ...o, status: "granskas" } : o)),
+        companies: s.companies.map((c) => {
+          if (!offer || c.id !== offer.companyId) return c;
+          return {
+            ...c,
+            applicationStatus:
+              c.applicationStatus === "inskickad" ? "under_granskning" : c.applicationStatus,
+            onboardingChecklist: { ...c.onboardingChecklist, firstPublish: true },
+          };
+        }),
       };
     });
   }, []);
@@ -320,7 +316,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     addOffer,
     updateOffer,
     deleteOffer,
-    publishOffer,
+    submitOfferForReview,
     inviteReferral,
   };
 

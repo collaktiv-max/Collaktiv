@@ -69,7 +69,7 @@ export default function RedigeraErbjudandePage() {
         title="Redigera erbjudande"
         subtitle="Ändringar sparas till erbjudandet."
         action={
-          offer.status !== "publicerad" && (
+          offer.status === "utkast" && (
             <Button
               href={`/portal/erbjudanden/${offer.id}/publicera`}
               variant="outline"

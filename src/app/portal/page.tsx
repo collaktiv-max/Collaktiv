@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
+import { Clock, Eye, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { BarChart } from "@/components/portal/BarChart";
@@ -36,6 +36,25 @@ export default function OversiktPage() {
           </Button>
         }
       />
+
+      {(currentCompany.applicationStatus === "inskickad" ||
+        currentCompany.applicationStatus === "under_granskning") && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-secondary)] p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[var(--color-brand-primary)]">
+            <Clock className="h-4.5 w-4.5" />
+          </span>
+          <div>
+            <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
+              Ert konto granskas
+            </p>
+            <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+              Ni kan skapa och förbereda erbjudanden fritt under tiden. Publicering
+              kräver att vi godkänt både kontot och erbjudandet – ni får besked via
+              e-post inom 1–2 dagar.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Eye} label="Visningar totalt" value={totalViews.toLocaleString("sv-SE")} trend="+12% denna vecka" />

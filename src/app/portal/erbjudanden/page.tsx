@@ -10,7 +10,7 @@ import type { OfferStatus } from "@/lib/types";
 
 const STATUS_CONFIG: Record<OfferStatus, { label: string; variant: "light" | "accent" | "dark" | "outline" }> = {
   utkast: { label: "Utkast", variant: "outline" },
-  vantar_pa_betalning: { label: "Väntar på publicering", variant: "light" },
+  granskas: { label: "Under granskning", variant: "light" },
   publicerad: { label: "Publicerad", variant: "accent" },
   arkiverad: { label: "Arkiverad", variant: "outline" },
 };
@@ -95,7 +95,7 @@ export default function ErbjudandenPage() {
                   >
                     <Pencil className="h-3.5 w-3.5" /> Redigera
                   </Link>
-                  {offer.status !== "publicerad" && (
+                  {offer.status === "utkast" && (
                     <Link
                       href={`/portal/erbjudanden/${offer.id}/publicera`}
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] py-2 text-xs font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)]"

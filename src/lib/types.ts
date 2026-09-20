@@ -48,7 +48,7 @@ export interface CompanyProfile {
 
 export type OfferStatus =
   | "utkast"
-  | "vantar_pa_betalning"
+  | "granskas"
   | "publicerad"
   | "arkiverad";
 
