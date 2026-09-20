@@ -133,7 +133,7 @@ export function PricingSection() {
                   <span className="text-base font-bold text-[var(--color-brand-muted)] line-through">
                     {regularMonthly} kr
                   </span>
-                  <span className="text-[2.5rem] font-extrabold leading-none text-[var(--color-brand-ink)]">
+                  <span className="text-[2.5rem] font-extrabold leading-none text-[#e0432c]">
                     {discountedMonthly}
                   </span>
                   <span className="text-sm font-bold text-[var(--color-brand-muted)]">

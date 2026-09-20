@@ -179,7 +179,7 @@ export default function PubliceraErbjudandePage() {
                 <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
                   {regularMonthly} kr
                 </span>
-                <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
+                <span className="text-xl font-extrabold text-[#e0432c]">
                   {discountedMonthly} kr/mån
                 </span>
               </div>
