@@ -18,38 +18,16 @@ import { useAppState } from "@/lib/store";
 import { estimateExposure } from "@/lib/mock-stats";
 import { REGION } from "@/lib/config";
 import type { PackageTier } from "@/lib/types";
-
-const PLANS: {
-  tier: PackageTier;
-  name: string;
-  price: string;
-  tagline: string;
-  features: string[];
-}[] = [
-  {
-    tier: "standard",
-    name: "Standard",
-    price: "499 kr/mån",
-    tagline: "Bra start för att synas i appen",
-    features: [
-      "Erbjudandet synligt i appen",
-      "Grundläggande statistik (visningar per dag)",
-      "Egen sida i portalen",
-    ],
-  },
-  {
-    tier: "premium",
-    name: "Premium",
-    price: "999 kr/mån",
-    tagline: "Mer synlighet, mer data",
-    features: [
-      "Allt i Standard",
-      "Prioriterad placering i appen (~70% fler visningar)",
-      "Detaljerad statistik: populäraste tider, per erbjudande",
-      "AI-genererat marknadsföringsmaterial ingår",
-    ],
-  },
-];
+import {
+  PLANS,
+  BILLING_LABELS,
+  EARLY_BIRD_SLOTS,
+  getMonthly,
+  getDiscountedMonthly,
+  getDiscountedTotal,
+  formatKr,
+  type BillingPeriod,
+} from "@/lib/pricing";
 
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
@@ -58,6 +36,7 @@ export default function PubliceraErbjudandePage() {
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
+  const [period, setPeriod] = useState<BillingPeriod>("year");
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -148,16 +127,38 @@ export default function PubliceraErbjudandePage() {
         </div>
       </div>
 
-      <h3 className="mb-4 mt-9 text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-        Välj paket för att publicera
-      </h3>
+      <div className="mb-4 mt-9 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+          Välj paket för att publicera
+        </h3>
+        <div className="inline-flex items-center rounded-full border border-[var(--color-brand-border)] bg-white p-1">
+          {(["sixMonths", "year"] as BillingPeriod[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition-colors ${
+                period === p
+                  ? "bg-[var(--color-brand-primary)] text-white"
+                  : "text-[var(--color-brand-muted)]"
+              }`}
+            >
+              {BILLING_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="mb-4 -mt-2 text-xs font-bold text-[#e0432c]">
+        De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på hela paketet – priserna nedan visar det.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {PLANS.map((plan) => {
-          const active = selectedTier === plan.tier;
+          const active = selectedTier === plan.id;
+          const regularMonthly = getMonthly(plan, period);
+          const discountedMonthly = getDiscountedMonthly(plan, period);
           return (
             <button
-              key={plan.tier}
-              onClick={() => setSelectedTier(plan.tier)}
+              key={plan.id}
+              onClick={() => setSelectedTier(plan.id)}
               className={`rounded-2xl border-2 p-6 text-left transition ${
                 active
                   ? "border-[var(--color-brand-primary)] bg-white shadow-md"
@@ -168,11 +169,16 @@ export default function PubliceraErbjudandePage() {
                 <span className="text-base font-extrabold text-[var(--color-brand-ink)]">
                   {plan.name}
                 </span>
-                {plan.tier === "premium" && <Badge variant="accent">Mest populär</Badge>}
+                {plan.id === "premium" && <Badge variant="accent">Mest populär</Badge>}
               </div>
-              <p className="mt-1 text-xl font-extrabold text-[var(--color-brand-primary)]">
-                {plan.price}
-              </p>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
+                  {regularMonthly} kr
+                </span>
+                <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
+                  {discountedMonthly} kr/mån
+                </span>
+              </div>
               <p className="text-xs font-semibold text-[var(--color-brand-muted)]">
                 {plan.tagline}
               </p>
@@ -215,7 +221,12 @@ export default function PubliceraErbjudandePage() {
         >
           {processing
             ? "Publicerar..."
-            : `Publicera för ${PLANS.find((p) => p.tier === selectedTier)?.price}`}
+            : `Publicera för ${formatKr(
+                getDiscountedTotal(
+                  PLANS.find((p) => p.id === selectedTier)!,
+                  period
+                )
+              )} / ${BILLING_LABELS[period].toLowerCase()}`}
         </Button>
       </div>
     </div>

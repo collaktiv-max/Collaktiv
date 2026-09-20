@@ -25,7 +25,7 @@ const cards = [
   {
     icon: Smartphone,
     title: "Noll integration i kassan",
-    text: "Inga nya system, dosor eller scanners. Kunden visar upp en rörlig 10-minuters nedräkning i sin mobil som personalen godkänner med ett ögonkast. Klart på 5 sekunder.",
+    text: "Kunden visar upp en rörlig 10-minuters nedräkning på sin mobil.",
     iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
   },
   {

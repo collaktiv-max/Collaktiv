@@ -19,7 +19,10 @@ export function PartnerPortalPreview({ className = "" }: { className?: string })
       <div className="flex">
         {/* Sidebar */}
         <div className="flex w-[92px] sm:w-[116px] shrink-0 flex-col gap-4 bg-[#0f1f18] px-2.5 py-4 sm:py-5">
-          <Logo showText={false} className="scale-[0.75] self-start pl-1" />
+          <Logo
+            className="self-start pl-0.5"
+            textClassName="text-[10px] text-white"
+          />
           <nav className="flex flex-col gap-1">
             {navItems.map((item, i) => {
               const Icon = item.icon;
