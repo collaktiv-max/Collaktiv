@@ -1,26 +1,56 @@
-import { Users, Megaphone, Repeat, LineChart } from "lucide-react";
+import {
+  Eye,
+  Users,
+  Leaf,
+  BarChart3,
+  TrendingUp,
+  CheckCircle2,
+} from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { REGION } from "@/lib/config";
 
-const items = [
+const cards = [
+  {
+    icon: Eye,
+    title: "Exponering",
+    text: `Synas för en engagerad lokal publik som redan är i rörelse i ${REGION}.`,
+    iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
+  },
   {
     icon: Users,
-    title: "Nya kunder, varje vecka",
-    text: "Ert erbjudande visas för resenärer som redan är på väg in i stan – precis när de bestämmer var de ska handla, fika eller träna.",
+    title: "Ny kundgrupp",
+    text: "Nå unga, hållbara resenärer som upptäcker nya favoritställen via appen.",
+    iconBg: "bg-[#fce8da] text-[#c2703a]",
   },
   {
-    icon: Megaphone,
-    title: "Synlighet utan annonsbudget",
-    text: "Ingen kostnad per klick eller visning. Ni betalar för att vara med i appen – inte för varje resenär som ser erbjudandet.",
+    icon: Leaf,
+    title: "Hållbarhetsprofil",
+    text: "Visa att ert företag stöttar gröna val och ett levande samhälle.",
+    iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
   },
   {
-    icon: Repeat,
-    title: "Stamkunder, inte engångsbesök",
-    text: "Resenärer som samlar poäng återkommer. Ett bra erbjudande idag blir ofta ett nytt stamkundsförhållande imorgon.",
+    icon: BarChart3,
+    title: "Statistik",
+    text: "Statistik över visningar, inlösen och total exponering.",
+    iconBg: "bg-[#0f1f18] text-[var(--color-brand-accent)]",
+  },
+];
+
+const banner = [
+  {
+    icon: TrendingUp,
+    title: "Betalande kunder",
+    text: "Resenärer med poäng letar aktivt efter var de kan använda dem.",
   },
   {
-    icon: LineChart,
-    title: "Svart på vitt vad det ger",
-    text: "Månadsrapport med visningar, inlösningar och populäraste tider – ni ser exakt vad Collaktiv gör för er butik.",
+    icon: Eye,
+    title: "Ständig synlighet",
+    text: "Ert erbjudande ligger kvar i appen – dygnet runt, utan nya annonser.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Ingen bindningstid",
+    text: "Pausa eller ändra erbjudandet när ni vill i partnerportalen.",
   },
 ];
 
@@ -43,12 +73,12 @@ export function ValueGrid() {
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map(({ icon: Icon, title, text }) => (
+          {cards.map(({ icon: Icon, title, text, iconBg }) => (
             <div
               key={title}
               className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-[var(--color-brand-primary)]/5"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg}`}>
                 <Icon className="h-5 w-5" />
               </span>
               <h3 className="mt-4 text-[15.5px] font-extrabold text-[var(--color-brand-ink)]">
@@ -57,6 +87,24 @@ export function ValueGrid() {
               <p className="mt-2 text-[13.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
                 {text}
               </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-6 rounded-2xl bg-[var(--color-brand-secondary)]/60 p-6 sm:grid-cols-3 sm:p-8">
+          {banner.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex items-start gap-3.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--color-brand-primary)] shadow-sm">
+                <Icon className="h-4.5 w-4.5" />
+              </span>
+              <div>
+                <h4 className="text-[14px] font-extrabold text-[var(--color-brand-ink)]">
+                  {title}
+                </h4>
+                <p className="mt-1 text-[13px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                  {text}
+                </p>
+              </div>
             </div>
           ))}
         </div>

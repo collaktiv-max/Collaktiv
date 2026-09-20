@@ -1,6 +1,12 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { Heart, Home, Ticket, Trophy, Tag, Star, MapPin } from "lucide-react";
+
+const sizeClasses = {
+  md: "w-[240px] sm:w-[270px]",
+  sm: "w-[168px] sm:w-[190px]",
+};
 
 export function PhoneMockup({
   companyName = "Ert företag",
@@ -9,6 +15,8 @@ export function PhoneMockup({
   points = 35,
   distance = "1,2 km bort",
   emoji = "🛍️",
+  image,
+  size = "md",
   className = "",
 }: {
   companyName?: string;
@@ -17,11 +25,13 @@ export function PhoneMockup({
   points?: number;
   distance?: string;
   emoji?: string;
+  image?: ReactNode;
+  size?: "md" | "sm";
   className?: string;
 }) {
   return (
     <div
-      className={`relative mx-auto w-[240px] sm:w-[270px] rounded-[2.75rem] border-[10px] border-[#0f1f18] bg-[#0f1f18] shadow-2xl ${className}`}
+      className={`relative mx-auto ${sizeClasses[size]} rounded-[2.75rem] border-[10px] border-[#0f1f18] bg-[#0f1f18] shadow-2xl ${className}`}
     >
       <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-[#0f1f18]" />
       <div className="overflow-hidden rounded-[2.1rem] bg-white">
@@ -39,8 +49,8 @@ export function PhoneMockup({
           </h3>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white shadow-sm">
-            <div className="relative flex h-32 items-center justify-center bg-gradient-to-br from-[var(--color-brand-secondary)] to-[#e5f3ea] text-5xl">
-              {emoji}
+            <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--color-brand-secondary)] to-[#e5f3ea] text-5xl">
+              {image ?? emoji}
               <span className="absolute left-3 top-3 rounded-lg bg-[#e0432c] px-2 py-1 text-[11px] font-extrabold text-white">
                 {discountBadge}
               </span>

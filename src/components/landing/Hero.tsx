@@ -5,6 +5,8 @@ import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { PhoneMockup } from "./PhoneMockup";
+import { OfferPhoto } from "./OfferPhoto";
+import { PartnerPortalPreview } from "./PartnerPortalPreview";
 import { REGION, RESENARER_COUNT } from "@/lib/config";
 
 const proofPoints = [
@@ -79,9 +81,12 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="order-1 lg:order-2"
+          className="relative order-1 mx-auto h-[490px] w-full max-w-[360px] sm:h-[500px] sm:max-w-[430px] lg:order-2 lg:h-[490px] lg:max-w-[500px]"
         >
-          <PhoneMockup />
+          <PartnerPortalPreview className="absolute right-0 top-0" />
+          <div className="absolute bottom-0 left-0 z-10 origin-bottom-left scale-[0.7]">
+            <PhoneMockup image={<OfferPhoto className="absolute inset-0 h-full w-full" />} />
+          </div>
         </motion.div>
       </Container>
     </section>
