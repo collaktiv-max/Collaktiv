@@ -1,7 +1,7 @@
 import {
   Eye,
   Users,
-  Leaf,
+  Smartphone,
   BarChart3,
   TrendingUp,
   CheckCircle2,
@@ -23,9 +23,9 @@ const cards = [
     iconBg: "bg-[#fce8da] text-[#c2703a]",
   },
   {
-    icon: Leaf,
-    title: "Hållbarhetsprofil",
-    text: "Visa att ert företag stöttar gröna val och ett levande samhälle.",
+    icon: Smartphone,
+    title: "Noll integration i kassan",
+    text: "Inga nya system, dosor eller scanners. Kunden visar upp en rörlig 10-minuters nedräkning i sin mobil som personalen godkänner med ett ögonkast. Klart på 5 sekunder.",
     iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
   },
   {
@@ -56,7 +56,7 @@ const banner = [
 
 export function ValueGrid() {
   return (
-    <section id="varfor" className="py-16 sm:py-24">
+    <section id="varfor" className="pt-10 pb-16 sm:pt-14 sm:pb-24">
       <Container>
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
@@ -67,8 +67,9 @@ export function ValueGrid() {
           </h2>
           <p className="mt-4 text-[16px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
             Till skillnad från vanlig annonsering betalar ni inte för
-            visningar ni inte vet effekten av – ni betalar för att synas för
-            en publik som redan reser hållbart och är redo att handla lokalt.
+            visningar ni inte vet effekten av - Med Collaktiv betalar ni för
+            att synas med exakt statistik på vem som faktiskt kommer in genom
+            dörren!
           </p>
         </div>
 
