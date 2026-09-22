@@ -1,48 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Store, Tags, ShieldCheck, Rocket } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Store, Tags, CreditCard, ShieldCheck, Rocket } from "lucide-react";
 import { Container } from "@/components/ui/Container";
-import { Button } from "@/components/ui/Button";
 
 const steps = [
   {
     icon: Store,
     title: "Registrera ert företag",
-    time: "~3 min",
-    description:
-      "Fyll i företagsinfo och kontaktperson. Tar under fem minuter – inget säljsamtal, ingen bindningstid.",
+    description: "Fem minuter, inget säljsamtal, ingen bindningstid.",
   },
   {
     icon: Tags,
-    title: "Skapa ert erbjudande",
-    time: "~2 min",
+    title: "Skapa erbjudande",
     description:
-      "Beskriv rabatten, eller låt vår AI föreslå ett erbjudande utifrån er bransch. Ni ser hela tiden hur det ser ut i appen.",
+      "Helt gratis – beskriv rabatten eller låt vår AI föreslå ett förslag utifrån er bransch.",
+  },
+  {
+    icon: CreditCard,
+    title: "Välj paket & publicera",
+    description:
+      "Standard eller Premium – ni betalar först när ni skickar in erbjudandet för publicering.",
   },
   {
     icon: ShieldCheck,
     title: "Vi granskar",
-    time: "1–2 dagar",
     description:
-      "Vi går igenom ansökan och erbjudandet manuellt för att hålla kvaliteten hög för både er och resenärerna.",
+      "Vi går igenom ansökan och erbjudandet manuellt för hög kvalitet. Besked inom 1–2 dagar.",
   },
   {
     icon: Rocket,
     title: "Ni är live!",
-    time: "Direkt",
-    description:
-      "Så fort ni är godkända publiceras erbjudandet i appen och ni börjar synas för resenärer direkt.",
+    description: "Erbjudandet publiceras och ni syns för tusentals resenärer direkt.",
+    highlight: true,
   },
 ];
 
 export function HowItWorks() {
-  const [active, setActive] = useState(0);
-  const step = steps[active];
-  const Icon = step.icon;
-  const isLast = active === steps.length - 1;
-
   return (
     <section id="sa-funkar-det" className="py-16 sm:py-24">
       <Container>
@@ -51,91 +45,61 @@ export function HowItWorks() {
             Så funkar det
           </span>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[var(--color-brand-ink)] sm:text-4xl">
-            Från klick till kund i fyra steg
+            Live i appen på några dagar
           </h2>
           <p className="mt-4 text-[16px] font-medium text-[var(--color-brand-muted)]">
-            Klicka på ett steg för att se vad som händer.
+            Från registrering till att ni syns för tusentals pendlare – utan krångel.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-4 lg:grid-cols-2 lg:gap-6">
-          <div className="flex flex-col gap-3">
-            {steps.map((s, i) => {
-              const StepIcon = s.icon;
-              const isActive = i === active;
-              return (
-                <button
-                  key={s.title}
-                  onClick={() => setActive(i)}
-                  className={`flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition-all ${
-                    isActive
-                      ? "border-[var(--color-brand-primary)]/30 bg-white shadow-md shadow-[var(--color-brand-primary)]/5"
-                      : "border-transparent bg-[var(--color-brand-secondary)]/60 hover:bg-[var(--color-brand-secondary)]"
+        <div className="relative mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="pointer-events-none absolute left-[10%] right-[10%] top-[23px] hidden h-px bg-[var(--color-brand-border)] lg:block" />
+
+          {steps.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.title}
+                className={`relative flex flex-col gap-3 ${
+                  s.highlight ? "rounded-2xl bg-[var(--color-brand-mint)]/40 p-4" : ""
+                }`}
+              >
+                {s.highlight ? (
+                  <motion.span
+                    animate={{ scale: [1, 1.08, 1] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                    className="relative z-10 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-accent)] text-[var(--color-brand-ink)] shadow-[0_0_0_6px_rgba(143,211,79,0.25)]"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </motion.span>
+                ) : (
+                  <span className="relative z-10 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[15px] font-extrabold text-white">
+                    {i + 1}
+                  </span>
+                )}
+                <h3
+                  className={`text-[15.5px] font-extrabold ${
+                    s.highlight
+                      ? "text-[var(--color-brand-primary-hover)]"
+                      : "text-[var(--color-brand-ink)]"
                   }`}
                 >
-                  <span className="flex items-center gap-4">
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold transition-colors ${
-                        isActive
-                          ? "bg-[var(--color-brand-primary)] text-white"
-                          : "bg-white text-[var(--color-brand-muted)]"
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="flex items-center gap-2 text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-                      <StepIcon className="hidden h-4 w-4 text-[var(--color-brand-primary)] sm:block" />
-                      {s.title}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-brand-muted)]">
-                    {s.time}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="relative overflow-hidden rounded-[1.75rem] bg-[#0f1f18] p-8 sm:p-10">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25 }}
-              >
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-[var(--color-brand-accent)]">
-                  <Icon className="h-7 w-7" />
-                </span>
-                <p className="mt-6 text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-accent)]">
-                  Steg {active + 1} av {steps.length}
-                </p>
-                <h3 className="mt-2 text-2xl font-extrabold text-white">
-                  {step.title}
+                  {s.title}
                 </h3>
-                <p className="mt-3 max-w-md text-[15px] font-medium leading-relaxed text-white/70">
-                  {step.description}
+                <p className="text-[13px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                  {s.description}
                 </p>
-
-                {isLast ? (
-                  <Button href="/registrera" className="mt-8" variant="primary">
-                    Kom igång nu
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setActive((a) => Math.min(a + 1, steps.length - 1))}
-                    className="mt-8"
-                    variant="dark"
+                {s.highlight && (
+                  <a
+                    href="/registrera"
+                    className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-extrabold text-[var(--color-brand-primary)] hover:underline"
                   >
-                    Nästa steg
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                    Bli partner idag <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
                 )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              </div>
+            );
+          })}
         </div>
       </Container>
     </section>

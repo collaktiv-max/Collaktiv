@@ -92,6 +92,7 @@ export function Hero() {
 
           <motion.div
             animate={{ y: [0, -7, 0] }}
+            style={{ rotate: -8 }}
             transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
             className="absolute left-0 top-0 z-20 hidden items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 shadow-lg sm:flex"
           >
@@ -104,7 +105,7 @@ export function Hero() {
           <motion.div
             animate={{ y: [0, -7, 0] }}
             transition={{ duration: 4.1, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-            className="absolute bottom-0 right-0 z-20 hidden items-center gap-1.5 rounded-xl bg-[var(--color-brand-ink)] px-3 py-2 shadow-lg sm:flex"
+            className="absolute right-0 top-[232px] z-20 hidden items-center gap-1.5 rounded-xl bg-[var(--color-brand-ink)] px-3 py-2 shadow-lg sm:top-[262px] sm:flex lg:top-[280px]"
           >
             <Eye className="h-3.5 w-3.5 shrink-0 text-white" />
             <span className="whitespace-nowrap text-[11px] font-extrabold text-white">
