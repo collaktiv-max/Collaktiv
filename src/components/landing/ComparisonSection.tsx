@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, Calculator, Sparkles } from "lucide-react";
+import { Check, X, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { getPlan, CHEAPEST_MONTHLY_PRICE, formatKr } from "@/lib/pricing";
 
@@ -38,16 +38,18 @@ const rows = [
   },
 ];
 
-const AD_SPEND_PRESETS = [3000, 6000, 10000];
+const MIN_SPEND = 1500;
+const MAX_SPEND = 15000;
 
 export function ComparisonSection() {
-  const [activeRow, setActiveRow] = useState(1);
-  const [adSpend, setAdSpend] = useState(AD_SPEND_PRESETS[1]);
+  const [adSpend, setAdSpend] = useState(6000);
 
   const standard = getPlan("standard");
   const collaktivMonthly = CHEAPEST_MONTHLY_PRICE;
   const monthlySavings = Math.max(0, adSpend - collaktivMonthly);
   const yearSavings = monthlySavings * 12;
+  const tradBarPct = Math.min(100, (adSpend / MAX_SPEND) * 100);
+  const collaktivBarPct = Math.max(3, (collaktivMonthly / MAX_SPEND) * 100);
 
   return (
     <section className="bg-[var(--color-brand-secondary)]/50 py-16 sm:py-24">
@@ -60,106 +62,111 @@ export function ComparisonSection() {
             Varför just Collaktiv?
           </h2>
           <p className="mt-3 text-sm font-medium text-[var(--color-brand-muted)]">
-            Klicka på en rad för att se skillnaden.
+            Dra i reglaget och se vad ni sparar.
           </p>
         </div>
 
-        <div className="mx-auto mt-10 grid max-w-6xl items-start gap-6 lg:grid-cols-[3fr_2fr]">
-          {/* Jämförelsetabell */}
-          <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white shadow-sm">
-            <div className="grid grid-cols-2 border-b border-[var(--color-brand-border)] bg-white text-[13px] font-extrabold">
-              <div className="flex items-center gap-2 px-4 py-3.5 text-[var(--color-brand-muted)]">
-                <X className="h-4 w-4" />{" "}
-                <span className="hidden sm:inline">Traditionell annonsering</span>
-                <span className="sm:hidden">Annonsering</span>
+        {/* Interaktiv besparingskalkylator */}
+        <div className="mx-auto mt-10 max-w-5xl rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-8">
+          <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                  Annonsbudget / mån
+                </span>
+                <span className="text-lg font-extrabold text-[var(--color-brand-ink)]">
+                  {formatKr(adSpend)}
+                </span>
               </div>
-              <div className="flex items-center gap-2 border-l border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)] px-4 py-3.5 text-[var(--color-brand-primary)]">
-                <Check className="h-4 w-4" /> Collaktiv
-              </div>
-            </div>
-            {rows.map((row, i) => {
-              const active = activeRow === i;
-              return (
-                <button
-                  key={row.label}
-                  onClick={() => setActiveRow(active ? -1 : i)}
-                  className={`grid w-full grid-cols-2 border-b border-[var(--color-brand-border)] text-left text-[12.5px] font-medium transition-colors last:border-b-0 ${
-                    active ? "bg-[var(--color-brand-secondary)]/30" : "hover:bg-[var(--color-brand-secondary)]/15"
-                  }`}
-                >
-                  <div className="px-4 py-3.5 text-[var(--color-brand-muted)]">
-                    <p
-                      className={`mb-1 text-[10.5px] font-extrabold uppercase tracking-wide transition-colors ${
-                        active ? "text-[var(--color-brand-primary)]" : "text-[var(--color-brand-ink)]/50"
-                      }`}
-                    >
-                      {row.label}
-                    </p>
-                    {row.ads}
+              <input
+                type="range"
+                min={MIN_SPEND}
+                max={MAX_SPEND}
+                step={250}
+                value={adSpend}
+                onChange={(e) => setAdSpend(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--color-brand-primary)]"
+              />
+
+              <div className="mt-6 flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[11.5px] font-bold text-[var(--color-brand-muted)]">
+                    <span>Traditionell annonsering</span>
+                    <span>{formatKr(adSpend)}</span>
                   </div>
-                  <div className="border-l border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/40 px-4 py-3.5 text-[var(--color-brand-ink)]">
-                    <span className="font-extrabold">{row.collaktivBold}</span>
-                    {row.collaktivRest}
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-brand-muted)] transition-all duration-300"
+                      style={{ width: `${tradBarPct}%` }}
+                    />
                   </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Interaktiv besparingskalkylator */}
-          <div className="flex h-full flex-col rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
-                <Calculator className="h-4.5 w-4.5" />
-              </span>
-              <div>
-                <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
-                  Räkna ut er besparing
-                </p>
-                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-                  Vad lägger ni idag på annonsering per månad?
-                </p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[11.5px] font-bold text-[var(--color-brand-primary)]">
+                    <span>Collaktiv {standard.name} (-20%, de 50 första)</span>
+                    <span>{formatKr(collaktivMonthly)}</span>
+                  </div>
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-brand-primary)] transition-all duration-300"
+                      style={{ width: `${collaktivBarPct}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {AD_SPEND_PRESETS.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setAdSpend(amount)}
-                  className={`rounded-full border px-3.5 py-1.5 text-xs font-extrabold transition ${
-                    adSpend === amount
-                      ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-white"
-                      : "border-[var(--color-brand-border)] text-[var(--color-brand-ink)] hover:border-[var(--color-brand-primary)]"
-                  }`}
-                >
-                  {formatKr(amount)}/mån
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 flex-1 rounded-xl bg-[var(--color-brand-mint)] p-5">
+            <div className="shrink-0 rounded-xl bg-[var(--color-brand-mint)] p-5 sm:w-[230px]">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]/70">
-                Med Collaktiv ({standard.name} från {collaktivMonthly} kr/mån) sparar ni
+                Ni sparar
               </p>
-              <p className="mt-1 text-3xl font-extrabold leading-none text-[#e0432c]">
+              <p className="mt-1 text-3xl font-extrabold leading-none text-[var(--color-brand-primary)]">
                 {formatKr(monthlySavings)}
                 <span className="text-sm font-bold text-[var(--color-brand-ink)]/60"> /mån</span>
               </p>
               <p className="mt-1 text-xs font-bold text-[var(--color-brand-ink)]/70">
                 = {formatKr(yearSavings)} per år
               </p>
-
-              <div className="mt-4 flex items-start gap-2 border-t border-[var(--color-brand-primary)]/15 pt-4">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
-                <p className="text-[12.5px] font-semibold leading-relaxed text-[var(--color-brand-ink)]">
-                  Och ni får mer värde för pengarna: exakt statistik på vem som
-                  faktiskt handlar, synlighet dygnet runt och inga tryck- eller
-                  designkostnader – sånt traditionella annonser aldrig kan ge.
-                </p>
-              </div>
             </div>
           </div>
+
+          <div className="mt-6 flex items-start gap-2 border-t border-[var(--color-brand-border)] pt-5">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
+            <p className="text-[12.5px] font-semibold leading-relaxed text-[var(--color-brand-ink)]">
+              Och ni får mer värde för pengarna: exakt statistik på vem som
+              faktiskt handlar, synlighet dygnet runt och inga tryck- eller
+              designkostnader – sånt traditionella annonser aldrig kan ge.
+            </p>
+          </div>
+        </div>
+
+        {/* Jämförelsekort */}
+        <div className="mx-auto mt-6 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white shadow-sm"
+            >
+              <p className="border-b border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/60 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]">
+                {row.label}
+              </p>
+              <div className="flex flex-col divide-y divide-[var(--color-brand-border)]">
+                <div className="flex items-start gap-2 px-4 py-3">
+                  <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-brand-muted)]" />
+                  <p className="text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                    {row.ads}
+                  </p>
+                </div>
+                <div className="flex items-start gap-2 bg-[var(--color-brand-secondary)]/40 px-4 py-3">
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-brand-primary)]" />
+                  <p className="text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-ink)]">
+                    <span className="font-extrabold">{row.collaktivBold}</span>
+                    {row.collaktivRest}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </Container>
     </section>
