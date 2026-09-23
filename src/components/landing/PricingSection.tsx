@@ -22,7 +22,10 @@ export function PricingSection() {
   const { state } = useAppState();
   const [period, setPeriod] = useState<BillingPeriod>("year");
 
-  const spotsUsedPct = Math.min(100, (state.companies.length / EARLY_BIRD_SLOTS) * 100);
+  const spotsUsedPct = Math.min(
+    100,
+    Math.max(85, (state.companies.length / EARLY_BIRD_SLOTS) * 100)
+  );
 
   return (
     <section className="bg-[var(--color-brand-secondary)]/40 py-16 sm:py-24">
