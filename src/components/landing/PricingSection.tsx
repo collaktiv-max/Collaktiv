@@ -22,7 +22,6 @@ export function PricingSection() {
   const { state } = useAppState();
   const [period, setPeriod] = useState<BillingPeriod>("year");
 
-  const spotsLeft = Math.max(0, EARLY_BIRD_SLOTS - state.companies.length);
   const spotsUsedPct = Math.min(100, (state.companies.length / EARLY_BIRD_SLOTS) * 100);
 
   return (
@@ -42,28 +41,23 @@ export function PricingSection() {
         </div>
 
         {/* FOMO-banner */}
-        <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#e0432c]/25 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]">
-              <Flame className="h-4.5 w-4.5" />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]">
+              <Flame className="h-4 w-4" />
             </span>
-            <p className="text-[14.5px] font-extrabold text-[var(--color-brand-ink)]">
-              De 50 första företagen får 20% rabatt på hela paketet – för alltid.
+            <p className="text-[13.5px] font-extrabold text-[var(--color-brand-ink)]">
+              De 50 första företagen får 20% rabatt på hela paketet.
             </p>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#e0432c] to-[#f2894f] transition-all duration-500"
                 style={{ width: `${spotsUsedPct}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs font-bold text-[var(--color-brand-muted)]">
-              <span>
-                <span className="text-[#e0432c]">{spotsLeft} platser kvar</span> av {EARLY_BIRD_SLOTS}
-              </span>
-              <span>Rabatten låses in permanent på ert konto</span>
-            </div>
+            <p className="mt-2 text-xs font-bold text-[#e0432c]">Några platser kvar</p>
           </div>
         </div>
 
