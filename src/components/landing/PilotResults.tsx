@@ -18,7 +18,7 @@ const awards = [
   { icon: Trophy, text: "Årets bästa UF-företag – Gävleborg & Gävle stad" },
   { icon: Medal, text: "Andraplats – Bästa tjänst" },
   { icon: Award, text: "Tredjeplats – Årets innovation" },
-  { icon: Sparkles, text: "+ ytterligare en utmärkelse" },
+  { icon: Sparkles, text: "+ ytterligare andra utmärkelser" },
 ];
 
 export function PilotResults() {
