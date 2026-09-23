@@ -33,7 +33,9 @@ export function PilotResults() {
         </h2>
         <p className="mt-2 max-w-2xl text-[15.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
           Under våren 2026 lanserade Collaktiv UF en 3 månaders lång pilot av
-          tjänsten i Gävle stad.
+          tjänsten i Gävle stad. Uppskattningen och feedbacken var enorm. Nu
+          siktar vi större, fler användare, fler företag, i en regionalt
+          satsad lansering av Collaktiv.
         </p>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
