@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Sparkles, TrendingUp, Eye } from "lucide-react";
+import { ArrowRight, Check, Sparkles, TrendingUp, Eye, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { PhoneMockup } from "./PhoneMockup";
@@ -110,6 +110,18 @@ export function Hero() {
             <Eye className="h-3.5 w-3.5 shrink-0 text-white" />
             <span className="whitespace-nowrap text-[11px] font-extrabold text-white">
               2 400 visningar
+            </span>
+          </motion.div>
+
+          <motion.div
+            animate={{ y: [0, -7, 0] }}
+            style={{ rotate: 6 }}
+            transition={{ duration: 3.9, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+            className="absolute right-0 top-0 z-20 hidden items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 shadow-lg sm:flex"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-primary)]" />
+            <span className="whitespace-nowrap text-[11px] font-extrabold text-[var(--color-brand-primary-hover)]">
+              39 nya kunder
             </span>
           </motion.div>
         </motion.div>
