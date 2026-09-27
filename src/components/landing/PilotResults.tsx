@@ -1,4 +1,4 @@
-import { Trophy, Medal, Award, Sparkles } from "lucide-react";
+import { Trophy, Medal, Award, Star } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { ImageCarousel } from "./ImageCarousel";
 
@@ -18,7 +18,7 @@ const awards = [
   { icon: Trophy, text: "Årets bästa UF-företag – Gävleborg & Gävle stad" },
   { icon: Medal, text: "Andraplats – Bästa tjänst" },
   { icon: Award, text: "Tredjeplats – Årets innovation" },
-  { icon: Sparkles, text: "+ ytterligare andra utmärkelser" },
+  { icon: Star, text: "Kvalificering till SM för bästa företag" },
 ];
 
 export function PilotResults() {
