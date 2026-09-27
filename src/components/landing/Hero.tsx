@@ -117,7 +117,7 @@ export function Hero() {
             animate={{ y: [0, -7, 0] }}
             style={{ rotate: 6 }}
             transition={{ duration: 3.9, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-            className="absolute right-0 top-0 z-20 hidden items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 shadow-lg sm:flex"
+            className="absolute right-0 top-0 z-20 hidden items-center gap-1.5 rounded-xl bg-[var(--color-brand-mint)] px-3 py-2 shadow-lg sm:flex"
           >
             <Users className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-primary)]" />
             <span className="whitespace-nowrap text-[11px] font-extrabold text-[var(--color-brand-primary-hover)]">
