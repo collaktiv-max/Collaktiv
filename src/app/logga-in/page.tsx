@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Info, Loader2, Lock, Mail } from "lucide-react";
+import { ArrowRight, Loader2, Lock, Mail } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -110,12 +110,6 @@ export default function LoggaInPage() {
             >
               {loading ? "Loggar in..." : "Logga in"}
             </Button>
-
-            <div className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-secondary)] p-3.5 text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
-              Vill ni bara testa portalen? Ange valfri e-post och lösenord så
-              öppnar vi en demo-portal med exempeldata.
-            </div>
           </form>
 
           <p className="mt-6 text-center text-sm font-bold text-[var(--color-brand-muted)]">

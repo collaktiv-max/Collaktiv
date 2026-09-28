@@ -1,16 +1,14 @@
 "use client";
 
-import { Clock, Eye, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
+import { BarChart3, Clock, Eye, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
-import { BarChart } from "@/components/portal/BarChart";
 import { PremiumGate } from "@/components/portal/PremiumGate";
 import { OnboardingChecklist } from "@/components/portal/OnboardingChecklist";
 import { ReferralCard } from "@/components/portal/ReferralCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
-import { getPopularHours, getWeeklyViews } from "@/lib/mock-stats";
 
 export default function OversiktPage() {
   const { currentCompany, companyOffers, updateCompany } = useAppState();
@@ -21,8 +19,6 @@ export default function OversiktPage() {
   const conversion = totalViews > 0 ? Math.round((totalRedemptions / totalViews) * 100) : 0;
   const topOffer = [...companyOffers].sort((a, b) => b.stats.views - a.stats.views)[0];
 
-  const weeklyViews = getWeeklyViews(currentCompany.id, Math.max(totalViews, 40));
-  const popularHours = getPopularHours(currentCompany.id);
   const isPremium = currentCompany.packageTier === "premium";
 
   return (
@@ -57,7 +53,7 @@ export default function OversiktPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Eye} label="Visningar totalt" value={totalViews.toLocaleString("sv-SE")} trend="+12% denna vecka" />
+        <StatCard icon={Eye} label="Visningar totalt" value={totalViews.toLocaleString("sv-SE")} />
         <StatCard icon={Ticket} label="Inlösningar" value={totalRedemptions.toLocaleString("sv-SE")} />
         <StatCard icon={TrendingUp} label="Konverteringsgrad" value={`${conversion}%`} />
         <StatCard
@@ -81,7 +77,7 @@ export default function OversiktPage() {
               </div>
               {!isPremium && <Badge>Standard</Badge>}
             </div>
-            <BarChart data={weeklyViews.map((d) => ({ label: d.day, value: d.value }))} />
+            <StatsPlaceholder />
           </div>
 
           {isPremium ? (
@@ -97,7 +93,7 @@ export default function OversiktPage() {
                 </div>
                 <Badge variant="accent">Premium</Badge>
               </div>
-              <BarChart data={popularHours.map((d) => ({ label: d.hour, value: d.value }))} />
+              <StatsPlaceholder />
             </div>
           ) : (
             <PremiumGate onUpgrade={() => updateCompany(currentCompany.id, { packageTier: "premium" })}>
@@ -106,7 +102,7 @@ export default function OversiktPage() {
                   Mest populära tider
                 </h3>
                 <div className="mt-5">
-                  <BarChart data={popularHours.map((d) => ({ label: d.hour, value: d.value }))} />
+                  <StatsPlaceholder />
                 </div>
               </div>
             </PremiumGate>
@@ -140,6 +136,19 @@ export default function OversiktPage() {
           <ReferralCard />
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatsPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-secondary)]/60 py-12 text-center">
+      <BarChart3 className="h-5 w-5 text-[var(--color-brand-muted)]" />
+      <p className="text-xs font-bold text-[var(--color-brand-ink)]">Ingen statistik ännu</p>
+      <p className="max-w-[240px] text-[11px] font-medium text-[var(--color-brand-muted)]">
+        Kopplas in så snart appen har lanserat och erbjudandet börjar synas
+        för resenärer.
+      </p>
     </div>
   );
 }

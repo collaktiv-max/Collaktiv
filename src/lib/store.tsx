@@ -37,54 +37,6 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function demoOffers(companyId: string): Offer[] {
-  const now = new Date().toISOString();
-  return [
-    {
-      id: uid(),
-      companyId,
-      title: "20% rabatt på hela köpet",
-      description:
-        "Visa koden i kassan och få rabatt på ditt nästa besök hos oss.",
-      discountType: "procent",
-      discountValue: "20%",
-      pointsCost: 35,
-      validTo: undefined,
-      terms: "Gäller ej redan nedsatta varor. En rabatt per besök.",
-      imageEmoji: "🛍️",
-      status: "publicerad",
-      createdAt: now,
-      stats: { views: 812, redemptions: 64 },
-    },
-    {
-      id: uid(),
-      companyId,
-      title: "Gratis fika vid köp",
-      description: "Bjuder på en fika när du handlar för minst 200 kr.",
-      discountType: "erbjudande",
-      discountValue: "1 gratis fika",
-      pointsCost: 25,
-      imageEmoji: "☕",
-      status: "publicerad",
-      createdAt: now,
-      stats: { views: 431, redemptions: 39 },
-    },
-    {
-      id: uid(),
-      companyId,
-      title: "15% för nya kunder",
-      description: "Ett förstagångserbjudande för att sänka tröskeln in i butiken.",
-      discountType: "procent",
-      discountValue: "15%",
-      pointsCost: 20,
-      imageEmoji: "✨",
-      status: "utkast",
-      createdAt: now,
-      stats: { views: 0, redemptions: 0 },
-    },
-  ];
-}
-
 function newCompany(input: {
   name: string;
   contactEmail: string;
@@ -198,26 +150,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         return { ...s, sessionCompanyId: existing.id };
       }
 
-      // Demo: ingen matchande ansökan – skapa en godkänd demo-portal
-      // så att inloggningen alltid går att testa.
-      const demo = newCompany({
-        name: "Ert företag",
-        contactEmail: email,
-        contactName: "Du",
-        category: "fika",
-        applicationStatus: "godkand",
-        packageTier: "premium",
-      });
-      demo.onboardingChecklist.profileComplete = true;
-      const offers = demoOffers(demo.id);
-      demo.onboardingChecklist.firstOffer = true;
-      demo.onboardingChecklist.firstPublish = true;
-      return {
-        ...s,
-        companies: [...s.companies, demo],
-        offers: [...s.offers, ...offers],
-        sessionCompanyId: demo.id,
+      result = {
+        ok: false,
+        reason:
+          "Vi hittar inget konto med den e-postadressen. Registrera ert företag för att komma igång.",
       };
+      return s;
     });
 
     return result;
