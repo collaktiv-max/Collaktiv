@@ -63,6 +63,7 @@ function newCompany(input: {
     region: input.region ?? "Gävleborg",
     packageTier: input.packageTier ?? "standard",
     applicationStatus: input.applicationStatus ?? "inskickad",
+    paymentConfirmed: false,
     createdAt: new Date().toISOString(),
     onboardingChecklist: {
       logo: !!input.logoDataUrl,

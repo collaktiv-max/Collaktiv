@@ -54,12 +54,26 @@ export default function OversiktPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Eye} label="Visningar totalt" value={totalViews.toLocaleString("sv-SE")} />
-        <StatCard icon={Ticket} label="Inlösningar" value={totalRedemptions.toLocaleString("sv-SE")} />
-        <StatCard icon={TrendingUp} label="Konverteringsgrad" value={`${conversion}%`} />
+        <StatCard
+          icon={Ticket}
+          label="Inlösningar"
+          value={totalRedemptions.toLocaleString("sv-SE")}
+          locked={!isPremium}
+          onUpgrade={() => updateCompany(currentCompany.id, { packageTier: "premium" })}
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="Konverteringsgrad"
+          value={`${conversion}%`}
+          locked={!isPremium}
+          onUpgrade={() => updateCompany(currentCompany.id, { packageTier: "premium" })}
+        />
         <StatCard
           icon={Trophy}
           label="Mest populära erbjudande"
           value={topOffer ? topOffer.title : "–"}
+          locked={!isPremium}
+          onUpgrade={() => updateCompany(currentCompany.id, { packageTier: "premium" })}
         />
       </div>
 

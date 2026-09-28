@@ -37,6 +37,7 @@ export interface CompanyProfile {
   region: string;
   packageTier: PackageTier;
   applicationStatus: ApplicationStatus;
+  paymentConfirmed: boolean;
   createdAt: string;
   onboardingChecklist: {
     logo: boolean;
