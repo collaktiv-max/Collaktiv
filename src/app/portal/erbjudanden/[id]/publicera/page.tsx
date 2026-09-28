@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
+  AlertCircle,
   ArrowLeft,
   Check,
   Eye,
@@ -32,15 +33,51 @@ import {
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { state, currentCompany, submitOfferForReview, updateCompany } = useAppState();
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
   const [period, setPeriod] = useState<BillingPeriod>("year");
   const [processing, setProcessing] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const offer = state.offers.find((o) => o.id === id);
+
+  // Efter en lyckad Stripe Checkout skickas kunden tillbaka hit med
+  // ?session_id=... – verifiera betalningen mot Stripe innan vi
+  // markerar erbjudandet som inskickat.
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId || !currentCompany || !offer) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVerifying(true);
+    fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`)
+      .then((r) => r.json())
+      .then((data: { paid?: boolean; metadata?: Record<string, string> }) => {
+        if (!data.paid) {
+          setError("Betalningen kunde inte bekräftas. Försök igen.");
+          return;
+        }
+        const tier = (data.metadata?.planId as PackageTier) ?? selectedTier;
+        updateCompany(currentCompany.id, { packageTier: tier, paymentConfirmed: true });
+        submitOfferForReview(offer.id);
+        setDone(true);
+        router.replace(`/portal/erbjudanden/${offer.id}/publicera`);
+      })
+      .catch(() => setError("Kunde inte verifiera betalningen. Försök igen."))
+      .finally(() => setVerifying(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, currentCompany, offer]);
+
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => router.push("/portal/erbjudanden"), 2800);
+    return () => clearTimeout(t);
+  }, [done, router]);
 
   if (!currentCompany) return null;
 
@@ -63,12 +100,42 @@ export default function PubliceraErbjudandePage() {
 
   async function handlePublish() {
     setProcessing(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    updateCompany(currentCompany!.id, { packageTier: selectedTier });
-    submitOfferForReview(offer!.id);
-    setProcessing(false);
-    setDone(true);
-    setTimeout(() => router.push("/portal/erbjudanden"), 2400);
+    setError(null);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyId: currentCompany!.id,
+          offerId: offer!.id,
+          planId: selectedTier,
+          period,
+          companyName: currentCompany!.name,
+          companyEmail: currentCompany!.contactEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? "Kunde inte starta betalningen.");
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Kunde inte starta betalningen. Försök igen om en stund.");
+      setProcessing(false);
+    }
+  }
+
+  if (verifying) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-primary)]" />
+          <p className="text-sm font-bold text-[var(--color-brand-muted)]">
+            Bekräftar betalningen...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (done) {
@@ -102,6 +169,15 @@ export default function PubliceraErbjudandePage() {
           </Button>
         }
       />
+
+      {(error || searchParams.get("canceled")) && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#f3c9c2] bg-[#fdecea] p-4">
+          <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#c0392b]" />
+          <p className="text-sm font-semibold text-[#c0392b]">
+            {error ?? "Betalningen avbröts – inget har dragits. Försök igen när ni är redo."}
+          </p>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-[var(--color-brand-primary)]/20 bg-gradient-to-br from-[var(--color-brand-secondary)] to-white p-6 sm:p-8">
         <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]">
