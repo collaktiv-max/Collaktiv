@@ -5,249 +5,193 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
-import type {
-  CompanyProfile,
-  Offer,
-  ReferralInvite,
-  Category,
-  PackageTier,
-} from "./types";
+import type { CompanyProfile, Offer, Category } from "./types";
 
-const STORAGE_KEY = "collaktiv_portal_state_v1";
-
-interface State {
-  companies: CompanyProfile[];
-  offers: Offer[];
-  referrals: ReferralInvite[];
-  sessionCompanyId: string | null;
-}
-
-const emptyState: State = {
-  companies: [],
-  offers: [],
-  referrals: [],
-  sessionCompanyId: null,
-};
-
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-function newCompany(input: {
+interface RegisterInput {
   name: string;
   contactEmail: string;
+  password: string;
   contactName?: string;
   contactPhone?: string;
   category?: Category;
   website?: string;
   description?: string;
   logoDataUrl?: string;
-  region?: string;
-  packageTier?: PackageTier;
-  applicationStatus?: CompanyProfile["applicationStatus"];
-}): CompanyProfile {
-  return {
-    id: uid(),
-    name: input.name,
-    logoDataUrl: input.logoDataUrl,
-    website: input.website ?? "",
-    description: input.description ?? "",
-    category: input.category ?? "ovrigt",
-    contactName: input.contactName ?? "",
-    contactEmail: input.contactEmail,
-    contactPhone: input.contactPhone ?? "",
-    region: input.region ?? "Gävleborg",
-    packageTier: input.packageTier ?? "standard",
-    applicationStatus: input.applicationStatus ?? "inskickad",
-    paymentConfirmed: false,
-    createdAt: new Date().toISOString(),
-    onboardingChecklist: {
-      logo: !!input.logoDataUrl,
-      firstOffer: false,
-      profileComplete: false,
-      firstPublish: false,
-    },
-  };
 }
 
 interface Ctx {
-  state: State;
   ready: boolean;
   currentCompany: CompanyProfile | null;
   companyOffers: Offer[];
-  registerCompany: (input: Parameters<typeof newCompany>[0]) => string;
-  login: (email: string, password: string) => { ok: boolean; reason?: string };
-  logout: () => void;
-  updateCompany: (id: string, partial: Partial<CompanyProfile>) => void;
-  addOffer: (offer: Omit<Offer, "id" | "createdAt" | "stats">) => string;
-  updateOffer: (id: string, partial: Partial<Offer>) => void;
-  deleteOffer: (id: string) => void;
-  submitOfferForReview: (id: string) => void;
-  inviteReferral: (email: string) => void;
+  referralCount: number;
+  registerCompany: (input: RegisterInput) => Promise<{ ok: boolean; reason?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; reason?: string }>;
+  logout: () => Promise<void>;
+  updateCompany: (id: string, partial: Partial<CompanyProfile>) => Promise<void>;
+  addOffer: (offer: Omit<Offer, "id" | "companyId" | "createdAt" | "stats">) => Promise<string>;
+  updateOffer: (id: string, partial: Partial<Offer>) => Promise<void>;
+  deleteOffer: (id: string) => Promise<void>;
+  submitOfferForReview: (id: string) => Promise<void>;
+  inviteReferral: (email: string) => Promise<void>;
+  /** Speglar lokalt state efter en serverbekräftad förändring (t.ex.
+   * Stripe-verifiering) utan att göra ett eget nätverksanrop. */
+  syncCompany: (company: CompanyProfile) => void;
+  syncOffer: (offer: Offer) => void;
 }
 
 const StoreContext = createContext<Ctx | null>(null);
 
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Något gick fel.");
+  return data as T;
+}
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(emptyState);
   const [ready, setReady] = useState(false);
+  const [currentCompany, setCurrentCompany] = useState<CompanyProfile | null>(null);
+  const [companyOffers, setCompanyOffers] = useState<Offer[]>([]);
+  const [referralCount, setReferralCount] = useState(0);
 
   useEffect(() => {
-    // One-time sync from localStorage after mount: avoids a hydration
-    // mismatch, since localStorage isn't available during the server render.
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState(JSON.parse(raw));
+    let cancelled = false;
+    (async () => {
+      try {
+        const { company } = await fetchJson<{ company: CompanyProfile | null }>("/api/auth/me");
+        if (cancelled) return;
+        setCurrentCompany(company);
+        if (company) {
+          const [{ offers }, { count }] = await Promise.all([
+            fetchJson<{ offers: Offer[] }>("/api/offers"),
+            fetchJson<{ count: number }>("/api/referrals"),
+          ]);
+          if (cancelled) return;
+          setCompanyOffers(offers);
+          setReferralCount(count);
+        }
+      } catch {
+        // ingen giltig session – fortsätt utloggad
+      } finally {
+        if (!cancelled) setReady(true);
       }
-    } catch {
-      // ignore corrupt storage
-    }
-    setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    if (!ready) return;
+  const registerCompany = useCallback(async (input: RegisterInput) => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // ignore quota errors
+      const { company } = await fetchJson<{ company: CompanyProfile }>("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setCurrentCompany(company);
+      setCompanyOffers([]);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
     }
-  }, [state, ready]);
+  }, []);
 
-  const registerCompany = useCallback(
-    (input: Parameters<typeof newCompany>[0]) => {
-      const company = newCompany({ ...input, applicationStatus: "inskickad" });
-      setState((s) => ({ ...s, companies: [...s.companies, company] }));
-      return company.id;
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const { company } = await fetchJson<{ company: CompanyProfile }>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      setCurrentCompany(company);
+      const [{ offers }, { count }] = await Promise.all([
+        fetchJson<{ offers: Offer[] }>("/api/offers"),
+        fetchJson<{ count: number }>("/api/referrals"),
+      ]);
+      setCompanyOffers(offers);
+      setReferralCount(count);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await fetchJson("/api/auth/logout", { method: "POST" });
+    setCurrentCompany(null);
+    setCompanyOffers([]);
+    setReferralCount(0);
+  }, []);
+
+  const updateCompany = useCallback(async (_id: string, partial: Partial<CompanyProfile>) => {
+    const { company } = await fetchJson<{ company: CompanyProfile }>("/api/company", {
+      method: "PATCH",
+      body: JSON.stringify(partial),
+    });
+    setCurrentCompany(company);
+  }, []);
+
+  const addOffer = useCallback(
+    async (offer: Omit<Offer, "id" | "companyId" | "createdAt" | "stats">) => {
+      const { offer: created } = await fetchJson<{ offer: Offer }>("/api/offers", {
+        method: "POST",
+        body: JSON.stringify(offer),
+      });
+      setCompanyOffers((offers) => [created, ...offers]);
+      setCurrentCompany((c) =>
+        c ? { ...c, onboardingChecklist: { ...c.onboardingChecklist, firstOffer: true } } : c
+      );
+      return created.id;
     },
     []
   );
 
-  const login = useCallback((email: string, password: string) => {
-    void password;
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) return { ok: false, reason: "Ange en e-postadress." };
-
-    let result: { ok: boolean; reason?: string } = { ok: true };
-
-    setState((s) => {
-      const existing = s.companies.find(
-        (c) => c.contactEmail.trim().toLowerCase() === normalized
-      );
-      if (existing) {
-        if (existing.applicationStatus === "avvisad") {
-          result = {
-            ok: false,
-            reason: "Er ansökan har tyvärr avvisats. Kontakta support för mer info.",
-          };
-          return s;
-        }
-        return { ...s, sessionCompanyId: existing.id };
-      }
-
-      result = {
-        ok: false,
-        reason:
-          "Vi hittar inget konto med den e-postadressen. Registrera ert företag för att komma igång.",
-      };
-      return s;
+  const updateOffer = useCallback(async (id: string, partial: Partial<Offer>) => {
+    const { offer } = await fetchJson<{ offer: Offer }>(`/api/offers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(partial),
     });
-
-    return result;
+    setCompanyOffers((offers) => offers.map((o) => (o.id === id ? offer : o)));
   }, []);
 
-  const logout = useCallback(() => {
-    setState((s) => ({ ...s, sessionCompanyId: null }));
+  const deleteOffer = useCallback(async (id: string) => {
+    await fetchJson(`/api/offers/${id}`, { method: "DELETE" });
+    setCompanyOffers((offers) => offers.filter((o) => o.id !== id));
   }, []);
 
-  const updateCompany = useCallback((id: string, partial: Partial<CompanyProfile>) => {
-    setState((s) => ({
-      ...s,
-      companies: s.companies.map((c) => (c.id === id ? { ...c, ...partial } : c)),
-    }));
+  const submitOfferForReview = useCallback(async (id: string) => {
+    const { offer, company } = await fetchJson<{ offer: Offer; company: CompanyProfile }>(
+      `/api/offers/${id}/submit`,
+      { method: "POST" }
+    );
+    setCompanyOffers((offers) => offers.map((o) => (o.id === id ? offer : o)));
+    setCurrentCompany(company);
   }, []);
 
-  const addOffer = useCallback((offer: Omit<Offer, "id" | "createdAt" | "stats">) => {
-    const id = uid();
-    setState((s) => ({
-      ...s,
-      offers: [
-        ...s.offers,
-        { ...offer, id, createdAt: new Date().toISOString(), stats: { views: 0, redemptions: 0 } },
-      ],
-      companies: s.companies.map((c) =>
-        c.id === offer.companyId
-          ? { ...c, onboardingChecklist: { ...c.onboardingChecklist, firstOffer: true } }
-          : c
-      ),
-    }));
-    return id;
-  }, []);
-
-  const updateOffer = useCallback((id: string, partial: Partial<Offer>) => {
-    setState((s) => ({
-      ...s,
-      offers: s.offers.map((o) => (o.id === id ? { ...o, ...partial } : o)),
-    }));
-  }, []);
-
-  const deleteOffer = useCallback((id: string) => {
-    setState((s) => ({ ...s, offers: s.offers.filter((o) => o.id !== id) }));
-  }, []);
-
-  // Företaget kan skapa och betala för ett erbjudande direkt, men det
-  // går live först när vi godkänt både kontot och erbjudandet – så det
-  // hamnar i granskning istället för att publiceras direkt.
-  const submitOfferForReview = useCallback((id: string) => {
-    setState((s) => {
-      const offer = s.offers.find((o) => o.id === id);
-      return {
-        ...s,
-        offers: s.offers.map((o) => (o.id === id ? { ...o, status: "granskas" } : o)),
-        companies: s.companies.map((c) => {
-          if (!offer || c.id !== offer.companyId) return c;
-          return {
-            ...c,
-            applicationStatus:
-              c.applicationStatus === "inskickad" ? "under_granskning" : c.applicationStatus,
-            onboardingChecklist: { ...c.onboardingChecklist, firstPublish: true },
-          };
-        }),
-      };
+  const inviteReferral = useCallback(async (email: string) => {
+    const { count } = await fetchJson<{ count: number }>("/api/referrals", {
+      method: "POST",
+      body: JSON.stringify({ email }),
     });
+    setReferralCount(count);
   }, []);
 
-  const inviteReferral = useCallback((email: string) => {
-    setState((s) => ({
-      ...s,
-      referrals: [
-        ...s.referrals,
-        { id: uid(), email, sentAt: new Date().toISOString(), status: "skickad" },
-      ],
-    }));
-  }, []);
-
-  const currentCompany = useMemo(
-    () => state.companies.find((c) => c.id === state.sessionCompanyId) ?? null,
-    [state.companies, state.sessionCompanyId]
-  );
-
-  const companyOffers = useMemo(
-    () => state.offers.filter((o) => o.companyId === currentCompany?.id),
-    [state.offers, currentCompany]
+  const syncCompany = useCallback((company: CompanyProfile) => setCurrentCompany(company), []);
+  const syncOffer = useCallback(
+    (offer: Offer) =>
+      setCompanyOffers((offers) => offers.map((o) => (o.id === offer.id ? offer : o))),
+    []
   );
 
   const value: Ctx = {
-    state,
     ready,
     currentCompany,
     companyOffers,
+    referralCount,
     registerCompany,
     login,
     logout,
@@ -257,6 +201,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     deleteOffer,
     submitOfferForReview,
     inviteReferral,
+    syncCompany,
+    syncOffer,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

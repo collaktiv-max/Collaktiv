@@ -64,8 +64,7 @@ function CompanyInfoCard({
 
   async function handleSave() {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    updateCompany(companyId, {
+    await updateCompany(companyId, {
       name,
       logoDataUrl: logo,
       website,
@@ -142,8 +141,7 @@ function ContactCard({
 
   async function handleSave() {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    updateCompany(companyId, { contactName, contactEmail, contactPhone });
+    await updateCompany(companyId, { contactName, contactEmail, contactPhone });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -182,15 +180,28 @@ function AccountCard({ email }: { email: string }) {
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     if (!password) return;
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    setSaving(false);
-    setSaved(true);
-    setPassword("");
-    setTimeout(() => setSaved(false), 2000);
+    setError(null);
+    try {
+      const res = await fetch("/api/company/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Kunde inte uppdatera lösenordet.");
+      setSaved(true);
+      setPassword("");
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte uppdatera lösenordet.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -204,6 +215,11 @@ function AccountCard({ email }: { email: string }) {
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </Field>
       </div>
+      {error && (
+        <p className="mt-3 rounded-lg bg-[#fdecea] px-3 py-2 text-xs font-bold text-[#c0392b]">
+          {error}
+        </p>
+      )}
       <div className="mt-6 flex items-center justify-end gap-3 border-t border-[var(--color-brand-border)] pt-5">
         <SavedPill show={saved} />
         <Button
@@ -238,8 +254,7 @@ function BillingCard({
 
   async function handleSwitch() {
     setSwitching(true);
-    await new Promise((r) => setTimeout(r, 700));
-    updateCompany(companyId, { packageTier: other });
+    await updateCompany(companyId, { packageTier: other });
     setSwitching(false);
   }
 

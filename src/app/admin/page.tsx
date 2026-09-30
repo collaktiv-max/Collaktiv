@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Check,
   CircleDollarSign,
   Clock,
+  LogOut,
   Mail,
   Phone,
   ShieldCheck,
@@ -13,8 +16,23 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Logo } from "@/components/ui/Logo";
-import { useAppState } from "@/lib/store";
-import { CATEGORY_LABELS, type ApplicationStatus, type PackageTier } from "@/lib/types";
+import {
+  CATEGORY_LABELS,
+  type ApplicationStatus,
+  type CompanyProfile,
+  type Offer,
+  type PackageTier,
+} from "@/lib/types";
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Något gick fel.");
+  return data as T;
+}
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   utkast: "Utkast",
@@ -37,8 +55,56 @@ function formatDate(iso: string) {
 }
 
 export default function AdminPage() {
-  const { state, updateCompany, updateOffer } = useAppState();
-  const { companies, offers } = state;
+  const router = useRouter();
+  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ companies }, { offers }] = await Promise.all([
+        fetchJson<{ companies: CompanyProfile[] }>("/api/admin/companies"),
+        fetchJson<{ offers: Offer[] }>("/api/admin/offers"),
+      ]);
+      if (cancelled) return;
+      setCompanies(companies);
+      setOffers(offers);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function updateCompany(id: string, partial: Partial<CompanyProfile>) {
+    const { company } = await fetchJson<{ company: CompanyProfile }>(
+      `/api/admin/companies/${id}`,
+      { method: "PATCH", body: JSON.stringify(partial) }
+    );
+    setCompanies((cs) => cs.map((c) => (c.id === id ? company : c)));
+  }
+
+  async function updateOffer(id: string, partial: Partial<Offer>) {
+    const { offer } = await fetchJson<{ offer: Offer }>(`/api/admin/offers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(partial),
+    });
+    setOffers((os) => os.map((o) => (o.id === id ? offer : o)));
+  }
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.replace("/admin/login");
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-brand-secondary)]/30">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-brand-primary)] border-t-transparent" />
+      </div>
+    );
+  }
 
   const pendingCompanies = companies.filter(
     (c) => c.applicationStatus === "inskickad" || c.applicationStatus === "under_granskning"
@@ -54,9 +120,17 @@ export default function AdminPage() {
             <Logo textClassName="text-white" />
             <Badge variant="translucent">Adminpanel</Badge>
           </div>
-          <span className="text-xs font-bold text-white/50">
-            Endast för internt bruk
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-white/50">
+              Endast för internt bruk
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-extrabold text-white/80 hover:bg-white/10"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Logga ut
+            </button>
+          </div>
         </div>
       </header>
 

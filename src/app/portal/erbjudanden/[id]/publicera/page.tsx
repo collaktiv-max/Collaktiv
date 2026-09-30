@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
 import { estimateExposure } from "@/lib/mock-stats";
 import { REGION } from "@/lib/config";
-import type { PackageTier } from "@/lib/types";
+import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
 import {
   PLANS,
   BILLING_LABELS,
@@ -34,7 +34,7 @@ export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { state, currentCompany, submitOfferForReview, updateCompany } = useAppState();
+  const { companyOffers, currentCompany, syncCompany, syncOffer } = useAppState();
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
@@ -44,11 +44,11 @@ export default function PubliceraErbjudandePage() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const offer = state.offers.find((o) => o.id === id);
+  const offer = companyOffers.find((o) => o.id === id);
 
   // Efter en lyckad Stripe Checkout skickas kunden tillbaka hit med
-  // ?session_id=... – verifiera betalningen mot Stripe innan vi
-  // markerar erbjudandet som inskickat.
+  // ?session_id=... – servern verifierar betalningen mot Stripe och
+  // markerar erbjudandet som inskickat innan den svarar.
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
     if (!sessionId || !currentCompany || !offer) return;
@@ -57,14 +57,13 @@ export default function PubliceraErbjudandePage() {
     setVerifying(true);
     fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`)
       .then((r) => r.json())
-      .then((data: { paid?: boolean; metadata?: Record<string, string> }) => {
-        if (!data.paid) {
+      .then((data: { paid?: boolean; company?: CompanyProfile; offer?: OfferT }) => {
+        if (!data.paid || !data.company || !data.offer) {
           setError("Betalningen kunde inte bekräftas. Försök igen.");
           return;
         }
-        const tier = (data.metadata?.planId as PackageTier) ?? selectedTier;
-        updateCompany(currentCompany.id, { packageTier: tier, paymentConfirmed: true });
-        submitOfferForReview(offer.id);
+        syncCompany(data.company);
+        syncOffer(data.offer);
         setDone(true);
         router.replace(`/portal/erbjudanden/${offer.id}/publicera`);
       })
@@ -106,19 +105,16 @@ export default function PubliceraErbjudandePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          companyId: currentCompany!.id,
           offerId: offer!.id,
           planId: selectedTier,
           period,
-          companyName: currentCompany!.name,
-          companyEmail: currentCompany!.contactEmail,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
         throw new Error(data.error ?? "Kunde inte starta betalningen.");
       }
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch {
       setError("Kunde inte starta betalningen. Försök igen om en stund.");
       setProcessing(false);

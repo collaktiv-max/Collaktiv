@@ -26,9 +26,7 @@ export default function NyttErbjudandePage() {
 
   async function handleSave(values: OfferFormValues) {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const id = addOffer({
-      companyId: currentCompany!.id,
+    const id = await addOffer({
       title: values.title,
       description: values.description,
       discountType: values.discountType,

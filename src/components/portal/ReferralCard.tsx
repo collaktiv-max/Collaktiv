@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Field";
 import { useAppState } from "@/lib/store";
 
 export function ReferralCard() {
-  const { state, inviteReferral } = useAppState();
+  const { referralCount, inviteReferral } = useAppState();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -16,8 +16,7 @@ export function ReferralCard() {
     e.preventDefault();
     if (!email.trim()) return;
     setSending(true);
-    await new Promise((r) => setTimeout(r, 500));
-    inviteReferral(email);
+    await inviteReferral(email);
     setSending(false);
     setSent(true);
     setEmail("");
@@ -63,9 +62,9 @@ export function ReferralCard() {
         </Button>
       </form>
 
-      {state.referrals.length > 0 && (
+      {referralCount > 0 && (
         <p className="mt-3 text-[11px] font-bold text-white/50">
-          {state.referrals.length} inbjudan{state.referrals.length === 1 ? "" : "ar"} skickade hittills
+          {referralCount} inbjudan{referralCount === 1 ? "" : "ar"} skickade hittills
         </p>
       )}
     </div>

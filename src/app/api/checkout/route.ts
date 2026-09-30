@@ -1,23 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionCompanyId } from "@/lib/session";
+import { getCompanyById, getOfferById } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { getPlan, getDiscountedTotal, BILLING_LABELS, type BillingPeriod } from "@/lib/pricing";
 import type { PlanId } from "@/lib/pricing";
 
 interface CheckoutBody {
-  companyId: string;
   offerId: string;
   planId: PlanId;
   period: BillingPeriod;
-  companyName: string;
-  companyEmail: string;
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as Partial<CheckoutBody>;
-  const { companyId, offerId, planId, period, companyName, companyEmail } = body;
+  const companyId = await getSessionCompanyId();
+  if (!companyId) {
+    return NextResponse.json({ error: "Ej inloggad." }, { status: 401 });
+  }
 
-  if (!companyId || !offerId || !planId || !period || !companyEmail) {
+  const body = (await req.json()) as Partial<CheckoutBody>;
+  const { offerId, planId, period } = body;
+  if (!offerId || !planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
+  }
+
+  const [company, offer] = await Promise.all([getCompanyById(companyId), getOfferById(offerId)]);
+  if (!company) {
+    return NextResponse.json({ error: "Företaget hittades inte." }, { status: 404 });
+  }
+  if (!offer || offer.companyId !== companyId) {
+    return NextResponse.json({ error: "Erbjudandet hittades inte." }, { status: 404 });
   }
 
   const plan = getPlan(planId);
@@ -27,7 +38,7 @@ export async function POST(req: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
-    customer_email: companyEmail,
+    customer_email: company.contactEmail,
     automatic_tax: { enabled: true },
     line_items: [
       {
@@ -37,7 +48,7 @@ export async function POST(req: NextRequest) {
           unit_amount: amount * 100,
           product_data: {
             name: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]}`,
-            description: `${companyName} · early bird-rabatt 20% inräknad`,
+            description: `${company.name} · early bird-rabatt 20% inräknad`,
           },
         },
       },

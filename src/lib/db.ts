@@ -131,6 +131,11 @@ export async function getCompanies(): Promise<CompanyProfile[]> {
   return rows.map((r) => stripPassword(toCompany(r)));
 }
 
+export async function getCompaniesCount(): Promise<number> {
+  const rows = (await sql`select count(*)::int as count from companies`) as { count: number }[];
+  return rows[0]?.count ?? 0;
+}
+
 export async function getCompanyById(id: string): Promise<CompanyProfile | null> {
   const rows = (await sql`select * from companies where id = ${id}`) as CompanyRow[];
   if (!rows[0]) return null;
@@ -210,6 +215,10 @@ export async function updateCompany(
   return stripPassword(toCompany(rows[0]));
 }
 
+export async function updateCompanyPassword(id: string, passwordHash: string): Promise<void> {
+  await sql`update companies set password_hash = ${passwordHash} where id = ${id}`;
+}
+
 // ---------- Erbjudanden ----------
 
 export async function getOffers(): Promise<Offer[]> {
@@ -278,6 +287,28 @@ export async function deleteOffer(id: string): Promise<void> {
   await sql`delete from offers where id = ${id}`;
 }
 
+// Företaget kan skapa och betala för ett erbjudande direkt, men det går
+// live först när vi godkänt både kontot och erbjudandet – så det hamnar
+// i granskning istället för att publiceras direkt.
+export async function submitOfferForReview(
+  offerId: string,
+  companyId: string
+): Promise<{ offer: Offer; company: CompanyProfile } | null> {
+  const offer = await updateOffer(offerId, { status: "granskas" });
+  if (!offer) return null;
+
+  const current = await getCompanyById(companyId);
+  if (!current) return null;
+
+  const company = await updateCompany(companyId, {
+    applicationStatus:
+      current.applicationStatus === "inskickad" ? "under_granskning" : current.applicationStatus,
+    onboardingChecklist: { ...current.onboardingChecklist, firstPublish: true },
+  });
+
+  return company ? { offer, company } : null;
+}
+
 // ---------- Referrals ----------
 
 export async function createReferral(email: string): Promise<ReferralInvite> {
@@ -290,4 +321,9 @@ export async function createReferral(email: string): Promise<ReferralInvite> {
 export async function getReferrals(): Promise<ReferralInvite[]> {
   const rows = (await sql`select * from referrals order by sent_at desc`) as ReferralRow[];
   return rows.map(toReferral);
+}
+
+export async function getReferralsCount(): Promise<number> {
+  const rows = (await sql`select count(*)::int as count from referrals`) as { count: number }[];
+  return rows[0]?.count ?? 0;
 }
