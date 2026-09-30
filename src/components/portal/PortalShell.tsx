@@ -177,7 +177,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </main>
 
         {/* Mobile bottom tab bar */}
-        <nav className="sticky bottom-0 z-30 grid grid-cols-4 border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden">
+        <nav className="sticky bottom-0 z-30 grid grid-cols-5 border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, "exact" in item && item.exact);
             const Icon = item.icon;

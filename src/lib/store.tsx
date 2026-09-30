@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CompanyProfile, Offer, Category } from "./types";
+import type { CompanyProfile, Offer, Campaign, Category } from "./types";
+import { fetchJson } from "./apiClient";
 
 interface RegisterInput {
   name: string;
@@ -20,12 +21,14 @@ interface RegisterInput {
   website?: string;
   description?: string;
   logoDataUrl?: string;
+  address?: string;
 }
 
 interface Ctx {
   ready: boolean;
   currentCompany: CompanyProfile | null;
   companyOffers: Offer[];
+  companyCampaigns: Campaign[];
   referralCount: number;
   registerCompany: (input: RegisterInput) => Promise<{ ok: boolean; reason?: string }>;
   login: (email: string, password: string) => Promise<{ ok: boolean; reason?: string }>;
@@ -36,6 +39,7 @@ interface Ctx {
   deleteOffer: (id: string) => Promise<void>;
   submitOfferForReview: (id: string) => Promise<void>;
   inviteReferral: (email: string) => Promise<void>;
+  createCampaign: (input: { targetLocations: string; message?: string }) => Promise<void>;
   /** Speglar lokalt state efter en serverbekräftad förändring (t.ex.
    * Stripe-verifiering) utan att göra ett eget nätverksanrop. */
   syncCompany: (company: CompanyProfile) => void;
@@ -44,20 +48,11 @@ interface Ctx {
 
 const StoreContext = createContext<Ctx | null>(null);
 
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? "Något gick fel.");
-  return data as T;
-}
-
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<CompanyProfile | null>(null);
   const [companyOffers, setCompanyOffers] = useState<Offer[]>([]);
+  const [companyCampaigns, setCompanyCampaigns] = useState<Campaign[]>([]);
   const [referralCount, setReferralCount] = useState(0);
 
   useEffect(() => {
@@ -68,13 +63,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setCurrentCompany(company);
         if (company) {
-          const [{ offers }, { count }] = await Promise.all([
+          const [{ offers }, { count }, { campaigns }] = await Promise.all([
             fetchJson<{ offers: Offer[] }>("/api/offers"),
             fetchJson<{ count: number }>("/api/referrals"),
+            fetchJson<{ campaigns: Campaign[] }>("/api/campaigns"),
           ]);
           if (cancelled) return;
           setCompanyOffers(offers);
           setReferralCount(count);
+          setCompanyCampaigns(campaigns);
         }
       } catch {
         // ingen giltig session – fortsätt utloggad
@@ -108,12 +105,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
       setCurrentCompany(company);
-      const [{ offers }, { count }] = await Promise.all([
+      const [{ offers }, { count }, { campaigns }] = await Promise.all([
         fetchJson<{ offers: Offer[] }>("/api/offers"),
         fetchJson<{ count: number }>("/api/referrals"),
+        fetchJson<{ campaigns: Campaign[] }>("/api/campaigns"),
       ]);
       setCompanyOffers(offers);
       setReferralCount(count);
+      setCompanyCampaigns(campaigns);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -124,6 +123,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     await fetchJson("/api/auth/logout", { method: "POST" });
     setCurrentCompany(null);
     setCompanyOffers([]);
+    setCompanyCampaigns([]);
     setReferralCount(0);
   }, []);
 
@@ -187,10 +187,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const createCampaign = useCallback(
+    async (input: { targetLocations: string; message?: string }) => {
+      const { campaign } = await fetchJson<{ campaign: Campaign }>("/api/campaigns", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setCompanyCampaigns((campaigns) => [campaign, ...campaigns]);
+    },
+    []
+  );
+
   const value: Ctx = {
     ready,
     currentCompany,
     companyOffers,
+    companyCampaigns,
     referralCount,
     registerCompany,
     login,
@@ -201,6 +213,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     deleteOffer,
     submitOfferForReview,
     inviteReferral,
+    createCampaign,
     syncCompany,
     syncOffer,
   };

@@ -7,32 +7,27 @@ import {
   Check,
   CircleDollarSign,
   Clock,
+  Gift,
   LogOut,
   Mail,
   Phone,
+  Rocket,
   ShieldCheck,
   Ticket,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Logo } from "@/components/ui/Logo";
+import { fetchJson } from "@/lib/apiClient";
 import {
   CATEGORY_LABELS,
   type ApplicationStatus,
+  type Campaign,
+  type CampaignStatus,
   type CompanyProfile,
   type Offer,
   type PackageTier,
 } from "@/lib/types";
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? "Något gick fel.");
-  return data as T;
-}
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   utkast: "Utkast",
@@ -50,6 +45,20 @@ const APPLICATION_STATUS_VARIANT: Record<ApplicationStatus, "light" | "accent" |
   avvisad: "outline",
 };
 
+const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
+  intresseanmald: "Intresseanmäld",
+  godkand: "Godkänd",
+  aktiv: "Aktiv",
+  avvisad: "Avvisad",
+};
+
+const CAMPAIGN_STATUS_VARIANT: Record<CampaignStatus, "light" | "accent" | "dark" | "outline"> = {
+  intresseanmald: "light",
+  godkand: "accent",
+  aktiv: "dark",
+  avvisad: "outline",
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -58,18 +67,21 @@ export default function AdminPage() {
   const router = useRouter();
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ companies }, { offers }] = await Promise.all([
+      const [{ companies }, { offers }, { campaigns }] = await Promise.all([
         fetchJson<{ companies: CompanyProfile[] }>("/api/admin/companies"),
         fetchJson<{ offers: Offer[] }>("/api/admin/offers"),
+        fetchJson<{ campaigns: Campaign[] }>("/api/admin/campaigns"),
       ]);
       if (cancelled) return;
       setCompanies(companies);
       setOffers(offers);
+      setCampaigns(campaigns);
       setLoading(false);
     })();
     return () => {
@@ -124,6 +136,14 @@ export default function AdminPage() {
     setOffers((os) => os.map((o) => (o.id === id ? offer : o)));
   }
 
+  async function updateCampaignStatus(id: string, status: CampaignStatus) {
+    const { campaign } = await fetchJson<{ campaign: Campaign }>(`/api/admin/campaigns/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    setCampaigns((cs) => cs.map((c) => (c.id === id ? campaign : c)));
+  }
+
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/admin/login");
@@ -142,6 +162,12 @@ export default function AdminPage() {
   );
   const pendingOffers = offers.filter((o) => o.status === "granskas");
   const payingCompanies = companies.filter((c) => c.paymentConfirmed);
+  const pendingCampaigns = campaigns.filter((c) => c.status === "intresseanmald");
+  const contestHosts = companies.filter((c) => c.contestHostInterested);
+
+  function companyName(companyId: string) {
+    return companies.find((c) => c.id === companyId)?.name ?? "–";
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-brand-secondary)]/30">
@@ -174,11 +200,13 @@ export default function AdminPage() {
         </p>
 
         {/* KPI-rad */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard icon={Building2} label="Företag totalt" value={companies.length} />
           <KpiCard icon={Clock} label="Väntar på granskning" value={pendingCompanies.length} />
           <KpiCard icon={Ticket} label="Erbjudanden att granska" value={pendingOffers.length} />
           <KpiCard icon={CircleDollarSign} label="Betalande företag" value={payingCompanies.length} />
+          <KpiCard icon={Rocket} label="Kampanjintresse" value={pendingCampaigns.length} />
+          <KpiCard icon={Gift} label="Tävlingsvärdar" value={contestHosts.length} />
         </div>
 
         {/* Ansökningar att granska */}
@@ -311,6 +339,114 @@ export default function AdminPage() {
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Kampanjförfrågningar */}
+        <section className="mt-10">
+          <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+            Kampanjer – intresseanmälningar
+          </h2>
+          <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+            Företag som vill betala för extra synlighet på riktade platser i appen.
+          </p>
+
+          {campaigns.length === 0 ? (
+            <EmptyRow text="Inga kampanjförfrågningar än." />
+          ) : (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-brand-border)] text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    <th className="px-5 py-3">Företag</th>
+                    <th className="px-5 py-3">Platser</th>
+                    <th className="px-5 py-3">Meddelande</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3">Inskickad</th>
+                    <th className="px-5 py-3 text-right">Åtgärd</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-brand-border)]">
+                  {campaigns.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                        {companyName(c.companyId)}
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {c.targetLocations}
+                      </td>
+                      <td className="max-w-[220px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {c.message || "–"}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge variant={CAMPAIGN_STATUS_VARIANT[c.status]}>
+                          {CAMPAIGN_STATUS_LABELS[c.status]}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {formatDate(c.createdAt)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <select
+                          value={c.status}
+                          onChange={(e) =>
+                            updateCampaignStatus(c.id, e.target.value as CampaignStatus)
+                          }
+                          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+                        >
+                          {Object.entries(CAMPAIGN_STATUS_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Tävlingsvärdar */}
+        <section className="mt-10">
+          <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+            Tävlingsvärdar
+          </h2>
+          <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+            Företag som anmält att de kan bidra med pris till en tävling i appen.
+          </p>
+
+          {contestHosts.length === 0 ? (
+            <EmptyRow text="Inga tävlingsvärdar anmälda än." />
+          ) : (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-brand-border)] text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    <th className="px-5 py-3">Företag</th>
+                    <th className="px-5 py-3">Kontakt</th>
+                    <th className="px-5 py-3">Erbjuder som pris</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-brand-border)]">
+                  {contestHosts.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                        {c.name}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
+                      </td>
+                      <td className="max-w-[320px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {c.contestPrizeDescription || "–"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

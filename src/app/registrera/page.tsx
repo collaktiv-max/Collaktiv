@@ -22,6 +22,7 @@ interface FormState {
   website: string;
   description: string;
   category: Category;
+  address: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -35,6 +36,7 @@ const initialForm: FormState = {
   website: "",
   description: "",
   category: "mat-dryck",
+  address: "",
   contactName: "",
   contactEmail: "",
   contactPhone: "",
@@ -55,7 +57,7 @@ export default function RegistreraPage() {
   }
 
   function canProceed() {
-    if (step === 0) return form.name.trim().length > 1;
+    if (step === 0) return form.name.trim().length > 1 && form.address.trim().length > 1;
     if (step === 1)
       return (
         form.contactName.trim().length > 1 &&
@@ -87,6 +89,7 @@ export default function RegistreraPage() {
       contactName: form.contactName,
       contactEmail: email,
       contactPhone: form.contactPhone,
+      address: form.address,
       password: form.password,
     });
     setSubmitting(false);
@@ -157,6 +160,17 @@ export default function RegistreraPage() {
                         placeholder="https://"
                         value={form.website}
                         onChange={(e) => update("website", e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Adress"
+                      required
+                      hint="Används för att visa er för resenärer nära er i appen"
+                    >
+                      <Input
+                        placeholder="Gatuadress, ort"
+                        value={form.address}
+                        onChange={(e) => update("address", e.target.value)}
                       />
                     </Field>
                     <Field label="Kort beskrivning av företaget">
@@ -306,6 +320,7 @@ function SummaryStep({
     { label: "Företagsnamn", value: form.name || "–", step: 0 },
     { label: "Kategori", value: CATEGORY_LABELS[form.category], step: 0 },
     { label: "Webbadress", value: form.website || "–", step: 0 },
+    { label: "Adress", value: form.address || "–", step: 0 },
     { label: "Kontaktperson", value: form.contactName || "–", step: 1 },
     { label: "E-post (kontakt)", value: form.contactEmail || "–", step: 1 },
     { label: "Telefon", value: form.contactPhone || "–", step: 1 },

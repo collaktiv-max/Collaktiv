@@ -16,7 +16,10 @@ const ALLOWED_FIELDS = [
   "contactEmail",
   "contactPhone",
   "region",
+  "address",
   "packageTier",
+  "contestHostInterested",
+  "contestPrizeDescription",
   "onboardingChecklist",
 ] as const satisfies readonly (keyof CompanyProfile)[];
 

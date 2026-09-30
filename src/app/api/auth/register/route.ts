@@ -13,6 +13,7 @@ interface RegisterBody {
   contactName?: string;
   contactEmail: string;
   contactPhone?: string;
+  address?: string;
   password: string;
 }
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
       contactName: body.contactName,
       contactEmail: contactEmail.trim(),
       contactPhone: body.contactPhone,
+      address: body.address,
       passwordHash,
     });
     await createSession(company.id);

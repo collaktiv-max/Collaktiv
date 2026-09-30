@@ -15,11 +15,16 @@ create table if not exists companies (
   contact_email     text not null,
   contact_phone     text not null default '',
   region            text not null default 'Gävleborg',
+  address           text default '',
+  latitude          double precision,
+  longitude         double precision,
   package_tier      text not null default 'standard'
                       check (package_tier in ('standard','premium')),
   application_status text not null default 'inskickad'
                       check (application_status in ('utkast','inskickad','under_granskning','godkand','avvisad')),
   payment_confirmed boolean not null default false,
+  contest_host_interested    boolean not null default false,
+  contest_prize_description  text default '',
   password_hash     text not null,
   onboarding_logo             boolean not null default false,
   onboarding_first_offer      boolean not null default false,
@@ -65,9 +70,9 @@ create table if not exists referrals (
 
 -- Ett register över varje lyckad Stripe-betalning, kopplat till
 -- företaget (och erbjudandet, om det gällde en publicering). Behövs
--- för att admin ska kunna se/hitta betalningen om ett erbjudande eller
--- en ansökan nekas efter betalning. Återbetalning hanteras INTE
--- automatiskt än – status-fältet finns förberett för det.
+-- för att admin ska kunna se/hitta betalningen, och för att en
+-- automatisk Stripe-återbetalning ska kunna triggas om en betald
+-- ansökan avvisas – se /api/admin/companies/[id].
 create table if not exists payments (
   id                        uuid primary key default gen_random_uuid(),
   company_id                uuid not null references companies (id) on delete cascade,
@@ -86,3 +91,19 @@ create table if not exists payments (
 create index if not exists payments_company_id_idx on payments (company_id);
 create unique index if not exists payments_stripe_session_id_key
   on payments (stripe_session_id);
+
+-- Intresseanmälan om att synas extra i appen på riktade platser. Vad
+-- som ingår (pris, längd, exakt vilka platser) bestäms senare – det
+-- här är bara underlaget admin behöver för att följa upp.
+create table if not exists campaigns (
+  id                uuid primary key default gen_random_uuid(),
+  company_id        uuid not null references companies (id) on delete cascade,
+  target_locations  text not null default '',
+  message           text default '',
+  status            text not null default 'intresseanmald'
+                      check (status in ('intresseanmald','godkand','aktiv','avvisad')),
+  created_at        timestamptz not null default now()
+);
+
+create index if not exists campaigns_company_id_idx on campaigns (company_id);
+create index if not exists campaigns_status_idx on campaigns (status);

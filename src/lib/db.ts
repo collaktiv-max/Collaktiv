@@ -4,6 +4,8 @@ import type {
   CompanyProfile,
   Offer,
   ReferralInvite,
+  Campaign,
+  CampaignStatus,
   Category,
   PackageTier,
   ApplicationStatus,
@@ -31,9 +33,14 @@ interface CompanyRow {
   contact_email: string;
   contact_phone: string;
   region: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   package_tier: PackageTier;
   application_status: ApplicationStatus;
   payment_confirmed: boolean;
+  contest_host_interested: boolean;
+  contest_prize_description: string | null;
   password_hash: string;
   onboarding_logo: boolean;
   onboarding_first_offer: boolean;
@@ -68,6 +75,15 @@ interface ReferralRow {
   sent_at: string;
 }
 
+interface CampaignRow {
+  id: string;
+  company_id: string;
+  target_locations: string;
+  message: string | null;
+  status: CampaignStatus;
+  created_at: string;
+}
+
 function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
   return {
     id: row.id,
@@ -80,9 +96,14 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
     region: row.region,
+    address: row.address ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     packageTier: row.package_tier,
     applicationStatus: row.application_status,
     paymentConfirmed: row.payment_confirmed,
+    contestHostInterested: row.contest_host_interested,
+    contestPrizeDescription: row.contest_prize_description ?? undefined,
     passwordHash: row.password_hash,
     createdAt: row.created_at,
     onboardingChecklist: {
@@ -124,6 +145,17 @@ function toReferral(row: ReferralRow): ReferralInvite {
   return { id: row.id, email: row.email, status: row.status, sentAt: row.sent_at };
 }
 
+function toCampaign(row: CampaignRow): Campaign {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    targetLocations: row.target_locations,
+    message: row.message ?? undefined,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
 // ---------- Företag ----------
 
 export async function getCompanies(): Promise<CompanyProfile[]> {
@@ -160,6 +192,7 @@ export async function createCompany(input: {
   contactEmail: string;
   contactPhone?: string;
   region?: string;
+  address?: string;
   packageTier?: PackageTier;
   applicationStatus?: ApplicationStatus;
   passwordHash: string;
@@ -167,13 +200,13 @@ export async function createCompany(input: {
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
-      contact_name, contact_email, contact_phone, region,
+      contact_name, contact_email, contact_phone, region, address,
       package_tier, application_status, password_hash,
       onboarding_logo
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
-      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"},
+      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"},
       ${input.passwordHash}, ${!!input.logoDataUrl}
     )
@@ -202,9 +235,14 @@ export async function updateCompany(
       contact_email = ${next.contactEmail},
       contact_phone = ${next.contactPhone},
       region = ${next.region},
+      address = ${next.address ?? ""},
+      latitude = ${next.latitude ?? null},
+      longitude = ${next.longitude ?? null},
       package_tier = ${next.packageTier},
       application_status = ${next.applicationStatus},
       payment_confirmed = ${next.paymentConfirmed},
+      contest_host_interested = ${next.contestHostInterested},
+      contest_prize_description = ${next.contestPrizeDescription ?? ""},
       onboarding_logo = ${checklist.logo},
       onboarding_first_offer = ${checklist.firstOffer},
       onboarding_profile_complete = ${checklist.profileComplete},
@@ -415,4 +453,46 @@ export async function getUnrefundedPaymentsByCompany(companyId: string): Promise
 
 export async function markPaymentRefunded(id: string): Promise<void> {
   await sql`update payments set status = 'refunded' where id = ${id}`;
+}
+
+// ---------- Kampanjer ----------
+
+export async function createCampaign(input: {
+  companyId: string;
+  targetLocations: string;
+  message?: string;
+}): Promise<Campaign> {
+  const rows = (await sql`
+    insert into campaigns (company_id, target_locations, message)
+    values (${input.companyId}, ${input.targetLocations}, ${input.message ?? ""})
+    returning *
+  `) as CampaignRow[];
+  return toCampaign(rows[0]);
+}
+
+export async function getCampaignsByCompany(companyId: string): Promise<Campaign[]> {
+  const rows = (await sql`
+    select * from campaigns where company_id = ${companyId} order by created_at desc
+  `) as CampaignRow[];
+  return rows.map(toCampaign);
+}
+
+export async function getCampaigns(): Promise<Campaign[]> {
+  const rows = (await sql`select * from campaigns order by created_at desc`) as CampaignRow[];
+  return rows.map(toCampaign);
+}
+
+export async function getCampaignById(id: string): Promise<Campaign | null> {
+  const rows = (await sql`select * from campaigns where id = ${id}`) as CampaignRow[];
+  return rows[0] ? toCampaign(rows[0]) : null;
+}
+
+export async function updateCampaignStatus(
+  id: string,
+  status: CampaignStatus
+): Promise<Campaign | null> {
+  const rows = (await sql`
+    update campaigns set status = ${status} where id = ${id} returning *
+  `) as CampaignRow[];
+  return rows[0] ? toCampaign(rows[0]) : null;
 }

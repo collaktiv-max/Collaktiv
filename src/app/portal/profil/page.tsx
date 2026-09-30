@@ -50,7 +50,14 @@ function CompanyInfoCard({
   updateCompany,
 }: {
   companyId: string;
-  initial: { name: string; logoDataUrl?: string; website?: string; description?: string; category: Category };
+  initial: {
+    name: string;
+    logoDataUrl?: string;
+    website?: string;
+    description?: string;
+    category: Category;
+    address?: string;
+  };
   checklist: { logo: boolean; firstOffer: boolean; profileComplete: boolean; firstPublish: boolean };
   updateCompany: UpdateFn;
 }) {
@@ -59,6 +66,7 @@ function CompanyInfoCard({
   const [website, setWebsite] = useState(initial.website ?? "");
   const [description, setDescription] = useState(initial.description ?? "");
   const [category, setCategory] = useState<Category>(initial.category);
+  const [address, setAddress] = useState(initial.address ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -70,6 +78,7 @@ function CompanyInfoCard({
       website,
       description,
       category,
+      address,
       onboardingChecklist: {
         ...checklist,
         logo: !!logo,
@@ -105,6 +114,13 @@ function CompanyInfoCard({
             </Select>
           </Field>
         </div>
+        <Field label="Adress" hint="Används för att visa er för resenärer nära er i appen">
+          <Input
+            placeholder="Gatuadress, ort"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </Field>
         <Field label="Beskrivning">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
