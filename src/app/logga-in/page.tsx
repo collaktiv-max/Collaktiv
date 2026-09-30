@@ -22,8 +22,7 @@ export default function LoggaInPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    const result = login(email, password);
+    const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
       router.push("/portal");

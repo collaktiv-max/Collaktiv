@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
 import { estimateExposure } from "@/lib/mock-stats";
 import { REGION } from "@/lib/config";
-import type { PackageTier } from "@/lib/types";
+import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
 import {
   PLANS,
   BILLING_LABELS,
@@ -34,7 +34,8 @@ export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { state, currentCompany, submitOfferForReview, updateCompany } = useAppState();
+  const { companyOffers, currentCompany, syncCompany, syncOffer, submitOfferForReview } =
+    useAppState();
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
@@ -44,11 +45,11 @@ export default function PubliceraErbjudandePage() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const offer = state.offers.find((o) => o.id === id);
+  const offer = companyOffers.find((o) => o.id === id);
 
   // Efter en lyckad Stripe Checkout skickas kunden tillbaka hit med
-  // ?session_id=... – verifiera betalningen mot Stripe innan vi
-  // markerar erbjudandet som inskickat.
+  // ?session_id=... – servern verifierar betalningen mot Stripe och
+  // markerar erbjudandet som inskickat innan den svarar.
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
     if (!sessionId || !currentCompany || !offer) return;
@@ -57,14 +58,13 @@ export default function PubliceraErbjudandePage() {
     setVerifying(true);
     fetch(`/api/checkout/verify?session_id=${encodeURIComponent(sessionId)}`)
       .then((r) => r.json())
-      .then((data: { paid?: boolean; metadata?: Record<string, string> }) => {
-        if (!data.paid) {
+      .then((data: { paid?: boolean; company?: CompanyProfile; offer?: OfferT }) => {
+        if (!data.paid || !data.company || !data.offer) {
           setError("Betalningen kunde inte bekräftas. Försök igen.");
           return;
         }
-        const tier = (data.metadata?.planId as PackageTier) ?? selectedTier;
-        updateCompany(currentCompany.id, { packageTier: tier, paymentConfirmed: true });
-        submitOfferForReview(offer.id);
+        syncCompany(data.company);
+        syncOffer(data.offer);
         setDone(true);
         router.replace(`/portal/erbjudanden/${offer.id}/publicera`);
       })
@@ -98,27 +98,43 @@ export default function PubliceraErbjudandePage() {
 
   const companyApproved = currentCompany.applicationStatus === "godkand";
 
+  // Redan betalat för det valda paketet (t.ex. ett erbjudande som
+  // skickades tillbaka för redigering) – skicka bara in på nytt utan
+  // att dra en ny betalning.
+  const alreadyPaidForTier =
+    currentCompany.paymentConfirmed && currentCompany.packageTier === selectedTier;
+
   async function handlePublish() {
     setProcessing(true);
     setError(null);
+
+    if (alreadyPaidForTier) {
+      try {
+        await submitOfferForReview(offer!.id);
+        setDone(true);
+      } catch {
+        setError("Kunde inte skicka in erbjudandet. Försök igen om en stund.");
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          companyId: currentCompany!.id,
           offerId: offer!.id,
           planId: selectedTier,
           period,
-          companyName: currentCompany!.name,
-          companyEmail: currentCompany!.contactEmail,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
         throw new Error(data.error ?? "Kunde inte starta betalningen.");
       }
-      window.location.href = data.url;
+      window.location.assign(data.url);
     } catch {
       setError("Kunde inte starta betalningen. Försök igen om en stund.");
       setProcessing(false);
@@ -293,6 +309,8 @@ export default function PubliceraErbjudandePage() {
           {companyApproved
             ? " Vi granskar erbjudandet innan det går live."
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
+          {!alreadyPaidForTier &&
+            " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
         </p>
         <Button
           onClick={handlePublish}
@@ -303,12 +321,14 @@ export default function PubliceraErbjudandePage() {
         >
           {processing
             ? "Skickar in..."
-            : `Skicka in för ${formatKr(
-                getDiscountedTotal(
-                  PLANS.find((p) => p.id === selectedTier)!,
-                  period
-                )
-              )} / ${BILLING_LABELS[period].toLowerCase()}`}
+            : alreadyPaidForTier
+              ? "Skicka in för granskning – redan betalt"
+              : `Skicka in för ${formatKr(
+                  getDiscountedTotal(
+                    PLANS.find((p) => p.id === selectedTier)!,
+                    period
+                  )
+                )} / ${BILLING_LABELS[period].toLowerCase()}`}
         </Button>
       </div>
     </div>

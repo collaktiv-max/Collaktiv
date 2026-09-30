@@ -35,9 +35,16 @@ export interface CompanyProfile {
   contactEmail: string;
   contactPhone: string;
   region: string;
+  /** Adress/plats – används för att visa företag närmast användaren i appen. */
+  address?: string;
+  /** Sätts av geokodning längre fram, inte av klienten. */
+  latitude?: number;
+  longitude?: number;
   packageTier: PackageTier;
   applicationStatus: ApplicationStatus;
   paymentConfirmed: boolean;
+  contestHostInterested: boolean;
+  contestPrizeDescription?: string;
   createdAt: string;
   onboardingChecklist: {
     logo: boolean;
@@ -81,4 +88,18 @@ export interface ReferralInvite {
   email: string;
   sentAt: string;
   status: "skickad" | "registrerad";
+}
+
+// En kampanj = extra synlighet i appen under en period, köpt direkt
+// i portalen. Vilket värde det ger företaget och vad det ska kosta
+// är inte bestämt än – det här fångar bara intresseanmälan så admin
+// kan följa upp.
+export type CampaignStatus = "intresseanmald" | "godkand" | "aktiv" | "avvisad";
+
+export interface Campaign {
+  id: string;
+  companyId: string;
+  message?: string;
+  status: CampaignStatus;
+  createdAt: string;
 }

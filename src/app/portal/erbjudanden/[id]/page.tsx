@@ -11,10 +11,10 @@ import { useAppState } from "@/lib/store";
 export default function RedigeraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { state, currentCompany, updateOffer } = useAppState();
+  const { companyOffers, currentCompany, updateOffer } = useAppState();
   const [saving, setSaving] = useState(false);
 
-  const offer = state.offers.find((o) => o.id === id);
+  const offer = companyOffers.find((o) => o.id === id);
 
   if (!currentCompany) return null;
 
@@ -46,8 +46,7 @@ export default function RedigeraErbjudandePage() {
 
   async function handleSave(values: OfferFormValues) {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    updateOffer(offer!.id, {
+    await updateOffer(offer!.id, {
       title: values.title,
       description: values.description,
       discountType: values.discountType,

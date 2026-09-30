@@ -50,7 +50,14 @@ function CompanyInfoCard({
   updateCompany,
 }: {
   companyId: string;
-  initial: { name: string; logoDataUrl?: string; website?: string; description?: string; category: Category };
+  initial: {
+    name: string;
+    logoDataUrl?: string;
+    website?: string;
+    description?: string;
+    category: Category;
+    address?: string;
+  };
   checklist: { logo: boolean; firstOffer: boolean; profileComplete: boolean; firstPublish: boolean };
   updateCompany: UpdateFn;
 }) {
@@ -59,18 +66,19 @@ function CompanyInfoCard({
   const [website, setWebsite] = useState(initial.website ?? "");
   const [description, setDescription] = useState(initial.description ?? "");
   const [category, setCategory] = useState<Category>(initial.category);
+  const [address, setAddress] = useState(initial.address ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    updateCompany(companyId, {
+    await updateCompany(companyId, {
       name,
       logoDataUrl: logo,
       website,
       description,
       category,
+      address,
       onboardingChecklist: {
         ...checklist,
         logo: !!logo,
@@ -106,6 +114,13 @@ function CompanyInfoCard({
             </Select>
           </Field>
         </div>
+        <Field label="Adress" hint="Används för att visa er för resenärer nära er i appen">
+          <Input
+            placeholder="Gatuadress, ort"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </Field>
         <Field label="Beskrivning">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
@@ -142,8 +157,7 @@ function ContactCard({
 
   async function handleSave() {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    updateCompany(companyId, { contactName, contactEmail, contactPhone });
+    await updateCompany(companyId, { contactName, contactEmail, contactPhone });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -182,15 +196,28 @@ function AccountCard({ email }: { email: string }) {
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     if (!password) return;
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    setSaving(false);
-    setSaved(true);
-    setPassword("");
-    setTimeout(() => setSaved(false), 2000);
+    setError(null);
+    try {
+      const res = await fetch("/api/company/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Kunde inte uppdatera lösenordet.");
+      setSaved(true);
+      setPassword("");
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte uppdatera lösenordet.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -204,6 +231,11 @@ function AccountCard({ email }: { email: string }) {
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </Field>
       </div>
+      {error && (
+        <p className="mt-3 rounded-lg bg-[#fdecea] px-3 py-2 text-xs font-bold text-[#c0392b]">
+          {error}
+        </p>
+      )}
       <div className="mt-6 flex items-center justify-end gap-3 border-t border-[var(--color-brand-border)] pt-5">
         <SavedPill show={saved} />
         <Button
@@ -238,8 +270,7 @@ function BillingCard({
 
   async function handleSwitch() {
     setSwitching(true);
-    await new Promise((r) => setTimeout(r, 700));
-    updateCompany(companyId, { packageTier: other });
+    await updateCompany(companyId, { packageTier: other });
     setSwitching(false);
   }
 

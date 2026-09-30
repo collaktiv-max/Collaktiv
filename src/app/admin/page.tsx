@@ -1,20 +1,33 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Check,
   CircleDollarSign,
   Clock,
+  Gift,
+  LogOut,
   Mail,
   Phone,
+  Rocket,
   ShieldCheck,
   Ticket,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Logo } from "@/components/ui/Logo";
-import { useAppState } from "@/lib/store";
-import { CATEGORY_LABELS, type ApplicationStatus, type PackageTier } from "@/lib/types";
+import { fetchJson } from "@/lib/apiClient";
+import {
+  CATEGORY_LABELS,
+  type ApplicationStatus,
+  type Campaign,
+  type CampaignStatus,
+  type CompanyProfile,
+  type Offer,
+  type PackageTier,
+} from "@/lib/types";
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   utkast: "Utkast",
@@ -32,19 +45,129 @@ const APPLICATION_STATUS_VARIANT: Record<ApplicationStatus, "light" | "accent" |
   avvisad: "outline",
 };
 
+const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
+  intresseanmald: "Intresseanmäld",
+  godkand: "Godkänd",
+  aktiv: "Aktiv",
+  avvisad: "Avvisad",
+};
+
+const CAMPAIGN_STATUS_VARIANT: Record<CampaignStatus, "light" | "accent" | "dark" | "outline"> = {
+  intresseanmald: "light",
+  godkand: "accent",
+  aktiv: "dark",
+  avvisad: "outline",
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function AdminPage() {
-  const { state, updateCompany, updateOffer } = useAppState();
-  const { companies, offers } = state;
+  const router = useRouter();
+  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ companies }, { offers }, { campaigns }] = await Promise.all([
+        fetchJson<{ companies: CompanyProfile[] }>("/api/admin/companies"),
+        fetchJson<{ offers: Offer[] }>("/api/admin/offers"),
+        fetchJson<{ campaigns: Campaign[] }>("/api/admin/campaigns"),
+      ]);
+      if (cancelled) return;
+      setCompanies(companies);
+      setOffers(offers);
+      setCampaigns(campaigns);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function updateCompany(id: string, partial: Partial<CompanyProfile>) {
+    const data = await fetchJson<{
+      company: CompanyProfile;
+      refundedAmount?: number;
+      refundErrors?: string[];
+    }>(`/api/admin/companies/${id}`, { method: "PATCH", body: JSON.stringify(partial) });
+    setCompanies((cs) => cs.map((c) => (c.id === id ? data.company : c)));
+    return data;
+  }
+
+  // Att avvisa ett betalt företag återbetalar automatiskt – be om en
+  // extra bekräftelse och visa vad som faktiskt hände.
+  async function handleReject(company: CompanyProfile) {
+    let confirmText = `Avvisa ${company.name}?`;
+    if (company.paymentConfirmed) {
+      const { payments } = await fetchJson<{ payments: { amount: number; status: string }[] }>(
+        `/api/admin/payments/${company.id}`
+      );
+      const unpaidTotal = payments
+        .filter((p) => p.status === "paid")
+        .reduce((sum, p) => sum + p.amount, 0);
+      confirmText =
+        unpaidTotal > 0
+          ? `${company.name} har betalat ${unpaidTotal} kr. Om ni avvisar återbetalas beloppet automatiskt via Stripe. Fortsätta?`
+          : `${company.name} har betalat, men beloppet är redan återbetalat. Avvisa ändå?`;
+    }
+    if (!confirm(confirmText)) return;
+
+    const { refundedAmount, refundErrors } = await updateCompany(company.id, {
+      applicationStatus: "avvisad",
+    });
+    if (refundedAmount && refundedAmount > 0) {
+      alert(`${company.name} avvisades. ${refundedAmount} kr återbetalades automatiskt.`);
+    }
+    if (refundErrors && refundErrors.length > 0) {
+      alert(`Obs! Återbetalning misslyckades:\n${refundErrors.join("\n")}`);
+    }
+  }
+
+  async function updateOffer(id: string, partial: Partial<Offer>) {
+    const { offer } = await fetchJson<{ offer: Offer }>(`/api/admin/offers/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(partial),
+    });
+    setOffers((os) => os.map((o) => (o.id === id ? offer : o)));
+  }
+
+  async function updateCampaignStatus(id: string, status: CampaignStatus) {
+    const { campaign } = await fetchJson<{ campaign: Campaign }>(`/api/admin/campaigns/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    setCampaigns((cs) => cs.map((c) => (c.id === id ? campaign : c)));
+  }
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.replace("/admin/login");
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-brand-secondary)]/30">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-brand-primary)] border-t-transparent" />
+      </div>
+    );
+  }
 
   const pendingCompanies = companies.filter(
     (c) => c.applicationStatus === "inskickad" || c.applicationStatus === "under_granskning"
   );
   const pendingOffers = offers.filter((o) => o.status === "granskas");
   const payingCompanies = companies.filter((c) => c.paymentConfirmed);
+  const pendingCampaigns = campaigns.filter((c) => c.status === "intresseanmald");
+  const contestHosts = companies.filter((c) => c.contestHostInterested);
+
+  function companyName(companyId: string) {
+    return companies.find((c) => c.id === companyId)?.name ?? "–";
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-brand-secondary)]/30">
@@ -54,9 +177,17 @@ export default function AdminPage() {
             <Logo textClassName="text-white" />
             <Badge variant="translucent">Adminpanel</Badge>
           </div>
-          <span className="text-xs font-bold text-white/50">
-            Endast för internt bruk
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-white/50">
+              Endast för internt bruk
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-extrabold text-white/80 hover:bg-white/10"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Logga ut
+            </button>
+          </div>
         </div>
       </header>
 
@@ -69,11 +200,13 @@ export default function AdminPage() {
         </p>
 
         {/* KPI-rad */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard icon={Building2} label="Företag totalt" value={companies.length} />
           <KpiCard icon={Clock} label="Väntar på granskning" value={pendingCompanies.length} />
           <KpiCard icon={Ticket} label="Erbjudanden att granska" value={pendingOffers.length} />
           <KpiCard icon={CircleDollarSign} label="Betalande företag" value={payingCompanies.length} />
+          <KpiCard icon={Rocket} label="Kampanjintresse" value={pendingCampaigns.length} />
+          <KpiCard icon={Gift} label="Tävlingsvärdar" value={contestHosts.length} />
         </div>
 
         {/* Ansökningar att granska */}
@@ -132,7 +265,7 @@ export default function AdminPage() {
                             <Check className="h-3.5 w-3.5" /> Godkänn
                           </button>
                           <button
-                            onClick={() => updateCompany(c.id, { applicationStatus: "avvisad" })}
+                            onClick={() => handleReject(c)}
                             className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
                           >
                             <X className="h-3.5 w-3.5" /> Avvisa
@@ -212,6 +345,110 @@ export default function AdminPage() {
           )}
         </section>
 
+        {/* Kampanjförfrågningar */}
+        <section className="mt-10">
+          <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+            Kampanjer – intresseanmälningar
+          </h2>
+          <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+            Företag som vill betala för extra synlighet i appen under en period.
+          </p>
+
+          {campaigns.length === 0 ? (
+            <EmptyRow text="Inga kampanjförfrågningar än." />
+          ) : (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-brand-border)] text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    <th className="px-5 py-3">Företag</th>
+                    <th className="px-5 py-3">Meddelande</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3">Inskickad</th>
+                    <th className="px-5 py-3 text-right">Åtgärd</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-brand-border)]">
+                  {campaigns.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                        {companyName(c.companyId)}
+                      </td>
+                      <td className="max-w-[280px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {c.message || "–"}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge variant={CAMPAIGN_STATUS_VARIANT[c.status]}>
+                          {CAMPAIGN_STATUS_LABELS[c.status]}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {formatDate(c.createdAt)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <select
+                          value={c.status}
+                          onChange={(e) =>
+                            updateCampaignStatus(c.id, e.target.value as CampaignStatus)
+                          }
+                          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+                        >
+                          {Object.entries(CAMPAIGN_STATUS_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Tävlingsvärdar */}
+        <section className="mt-10">
+          <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+            Tävlingsvärdar
+          </h2>
+          <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+            Företag som anmält att de kan bidra med pris till en tävling i appen.
+          </p>
+
+          {contestHosts.length === 0 ? (
+            <EmptyRow text="Inga tävlingsvärdar anmälda än." />
+          ) : (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-brand-border)] text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    <th className="px-5 py-3">Företag</th>
+                    <th className="px-5 py-3">Kontakt</th>
+                    <th className="px-5 py-3">Erbjuder som pris</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-brand-border)]">
+                  {contestHosts.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                        {c.name}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
+                      </td>
+                      <td className="max-w-[320px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                        {c.contestPrizeDescription || "–"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
         {/* Alla företag */}
         <section className="mt-10">
           <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
@@ -266,11 +503,14 @@ export default function AdminPage() {
                           </Badge>
                           <select
                             value={c.applicationStatus}
-                            onChange={(e) =>
-                              updateCompany(c.id, {
-                                applicationStatus: e.target.value as ApplicationStatus,
-                              })
-                            }
+                            onChange={(e) => {
+                              const next = e.target.value as ApplicationStatus;
+                              if (next === "avvisad") {
+                                handleReject(c);
+                              } else {
+                                updateCompany(c.id, { applicationStatus: next });
+                              }
+                            }}
                             className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
                           >
                             {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (

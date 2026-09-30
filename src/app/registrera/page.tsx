@@ -22,6 +22,7 @@ interface FormState {
   website: string;
   description: string;
   category: Category;
+  address: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -35,6 +36,7 @@ const initialForm: FormState = {
   website: "",
   description: "",
   category: "mat-dryck",
+  address: "",
   contactName: "",
   contactEmail: "",
   contactPhone: "",
@@ -43,18 +45,19 @@ const initialForm: FormState = {
 };
 
 export default function RegistreraPage() {
-  const { registerCompany, login } = useAppState();
+  const { registerCompany } = useAppState();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   function canProceed() {
-    if (step === 0) return form.name.trim().length > 1;
+    if (step === 0) return form.name.trim().length > 1 && form.address.trim().length > 1;
     if (step === 1)
       return (
         form.contactName.trim().length > 1 &&
@@ -75,9 +78,9 @@ export default function RegistreraPage() {
 
   async function handleSubmit() {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 900));
+    setError(null);
     const email = form.accountEmail || form.contactEmail;
-    registerCompany({
+    const result = await registerCompany({
       name: form.name,
       logoDataUrl: form.logoDataUrl,
       website: form.website,
@@ -86,9 +89,16 @@ export default function RegistreraPage() {
       contactName: form.contactName,
       contactEmail: email,
       contactPhone: form.contactPhone,
+      address: form.address,
+      password: form.password,
     });
-    login(email, form.password);
-    router.push("/portal");
+    setSubmitting(false);
+    if (result.ok) {
+      router.push("/portal");
+    } else {
+      setError(result.reason ?? "Något gick fel, försök igen.");
+      setStep(2);
+    }
   }
 
   return (
@@ -150,6 +160,17 @@ export default function RegistreraPage() {
                         placeholder="https://"
                         value={form.website}
                         onChange={(e) => update("website", e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Adress"
+                      required
+                      hint="Används för att visa er för resenärer nära er i appen"
+                    >
+                      <Input
+                        placeholder="Gatuadress, ort"
+                        value={form.address}
+                        onChange={(e) => update("address", e.target.value)}
                       />
                     </Field>
                     <Field label="Kort beskrivning av företaget">
@@ -229,6 +250,11 @@ export default function RegistreraPage() {
                       Publicering kräver att vi godkänt både kontot och
                       erbjudandet.
                     </div>
+                    {error && (
+                      <p className="rounded-lg bg-[#fdecea] px-3 py-2 text-xs font-bold text-[#c0392b]">
+                        {error}
+                      </p>
+                    )}
                   </>
                 )}
 
@@ -294,6 +320,7 @@ function SummaryStep({
     { label: "Företagsnamn", value: form.name || "–", step: 0 },
     { label: "Kategori", value: CATEGORY_LABELS[form.category], step: 0 },
     { label: "Webbadress", value: form.website || "–", step: 0 },
+    { label: "Adress", value: form.address || "–", step: 0 },
     { label: "Kontaktperson", value: form.contactName || "–", step: 1 },
     { label: "E-post (kontakt)", value: form.contactEmail || "–", step: 1 },
     { label: "Telefon", value: form.contactPhone || "–", step: 1 },

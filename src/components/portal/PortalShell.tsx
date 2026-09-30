@@ -75,8 +75,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
               </p>
             </div>
             <button
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 router.push("/");
               }}
               aria-label="Logga ut"
@@ -158,9 +158,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 })}
               </nav>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setMobileOpen(false);
-                  logout();
+                  await logout();
                   router.push("/");
                 }}
                 className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-[#c0392b] hover:bg-[#fdecea]"
@@ -177,7 +177,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </main>
 
         {/* Mobile bottom tab bar */}
-        <nav className="sticky bottom-0 z-30 grid grid-cols-4 border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden">
+        <nav className="sticky bottom-0 z-30 grid grid-cols-5 border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, "exact" in item && item.exact);
             const Icon = item.icon;

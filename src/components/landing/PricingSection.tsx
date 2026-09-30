@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Flame, Sparkles, ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { useAppState } from "@/lib/store";
 import {
   PLANS,
   BILLING_LABELS,
@@ -19,13 +18,19 @@ import {
 } from "@/lib/pricing";
 
 export function PricingSection() {
-  const { state } = useAppState();
   const [period, setPeriod] = useState<BillingPeriod>("year");
+  const [companyCount, setCompanyCount] = useState(0);
 
-  const spotsUsedPct = Math.min(
-    100,
-    Math.max(85, (state.companies.length / EARLY_BIRD_SLOTS) * 100)
-  );
+  useEffect(() => {
+    fetch("/api/public/stats")
+      .then((r) => r.json())
+      .then((data: { companyCount?: number }) => {
+        if (typeof data.companyCount === "number") setCompanyCount(data.companyCount);
+      })
+      .catch(() => {});
+  }, []);
+
+  const spotsUsedPct = Math.min(100, Math.max(85, (companyCount / EARLY_BIRD_SLOTS) * 100));
 
   return (
     <section className="bg-[var(--color-brand-secondary)]/40 py-16 sm:py-24">
