@@ -78,7 +78,6 @@ interface ReferralRow {
 interface CampaignRow {
   id: string;
   company_id: string;
-  target_locations: string;
   message: string | null;
   status: CampaignStatus;
   created_at: string;
@@ -149,7 +148,6 @@ function toCampaign(row: CampaignRow): Campaign {
   return {
     id: row.id,
     companyId: row.company_id,
-    targetLocations: row.target_locations,
     message: row.message ?? undefined,
     status: row.status,
     createdAt: row.created_at,
@@ -459,12 +457,11 @@ export async function markPaymentRefunded(id: string): Promise<void> {
 
 export async function createCampaign(input: {
   companyId: string;
-  targetLocations: string;
   message?: string;
 }): Promise<Campaign> {
   const rows = (await sql`
-    insert into campaigns (company_id, target_locations, message)
-    values (${input.companyId}, ${input.targetLocations}, ${input.message ?? ""})
+    insert into campaigns (company_id, message)
+    values (${input.companyId}, ${input.message ?? ""})
     returning *
   `) as CampaignRow[];
   return toCampaign(rows[0]);

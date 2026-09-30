@@ -5,7 +5,7 @@ import { Gift, Loader2, Rocket, Send } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Field, Input, Textarea } from "@/components/ui/Field";
+import { Field, Textarea } from "@/components/ui/Field";
 import { useAppState } from "@/lib/store";
 import type { CampaignStatus } from "@/lib/types";
 
@@ -19,10 +19,13 @@ const STATUS_CONFIG: Record<
   avvisad: { label: "Avvisad", variant: "outline" },
 };
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export default function KampanjerPage() {
   const { currentCompany, companyCampaigns, createCampaign, updateCompany } = useAppState();
 
-  const [targetLocations, setTargetLocations] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -40,12 +43,10 @@ export default function KampanjerPage() {
 
   async function handleSubmitCampaign(e: FormEvent) {
     e.preventDefault();
-    if (!targetLocations.trim()) return;
     setSending(true);
     try {
-      await createCampaign({ targetLocations, message: message || undefined });
+      await createCampaign({ message: message || undefined });
       setSent(true);
-      setTargetLocations("");
       setMessage("");
       setTimeout(() => setSent(false), 2500);
     } finally {
@@ -71,7 +72,7 @@ export default function KampanjerPage() {
     <div>
       <PageHeader
         title="Kampanjer"
-        subtitle="Synas extra i appen på riktade platser, eller bidra med ett pris till en tävling för resenärer."
+        subtitle="Köp extra synlighet i appen under en period, eller bidra med ett pris till en tävling för resenärer."
       />
 
       <div className="flex flex-col gap-6">
@@ -89,10 +90,11 @@ export default function KampanjerPage() {
                 <Badge variant="light">Kommer snart</Badge>
               </div>
               <p className="mt-1.5 text-sm font-medium leading-relaxed text-[var(--color-brand-muted)]">
-                Betala för extra synlighet på riktade platser i appen – t.ex. vid en
-                specifik hållplats eller i ett visst område – så ni syns först för
-                resenärer just där. Pris och upplägg tar vi fram tillsammans med er;
-                skicka en intresseanmälan så hör vi av oss.
+                Betala direkt i portalen för att synas extra i appen under en period ni
+                väljer – t.ex. inför en högsäsong eller en särskild satsning. Vi jobbar
+                fortfarande på exakt vilket värde en kampanj ger er och vad den ska
+                kosta, men ni kan redan nu anmäla intresse – så hör vi av oss så fort
+                den går att köpa.
               </p>
             </div>
           </div>
@@ -101,14 +103,7 @@ export default function KampanjerPage() {
             onSubmit={handleSubmitCampaign}
             className="mt-5 flex flex-col gap-4 border-t border-[var(--color-brand-border)] pt-5"
           >
-            <Field label="Vilka platser vill ni synas på?" required>
-              <Input
-                placeholder="T.ex. Gävle Centralstation, Brynäs"
-                value={targetLocations}
-                onChange={(e) => setTargetLocations(e.target.value)}
-              />
-            </Field>
-            <Field label="Meddelande" hint="Valfritt">
+            <Field label="Meddelande" hint="Valfritt – t.ex. när ni skulle vilja köra en kampanj">
               <Textarea
                 placeholder="Berätta gärna mer om vad ni är ute efter"
                 value={message}
@@ -119,7 +114,7 @@ export default function KampanjerPage() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={sending || !targetLocations.trim()}
+                disabled={sending}
                 icon={
                   sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -128,7 +123,7 @@ export default function KampanjerPage() {
                   )
                 }
               >
-                {sent ? "Skickat!" : "Skicka intresseanmälan"}
+                {sent ? "Skickat!" : "Anmäl intresse"}
               </Button>
             </div>
           </form>
@@ -139,7 +134,7 @@ export default function KampanjerPage() {
                 <div key={c.id} className="flex items-center justify-between gap-3 py-3">
                   <div>
                     <p className="text-sm font-bold text-[var(--color-brand-ink)]">
-                      {c.targetLocations}
+                      Intresseanmälan {formatDate(c.createdAt)}
                     </p>
                     {c.message && (
                       <p className="text-xs font-medium text-[var(--color-brand-muted)]">

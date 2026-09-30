@@ -17,15 +17,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ej inloggad." }, { status: 401 });
   }
 
-  const body = (await req.json()) as { targetLocations?: string; message?: string };
-  const targetLocations = body.targetLocations?.trim();
-  if (!targetLocations) {
-    return NextResponse.json({ error: "Ange vilka platser ni vill synas på." }, { status: 400 });
-  }
+  const body = (await req.json()) as { message?: string };
 
   const campaign = await createCampaign({
     companyId,
-    targetLocations,
     message: body.message,
   });
   return NextResponse.json({ campaign });

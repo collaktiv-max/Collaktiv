@@ -39,7 +39,7 @@ interface Ctx {
   deleteOffer: (id: string) => Promise<void>;
   submitOfferForReview: (id: string) => Promise<void>;
   inviteReferral: (email: string) => Promise<void>;
-  createCampaign: (input: { targetLocations: string; message?: string }) => Promise<void>;
+  createCampaign: (input: { message?: string }) => Promise<void>;
   /** Speglar lokalt state efter en serverbekräftad förändring (t.ex.
    * Stripe-verifiering) utan att göra ett eget nätverksanrop. */
   syncCompany: (company: CompanyProfile) => void;
@@ -187,16 +187,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const createCampaign = useCallback(
-    async (input: { targetLocations: string; message?: string }) => {
-      const { campaign } = await fetchJson<{ campaign: Campaign }>("/api/campaigns", {
-        method: "POST",
-        body: JSON.stringify(input),
-      });
-      setCompanyCampaigns((campaigns) => [campaign, ...campaigns]);
-    },
-    []
-  );
+  const createCampaign = useCallback(async (input: { message?: string }) => {
+    const { campaign } = await fetchJson<{ campaign: Campaign }>("/api/campaigns", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setCompanyCampaigns((campaigns) => [campaign, ...campaigns]);
+  }, []);
 
   const value: Ctx = {
     ready,

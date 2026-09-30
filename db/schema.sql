@@ -92,13 +92,13 @@ create index if not exists payments_company_id_idx on payments (company_id);
 create unique index if not exists payments_stripe_session_id_key
   on payments (stripe_session_id);
 
--- Intresseanmälan om att synas extra i appen på riktade platser. Vad
--- som ingår (pris, längd, exakt vilka platser) bestäms senare – det
--- här är bara underlaget admin behöver för att följa upp.
+-- Intresseanmälan om att köpa extra synlighet i appen under en
+-- period, direkt i portalen. Vilket värde det ger företaget och vad
+-- det ska kosta är inte bestämt än – det här är bara underlaget
+-- admin behöver för att följa upp intresset.
 create table if not exists campaigns (
   id                uuid primary key default gen_random_uuid(),
   company_id        uuid not null references companies (id) on delete cascade,
-  target_locations  text not null default '',
   message           text default '',
   status            text not null default 'intresseanmald'
                       check (status in ('intresseanmald','godkand','aktiv','avvisad')),

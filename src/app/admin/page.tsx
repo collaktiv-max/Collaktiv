@@ -351,7 +351,7 @@ export default function AdminPage() {
             Kampanjer – intresseanmälningar
           </h2>
           <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
-            Företag som vill betala för extra synlighet på riktade platser i appen.
+            Företag som vill betala för extra synlighet i appen under en period.
           </p>
 
           {campaigns.length === 0 ? (
@@ -362,7 +362,6 @@ export default function AdminPage() {
                 <thead>
                   <tr className="border-b border-[var(--color-brand-border)] text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
                     <th className="px-5 py-3">Företag</th>
-                    <th className="px-5 py-3">Platser</th>
                     <th className="px-5 py-3">Meddelande</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">Inskickad</th>
@@ -375,10 +374,7 @@ export default function AdminPage() {
                       <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
                         {companyName(c.companyId)}
                       </td>
-                      <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                        {c.targetLocations}
-                      </td>
-                      <td className="max-w-[220px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                      <td className="max-w-[280px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                         {c.message || "–"}
                       </td>
                       <td className="px-5 py-3.5">

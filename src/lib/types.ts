@@ -90,15 +90,15 @@ export interface ReferralInvite {
   status: "skickad" | "registrerad";
 }
 
-// En kampanj = extra synlighet i appen på riktade platser. Vad som
-// exakt ingår (pris, längd, vilka platser) bestäms senare – det här
-// fångar bara intresseanmälan så admin kan följa upp.
+// En kampanj = extra synlighet i appen under en period, köpt direkt
+// i portalen. Vilket värde det ger företaget och vad det ska kosta
+// är inte bestämt än – det här fångar bara intresseanmälan så admin
+// kan följa upp.
 export type CampaignStatus = "intresseanmald" | "godkand" | "aktiv" | "avvisad";
 
 export interface Campaign {
   id: string;
   companyId: string;
-  targetLocations: string;
   message?: string;
   status: CampaignStatus;
   createdAt: string;
