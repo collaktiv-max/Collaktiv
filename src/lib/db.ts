@@ -6,6 +6,8 @@ import type {
   ReferralInvite,
   Campaign,
   CampaignStatus,
+  Payment,
+  PaymentStatus,
   Category,
   PackageTier,
   ApplicationStatus,
@@ -376,22 +378,8 @@ interface PaymentRow {
   currency: string;
   plan_id: string;
   period: string;
-  status: "paid" | "refunded";
+  status: PaymentStatus;
   created_at: string;
-}
-
-export interface Payment {
-  id: string;
-  companyId: string;
-  offerId: string | null;
-  stripeSessionId: string;
-  stripePaymentIntentId: string | null;
-  amount: number;
-  currency: string;
-  planId: string;
-  period: string;
-  status: "paid" | "refunded";
-  createdAt: string;
 }
 
 function toPayment(row: PaymentRow): Payment {

@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  Check,
+  CreditCard,
+  Loader2,
+  Mail,
+  RefreshCcw,
+  ShieldCheck,
+} from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { LogoUpload } from "@/components/onboarding/LogoUpload";
 import { useAppState } from "@/lib/store";
-import { CATEGORY_LABELS, type Category, type PackageTier } from "@/lib/types";
+import { fetchJson } from "@/lib/apiClient";
+import { getPlan, BILLING_LABELS, formatKr, type BillingPeriod } from "@/lib/pricing";
+import { CATEGORY_LABELS, type Category, type CompanyProfile, type Payment } from "@/lib/types";
 
 function SavedPill({ show }: { show: boolean }) {
   if (!show) return null;
@@ -35,7 +46,7 @@ export default function ProfilPage() {
         />
         <ContactCard companyId={currentCompany.id} initial={currentCompany} updateCompany={updateCompany} />
         <AccountCard email={currentCompany.contactEmail} />
-        <BillingCard tier={currentCompany.packageTier} companyId={currentCompany.id} updateCompany={updateCompany} />
+        <BillingCard company={currentCompany} />
       </div>
     </div>
   );
@@ -251,59 +262,151 @@ function AccountCard({ email }: { email: string }) {
   );
 }
 
-const PLAN_DETAILS: Record<PackageTier, { name: string; price: string }> = {
-  standard: { name: "Standard", price: "499 kr/mån" },
-  premium: { name: "Premium", price: "999 kr/mån" },
-};
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
+}
 
-function BillingCard({
-  tier,
-  companyId,
-  updateCompany,
-}: {
-  tier: PackageTier;
-  companyId: string;
-  updateCompany: UpdateFn;
-}) {
-  const [switching, setSwitching] = useState(false);
-  const other: PackageTier = tier === "premium" ? "standard" : "premium";
+function InfoRow({ icon: Icon, label, description }: { icon: typeof ShieldCheck; label: string; description: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div>
+        <p className="text-xs font-extrabold text-[var(--color-brand-ink)]">{label}</p>
+        <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
 
-  async function handleSwitch() {
-    setSwitching(true);
-    await updateCompany(companyId, { packageTier: other });
-    setSwitching(false);
+function BillingCard({ company }: { company: CompanyProfile }) {
+  const router = useRouter();
+  const [payments, setPayments] = useState<Payment[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchJson<{ payments: Payment[] }>("/api/payments")
+      .then((data) => {
+        if (!cancelled) setPayments(data.payments);
+      })
+      .catch(() => {
+        if (!cancelled) setPayments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const goToPackages = () => router.push("/portal/erbjudanden");
+  const latestPaid = payments?.find((p) => p.status === "paid");
+
+  if (!company.paymentConfirmed) {
+    return (
+      <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
+        <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Paket & fakturering</h2>
+        <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-brand-muted)]">
+              <CreditCard className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">Inget aktivt paket</p>
+              <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                Välj Standard eller Premium och betala när ni publicerar ert erbjudande.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={goToPackages}
+            icon={<ArrowRight className="h-4 w-4" />}
+          >
+            Se paket och betala
+          </Button>
+        </div>
+      </div>
+    );
   }
+
+  const plan = getPlan(company.packageTier);
 
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
       <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Paket & fakturering</h2>
+
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
             <CreditCard className="h-5 w-5" />
           </span>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
-                {PLAN_DETAILS[tier].name}
-              </p>
-              {tier === "premium" && <Badge variant="accent">Aktivt</Badge>}
+              <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">{plan.name}</p>
+              <Badge variant="accent">Betalt</Badge>
             </div>
             <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-              {PLAN_DETAILS[tier].price} · Nästa fakturering 1:a nästa månad
+              {latestPaid
+                ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
+                : plan.tagline}
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleSwitch}
-          disabled={switching}
-          icon={switching ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-        >
-          {other === "premium" ? "Uppgradera till Premium" : "Byt till Standard"}
-        </Button>
+        {company.packageTier === "standard" && (
+          <Button size="sm" variant="outline" onClick={goToPackages}>
+            Uppgradera till Premium
+          </Button>
+        )}
       </div>
+
+      <div className="mt-6 grid gap-4 border-t border-[var(--color-brand-border)] pt-5 sm:grid-cols-3">
+        <InfoRow
+          icon={ShieldCheck}
+          label="Ingen bindningstid"
+          description="Pausa eller avsluta när ni vill – nästa publicering är alltid ett fritt val."
+        />
+        <InfoRow
+          icon={RefreshCcw}
+          label="Automatisk återbetalning"
+          description="Om er ansökan eller ett erbjudande nekas efter betalning återbetalas beloppet automatiskt till ert kort."
+        />
+        <InfoRow
+          icon={Mail}
+          label="Kvitto"
+          description="Ett kvitto för varje betalning skickas automatiskt till er e-post av Stripe."
+        />
+      </div>
+
+      {payments && payments.length > 0 && (
+        <div className="mt-6 border-t border-[var(--color-brand-border)] pt-5">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+            Betalningshistorik
+          </p>
+          <div className="mt-2 divide-y divide-[var(--color-brand-border)]">
+            {payments.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div>
+                  <p className="text-sm font-bold text-[var(--color-brand-ink)]">
+                    {getPlan(p.planId as CompanyProfile["packageTier"]).name} ·{" "}
+                    {BILLING_LABELS[p.period as BillingPeriod] ?? p.period}
+                  </p>
+                  <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                    {formatDate(p.createdAt)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-[var(--color-brand-ink)]">{formatKr(p.amount)}</p>
+                  <Badge variant={p.status === "refunded" ? "outline" : "accent"}>
+                    {p.status === "refunded" ? "Återbetald" : "Betald"}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

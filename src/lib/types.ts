@@ -103,3 +103,19 @@ export interface Campaign {
   status: CampaignStatus;
   createdAt: string;
 }
+
+export type PaymentStatus = "paid" | "refunded";
+
+export interface Payment {
+  id: string;
+  companyId: string;
+  offerId: string | null;
+  stripeSessionId: string;
+  stripePaymentIntentId: string | null;
+  amount: number;
+  currency: string;
+  planId: string;
+  period: string;
+  status: PaymentStatus;
+  createdAt: string;
+}
