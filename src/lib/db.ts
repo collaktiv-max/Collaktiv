@@ -1,0 +1,293 @@
+import "server-only";
+import { neon } from "@neondatabase/serverless";
+import type {
+  CompanyProfile,
+  Offer,
+  ReferralInvite,
+  Category,
+  PackageTier,
+  ApplicationStatus,
+  OfferStatus,
+  DiscountType,
+} from "./types";
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL saknas i miljövariablerna (.env.local).");
+}
+
+export const sql = neon(databaseUrl);
+
+// ---------- Rader från databasen (snake_case) ----------
+
+interface CompanyRow {
+  id: string;
+  name: string;
+  logo_data_url: string | null;
+  website: string;
+  description: string;
+  category: Category;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  region: string;
+  package_tier: PackageTier;
+  application_status: ApplicationStatus;
+  payment_confirmed: boolean;
+  password_hash: string;
+  onboarding_logo: boolean;
+  onboarding_first_offer: boolean;
+  onboarding_profile_complete: boolean;
+  onboarding_first_publish: boolean;
+  created_at: string;
+}
+
+interface OfferRow {
+  id: string;
+  company_id: string;
+  title: string;
+  description: string;
+  discount_type: DiscountType;
+  discount_value: string;
+  points_cost: number;
+  valid_to: string | null;
+  terms: string | null;
+  image_emoji: string;
+  image_data_url: string | null;
+  image_optimized: boolean;
+  status: OfferStatus;
+  views: number;
+  redemptions: number;
+  created_at: string;
+}
+
+interface ReferralRow {
+  id: string;
+  email: string;
+  status: "skickad" | "registrerad";
+  sent_at: string;
+}
+
+function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
+  return {
+    id: row.id,
+    name: row.name,
+    logoDataUrl: row.logo_data_url ?? undefined,
+    website: row.website,
+    description: row.description,
+    category: row.category,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    region: row.region,
+    packageTier: row.package_tier,
+    applicationStatus: row.application_status,
+    paymentConfirmed: row.payment_confirmed,
+    passwordHash: row.password_hash,
+    createdAt: row.created_at,
+    onboardingChecklist: {
+      logo: row.onboarding_logo,
+      firstOffer: row.onboarding_first_offer,
+      profileComplete: row.onboarding_profile_complete,
+      firstPublish: row.onboarding_first_publish,
+    },
+  };
+}
+
+function stripPassword(company: CompanyProfile & { passwordHash: string }): CompanyProfile {
+  const { passwordHash: _passwordHash, ...rest } = company;
+  void _passwordHash;
+  return rest;
+}
+
+function toOffer(row: OfferRow): Offer {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    title: row.title,
+    description: row.description,
+    discountType: row.discount_type,
+    discountValue: row.discount_value,
+    pointsCost: row.points_cost,
+    validTo: row.valid_to ?? undefined,
+    terms: row.terms ?? undefined,
+    imageEmoji: row.image_emoji,
+    imageDataUrl: row.image_data_url ?? undefined,
+    imageOptimized: row.image_optimized,
+    status: row.status,
+    createdAt: row.created_at,
+    stats: { views: row.views, redemptions: row.redemptions },
+  };
+}
+
+function toReferral(row: ReferralRow): ReferralInvite {
+  return { id: row.id, email: row.email, status: row.status, sentAt: row.sent_at };
+}
+
+// ---------- Företag ----------
+
+export async function getCompanies(): Promise<CompanyProfile[]> {
+  const rows = (await sql`select * from companies order by created_at desc`) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
+}
+
+export async function getCompanyById(id: string): Promise<CompanyProfile | null> {
+  const rows = (await sql`select * from companies where id = ${id}`) as CompanyRow[];
+  if (!rows[0]) return null;
+  return stripPassword(toCompany(rows[0]));
+}
+
+/** Inkluderar password_hash – används bara internt av login(). */
+export async function getCompanyByEmailWithPassword(email: string) {
+  const rows = (await sql`
+    select * from companies where lower(contact_email) = lower(${email})
+  `) as CompanyRow[];
+  return rows[0] ? toCompany(rows[0]) : null;
+}
+
+export async function createCompany(input: {
+  name: string;
+  logoDataUrl?: string;
+  website?: string;
+  description?: string;
+  category?: Category;
+  contactName?: string;
+  contactEmail: string;
+  contactPhone?: string;
+  region?: string;
+  packageTier?: PackageTier;
+  applicationStatus?: ApplicationStatus;
+  passwordHash: string;
+}): Promise<CompanyProfile> {
+  const rows = (await sql`
+    insert into companies (
+      name, logo_data_url, website, description, category,
+      contact_name, contact_email, contact_phone, region,
+      package_tier, application_status, password_hash,
+      onboarding_logo
+    ) values (
+      ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
+      ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
+      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"},
+      ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"},
+      ${input.passwordHash}, ${!!input.logoDataUrl}
+    )
+    returning *
+  `) as CompanyRow[];
+  return stripPassword(toCompany(rows[0]));
+}
+
+export async function updateCompany(
+  id: string,
+  partial: Partial<CompanyProfile>
+): Promise<CompanyProfile | null> {
+  const current = await getCompanyById(id);
+  if (!current) return null;
+  const next = { ...current, ...partial };
+  const checklist = { ...current.onboardingChecklist, ...partial.onboardingChecklist };
+
+  const rows = (await sql`
+    update companies set
+      name = ${next.name},
+      logo_data_url = ${next.logoDataUrl ?? null},
+      website = ${next.website ?? ""},
+      description = ${next.description ?? ""},
+      category = ${next.category},
+      contact_name = ${next.contactName},
+      contact_email = ${next.contactEmail},
+      contact_phone = ${next.contactPhone},
+      region = ${next.region},
+      package_tier = ${next.packageTier},
+      application_status = ${next.applicationStatus},
+      payment_confirmed = ${next.paymentConfirmed},
+      onboarding_logo = ${checklist.logo},
+      onboarding_first_offer = ${checklist.firstOffer},
+      onboarding_profile_complete = ${checklist.profileComplete},
+      onboarding_first_publish = ${checklist.firstPublish}
+    where id = ${id}
+    returning *
+  `) as CompanyRow[];
+  return stripPassword(toCompany(rows[0]));
+}
+
+// ---------- Erbjudanden ----------
+
+export async function getOffers(): Promise<Offer[]> {
+  const rows = (await sql`select * from offers order by created_at desc`) as OfferRow[];
+  return rows.map(toOffer);
+}
+
+export async function getOffersByCompany(companyId: string): Promise<Offer[]> {
+  const rows = (await sql`
+    select * from offers where company_id = ${companyId} order by created_at desc
+  `) as OfferRow[];
+  return rows.map(toOffer);
+}
+
+export async function getOfferById(id: string): Promise<Offer | null> {
+  const rows = (await sql`select * from offers where id = ${id}`) as OfferRow[];
+  return rows[0] ? toOffer(rows[0]) : null;
+}
+
+export async function createOffer(
+  offer: Omit<Offer, "id" | "createdAt" | "stats">
+): Promise<Offer> {
+  const rows = (await sql`
+    insert into offers (
+      company_id, title, description, discount_type, discount_value,
+      points_cost, valid_to, terms, image_emoji, image_data_url,
+      image_optimized, status
+    ) values (
+      ${offer.companyId}, ${offer.title}, ${offer.description}, ${offer.discountType},
+      ${offer.discountValue}, ${offer.pointsCost}, ${offer.validTo ?? null}, ${offer.terms ?? null},
+      ${offer.imageEmoji}, ${offer.imageDataUrl ?? null}, ${!!offer.imageOptimized}, ${offer.status}
+    )
+    returning *
+  `) as OfferRow[];
+  return toOffer(rows[0]);
+}
+
+export async function updateOffer(id: string, partial: Partial<Offer>): Promise<Offer | null> {
+  const current = await getOfferById(id);
+  if (!current) return null;
+  const next = { ...current, ...partial };
+  const stats = { ...current.stats, ...partial.stats };
+
+  const rows = (await sql`
+    update offers set
+      title = ${next.title},
+      description = ${next.description},
+      discount_type = ${next.discountType},
+      discount_value = ${next.discountValue},
+      points_cost = ${next.pointsCost},
+      valid_to = ${next.validTo ?? null},
+      terms = ${next.terms ?? null},
+      image_emoji = ${next.imageEmoji},
+      image_data_url = ${next.imageDataUrl ?? null},
+      image_optimized = ${!!next.imageOptimized},
+      status = ${next.status},
+      views = ${stats.views},
+      redemptions = ${stats.redemptions}
+    where id = ${id}
+    returning *
+  `) as OfferRow[];
+  return toOffer(rows[0]);
+}
+
+export async function deleteOffer(id: string): Promise<void> {
+  await sql`delete from offers where id = ${id}`;
+}
+
+// ---------- Referrals ----------
+
+export async function createReferral(email: string): Promise<ReferralInvite> {
+  const rows = (await sql`
+    insert into referrals (email) values (${email}) returning *
+  `) as ReferralRow[];
+  return toReferral(rows[0]);
+}
+
+export async function getReferrals(): Promise<ReferralInvite[]> {
+  const rows = (await sql`select * from referrals order by sent_at desc`) as ReferralRow[];
+  return rows.map(toReferral);
+}
