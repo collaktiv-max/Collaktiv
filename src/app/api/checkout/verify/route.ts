@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
 import { stripe } from "@/lib/stripe";
-import { submitOfferForReview, updateCompany } from "@/lib/db";
+import { createPayment, submitOfferForReview, updateCompany } from "@/lib/db";
 import type { PackageTier } from "@/lib/types";
+import type { BillingPeriod } from "@/lib/pricing";
 
 export async function GET(req: NextRequest) {
   const companyId = await getSessionCompanyId();
@@ -23,9 +24,24 @@ export async function GET(req: NextRequest) {
 
   const offerId = session.metadata?.offerId;
   const planId = session.metadata?.planId as PackageTier | undefined;
-  if (!offerId || !planId) {
+  const period = session.metadata?.period as BillingPeriod | undefined;
+  if (!offerId || !planId || !period) {
     return NextResponse.json({ paid: false });
   }
+
+  // Sparas så admin kan hitta betalningen och en avvisning kan
+  // återbetalas automatiskt – se /api/admin/companies/[id].
+  await createPayment({
+    companyId,
+    offerId,
+    stripeSessionId: session.id,
+    stripePaymentIntentId:
+      typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+    amount: (session.amount_total ?? 0) / 100,
+    currency: session.currency ?? "sek",
+    planId,
+    period,
+  });
 
   await updateCompany(companyId, { packageTier: planId, paymentConfirmed: true });
   const result = await submitOfferForReview(offerId, companyId);

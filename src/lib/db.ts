@@ -327,3 +327,92 @@ export async function getReferralsCount(): Promise<number> {
   const rows = (await sql`select count(*)::int as count from referrals`) as { count: number }[];
   return rows[0]?.count ?? 0;
 }
+
+// ---------- Betalningar ----------
+
+interface PaymentRow {
+  id: string;
+  company_id: string;
+  offer_id: string | null;
+  stripe_session_id: string;
+  stripe_payment_intent_id: string | null;
+  amount: number;
+  currency: string;
+  plan_id: string;
+  period: string;
+  status: "paid" | "refunded";
+  created_at: string;
+}
+
+export interface Payment {
+  id: string;
+  companyId: string;
+  offerId: string | null;
+  stripeSessionId: string;
+  stripePaymentIntentId: string | null;
+  amount: number;
+  currency: string;
+  planId: string;
+  period: string;
+  status: "paid" | "refunded";
+  createdAt: string;
+}
+
+function toPayment(row: PaymentRow): Payment {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    offerId: row.offer_id,
+    stripeSessionId: row.stripe_session_id,
+    stripePaymentIntentId: row.stripe_payment_intent_id,
+    amount: row.amount,
+    currency: row.currency,
+    planId: row.plan_id,
+    period: row.period,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+export async function createPayment(input: {
+  companyId: string;
+  offerId?: string;
+  stripeSessionId: string;
+  stripePaymentIntentId?: string;
+  amount: number;
+  currency?: string;
+  planId: string;
+  period: string;
+}): Promise<Payment> {
+  const rows = (await sql`
+    insert into payments (
+      company_id, offer_id, stripe_session_id, stripe_payment_intent_id,
+      amount, currency, plan_id, period
+    ) values (
+      ${input.companyId}, ${input.offerId ?? null}, ${input.stripeSessionId},
+      ${input.stripePaymentIntentId ?? null}, ${input.amount}, ${input.currency ?? "sek"},
+      ${input.planId}, ${input.period}
+    )
+    on conflict (stripe_session_id) do update set stripe_session_id = excluded.stripe_session_id
+    returning *
+  `) as PaymentRow[];
+  return toPayment(rows[0]);
+}
+
+export async function getPaymentsByCompany(companyId: string): Promise<Payment[]> {
+  const rows = (await sql`
+    select * from payments where company_id = ${companyId} order by created_at desc
+  `) as PaymentRow[];
+  return rows.map(toPayment);
+}
+
+export async function getUnrefundedPaymentsByCompany(companyId: string): Promise<Payment[]> {
+  const rows = (await sql`
+    select * from payments where company_id = ${companyId} and status = 'paid' order by created_at desc
+  `) as PaymentRow[];
+  return rows.map(toPayment);
+}
+
+export async function markPaymentRefunded(id: string): Promise<void> {
+  await sql`update payments set status = 'refunded' where id = ${id}`;
+}

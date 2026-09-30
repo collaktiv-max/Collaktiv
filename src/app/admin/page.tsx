@@ -78,11 +78,42 @@ export default function AdminPage() {
   }, []);
 
   async function updateCompany(id: string, partial: Partial<CompanyProfile>) {
-    const { company } = await fetchJson<{ company: CompanyProfile }>(
-      `/api/admin/companies/${id}`,
-      { method: "PATCH", body: JSON.stringify(partial) }
-    );
-    setCompanies((cs) => cs.map((c) => (c.id === id ? company : c)));
+    const data = await fetchJson<{
+      company: CompanyProfile;
+      refundedAmount?: number;
+      refundErrors?: string[];
+    }>(`/api/admin/companies/${id}`, { method: "PATCH", body: JSON.stringify(partial) });
+    setCompanies((cs) => cs.map((c) => (c.id === id ? data.company : c)));
+    return data;
+  }
+
+  // Att avvisa ett betalt företag återbetalar automatiskt – be om en
+  // extra bekräftelse och visa vad som faktiskt hände.
+  async function handleReject(company: CompanyProfile) {
+    let confirmText = `Avvisa ${company.name}?`;
+    if (company.paymentConfirmed) {
+      const { payments } = await fetchJson<{ payments: { amount: number; status: string }[] }>(
+        `/api/admin/payments/${company.id}`
+      );
+      const unpaidTotal = payments
+        .filter((p) => p.status === "paid")
+        .reduce((sum, p) => sum + p.amount, 0);
+      confirmText =
+        unpaidTotal > 0
+          ? `${company.name} har betalat ${unpaidTotal} kr. Om ni avvisar återbetalas beloppet automatiskt via Stripe. Fortsätta?`
+          : `${company.name} har betalat, men beloppet är redan återbetalat. Avvisa ändå?`;
+    }
+    if (!confirm(confirmText)) return;
+
+    const { refundedAmount, refundErrors } = await updateCompany(company.id, {
+      applicationStatus: "avvisad",
+    });
+    if (refundedAmount && refundedAmount > 0) {
+      alert(`${company.name} avvisades. ${refundedAmount} kr återbetalades automatiskt.`);
+    }
+    if (refundErrors && refundErrors.length > 0) {
+      alert(`Obs! Återbetalning misslyckades:\n${refundErrors.join("\n")}`);
+    }
   }
 
   async function updateOffer(id: string, partial: Partial<Offer>) {
@@ -206,7 +237,7 @@ export default function AdminPage() {
                             <Check className="h-3.5 w-3.5" /> Godkänn
                           </button>
                           <button
-                            onClick={() => updateCompany(c.id, { applicationStatus: "avvisad" })}
+                            onClick={() => handleReject(c)}
                             className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
                           >
                             <X className="h-3.5 w-3.5" /> Avvisa
@@ -340,11 +371,14 @@ export default function AdminPage() {
                           </Badge>
                           <select
                             value={c.applicationStatus}
-                            onChange={(e) =>
-                              updateCompany(c.id, {
-                                applicationStatus: e.target.value as ApplicationStatus,
-                              })
-                            }
+                            onChange={(e) => {
+                              const next = e.target.value as ApplicationStatus;
+                              if (next === "avvisad") {
+                                handleReject(c);
+                              } else {
+                                updateCompany(c.id, { applicationStatus: next });
+                              }
+                            }}
                             className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
                           >
                             {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (

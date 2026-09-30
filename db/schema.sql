@@ -62,3 +62,27 @@ create table if not exists referrals (
                check (status in ('skickad','registrerad')),
   sent_at    timestamptz not null default now()
 );
+
+-- Ett register över varje lyckad Stripe-betalning, kopplat till
+-- företaget (och erbjudandet, om det gällde en publicering). Behövs
+-- för att admin ska kunna se/hitta betalningen om ett erbjudande eller
+-- en ansökan nekas efter betalning. Återbetalning hanteras INTE
+-- automatiskt än – status-fältet finns förberett för det.
+create table if not exists payments (
+  id                        uuid primary key default gen_random_uuid(),
+  company_id                uuid not null references companies (id) on delete cascade,
+  offer_id                  uuid references offers (id) on delete set null,
+  stripe_session_id         text not null,
+  stripe_payment_intent_id  text,
+  amount                    integer not null,
+  currency                  text not null default 'sek',
+  plan_id                   text not null,
+  period                    text not null,
+  status                    text not null default 'paid'
+                              check (status in ('paid','refunded')),
+  created_at                timestamptz not null default now()
+);
+
+create index if not exists payments_company_id_idx on payments (company_id);
+create unique index if not exists payments_stripe_session_id_key
+  on payments (stripe_session_id);

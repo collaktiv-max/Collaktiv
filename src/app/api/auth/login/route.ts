@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCompanyByEmailWithPassword } from "@/lib/db";
+import { getCompanyByEmailWithPassword, getPaymentsByCompany } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { createSession } from "@/lib/session";
 
@@ -29,8 +29,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (company.applicationStatus === "avvisad") {
+    const payments = await getPaymentsByCompany(company.id);
+    const refunded = payments.some((p) => p.status === "refunded");
     return NextResponse.json(
-      { error: "Er ansökan har tyvärr avvisats. Kontakta support för mer info." },
+      {
+        error: refunded
+          ? "Er ansökan har tyvärr avvisats. Er betalning har återbetalats automatiskt och syns på ert kort inom några bankdagar. Kontakta support för mer info."
+          : "Er ansökan har tyvärr avvisats. Kontakta support för mer info.",
+      },
       { status: 403 }
     );
   }

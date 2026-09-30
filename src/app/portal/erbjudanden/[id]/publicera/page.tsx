@@ -34,7 +34,8 @@ export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { companyOffers, currentCompany, syncCompany, syncOffer } = useAppState();
+  const { companyOffers, currentCompany, syncCompany, syncOffer, submitOfferForReview } =
+    useAppState();
   const [selectedTier, setSelectedTier] = useState<PackageTier>(
     currentCompany?.packageTier ?? "standard"
   );
@@ -97,9 +98,28 @@ export default function PubliceraErbjudandePage() {
 
   const companyApproved = currentCompany.applicationStatus === "godkand";
 
+  // Redan betalat för det valda paketet (t.ex. ett erbjudande som
+  // skickades tillbaka för redigering) – skicka bara in på nytt utan
+  // att dra en ny betalning.
+  const alreadyPaidForTier =
+    currentCompany.paymentConfirmed && currentCompany.packageTier === selectedTier;
+
   async function handlePublish() {
     setProcessing(true);
     setError(null);
+
+    if (alreadyPaidForTier) {
+      try {
+        await submitOfferForReview(offer!.id);
+        setDone(true);
+      } catch {
+        setError("Kunde inte skicka in erbjudandet. Försök igen om en stund.");
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -289,6 +309,8 @@ export default function PubliceraErbjudandePage() {
           {companyApproved
             ? " Vi granskar erbjudandet innan det går live."
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
+          {!alreadyPaidForTier &&
+            " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
         </p>
         <Button
           onClick={handlePublish}
@@ -299,12 +321,14 @@ export default function PubliceraErbjudandePage() {
         >
           {processing
             ? "Skickar in..."
-            : `Skicka in för ${formatKr(
-                getDiscountedTotal(
-                  PLANS.find((p) => p.id === selectedTier)!,
-                  period
-                )
-              )} / ${BILLING_LABELS[period].toLowerCase()}`}
+            : alreadyPaidForTier
+              ? "Skicka in för granskning – redan betalt"
+              : `Skicka in för ${formatKr(
+                  getDiscountedTotal(
+                    PLANS.find((p) => p.id === selectedTier)!,
+                    period
+                  )
+                )} / ${BILLING_LABELS[period].toLowerCase()}`}
         </Button>
       </div>
     </div>
