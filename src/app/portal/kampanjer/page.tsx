@@ -75,7 +75,7 @@ export default function KampanjerPage() {
         subtitle="Köp extra synlighet i appen under en period, eller bidra med ett pris till en tävling för resenärer."
       />
 
-      <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Kampanj i appen */}
         <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
           <div className="flex items-start gap-4">

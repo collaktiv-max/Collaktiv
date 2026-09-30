@@ -42,6 +42,7 @@ export const PLANS: PlanDefinition[] = [
     },
     features: [
       "Prioriterad placering",
+      "Chans att bli Veckans erbjudande",
       "Full tillgång till statistik",
       "Max 5 erbjudanden",
       "Större synlighet på sociala medier",
