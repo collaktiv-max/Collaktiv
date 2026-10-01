@@ -11,7 +11,7 @@ const rows = [
     label: "Kassahantering",
     ads: "Krångliga kuponger, streckkoder eller dyra kassaintegrationer.",
     collaktivBold: "Noll integration.",
-    collaktivRest: " Dynamisk 10-minuters säkerhetsnedräkning på kundens skärm.",
+    collaktivRest: " Kund visar upp swish-liknande på mobilen för att lösa in sitt erbjudande.",
   },
   {
     label: "Betalningsmodell",

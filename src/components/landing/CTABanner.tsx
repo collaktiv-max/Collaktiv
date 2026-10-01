@@ -17,7 +17,7 @@ export function CTABanner() {
             Registreringen tar under fem minuter, är gratis att komma igång
             med och helt utan bindningstid.
           </p>
-          <div className="relative mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="relative mt-8 flex items-center justify-center">
             <Button
               href="/registrera"
               size="lg"
@@ -25,9 +25,6 @@ export function CTABanner() {
               icon={<ArrowRight className="h-4.5 w-4.5" />}
             >
               Registrera ert företag
-            </Button>
-            <Button href="/logga-in" size="lg" variant="ghost-white">
-              Redan partner? Logga in
             </Button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { PremiumGate } from "@/components/portal/PremiumGate";
 import { OnboardingChecklist } from "@/components/portal/OnboardingChecklist";
+import { RedemptionGuideCard } from "@/components/portal/RedemptionGuideCard";
 import { ReferralCard } from "@/components/portal/ReferralCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -175,6 +176,7 @@ export default function OversiktPage() {
 
         <div className="flex flex-col gap-5">
           <OnboardingChecklist company={currentCompany} />
+          <RedemptionGuideCard />
           <ReferralCard />
         </div>
       </div>

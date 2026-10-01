@@ -45,7 +45,7 @@ export function HowItWorks() {
             Så funkar det
           </span>
           <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[var(--color-brand-ink)] sm:text-4xl">
-            Live i appen på några dagar
+            Så bidrar du till ett bättre Gävleborg
           </h2>
           <p className="mt-4 text-[16px] font-medium text-[var(--color-brand-muted)]">
             Från registrering till att ni syns för tusentals pendlare – utan krångel.

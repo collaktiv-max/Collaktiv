@@ -39,8 +39,7 @@ export function FAQ() {
               Vanliga frågor
             </h2>
             <p className="mt-4 max-w-sm text-[15px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-              Hittar ni inte svaret ni letar efter? Hör av er så svarar vårt
-              team inom en arbetsdag.
+              Hittar ni inte svaret ni letar efter?
             </p>
             <Button
               href="mailto:info@collaktiv.se"

@@ -49,8 +49,8 @@ export function PricingSection() {
         </div>
 
         {/* FOMO-banner */}
-        <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex items-center gap-2.5">
+        <div className="mx-auto mt-6 flex max-w-3xl flex-col gap-3 rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+          <div className="flex items-center gap-2.5 sm:shrink-0">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]">
               <Flame className="h-4 w-4" />
             </span>
@@ -58,14 +58,14 @@ export function PricingSection() {
               De 50 första företagen får 20% rabatt på hela paketet.
             </p>
           </div>
-          <div className="mt-3">
+          <div className="flex flex-1 items-center gap-3">
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#e0432c] to-[#f2894f] transition-all duration-500"
                 style={{ width: `${spotsUsedPct}%` }}
               />
             </div>
-            <p className="mt-2 text-xs font-bold text-[#e0432c]">Några platser kvar</p>
+            <p className="shrink-0 text-xs font-bold text-[#e0432c]">Några platser kvar</p>
           </div>
         </div>
 
@@ -146,10 +146,12 @@ export function PricingSection() {
                   {formatKr(discountedTotal)}{" "}
                   <span className="line-through">{formatKr(regularTotal)}</span> för{" "}
                   {BILLING_LABELS[period]}
-                  {period === "year" && (
-                    <> · spara {formatKr(savings)} mot 6-månaderspriset</>
-                  )}
                 </p>
+                {period === "year" && (
+                  <p className="mt-0.5 text-xs font-semibold text-[var(--color-brand-muted)]">
+                    Spara {formatKr(savings)} mot 6-månaderspriset
+                  </p>
+                )}
 
                 <Button
                   href="/registrera"
