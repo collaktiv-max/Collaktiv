@@ -21,8 +21,8 @@ export function RedemptionGuideCard() {
       </div>
 
       <p className="mt-4 text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-        Resenären visar upp en swish-liknande kod på sin mobil i appen. Er
-        personal bekräftar koden i kassan för att lösa in erbjudandet.
+        Resenären visar upp en swish-liknande sida på sin mobil i appen. Er
+        personal bekräftar den i kassan för att lösa in erbjudandet.
       </p>
     </div>
   );

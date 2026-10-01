@@ -25,7 +25,7 @@ const cards = [
   {
     icon: Smartphone,
     title: "Noll integration i kassan",
-    text: "Kund visar upp swish-liknande på mobilen för att lösa in sitt erbjudande.",
+    text: "Kund visar upp swish-liknande sida på mobilen för att lösa in sitt erbjudande.",
     iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
   },
   {
