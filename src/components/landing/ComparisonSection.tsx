@@ -1,235 +1,135 @@
-"use client";
-
-import { useState } from "react";
-import { AnimatePresence, motion, type PanInfo } from "framer-motion";
-import { Check, X, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Bus, Users, MapPin } from "lucide-react";
 import { Container } from "@/components/ui/Container";
-import { getPlan, CHEAPEST_MONTHLY_PRICE, formatKr } from "@/lib/pricing";
+import { Button } from "@/components/ui/Button";
 
-const rows = [
+const steps = [
   {
-    label: "Kassahantering",
-    ads: "Krångliga kuponger, streckkoder eller dyra kassaintegrationer.",
-    collaktivBold: "Noll integration.",
-    collaktivRest: " Kund visar upp swish-liknande sida på mobilen för att lösa in sitt erbjudande.",
+    num: 1,
+    title: "Uppmuntra hållbara val",
+    text: "Resenärer samlar poäng när deras kollektivtrafikresor verifieras i Collaktiv.",
   },
   {
-    label: "Betalningsmodell",
-    ads: "5 000–10 000 kr för traditionella annonser eller osäkra klickavgifter.",
-    collaktivBold: "Fast, låg månadskostnad",
-    collaktivRest: ` (från ${CHEAPEST_MONTHLY_PRICE} kr/mån för de 50 första företagen). Ingen bindningstid.`,
+    num: 2,
+    title: "Belöna resandet",
+    text: "Poängen löses in hos er och andra anslutna företag.",
   },
   {
-    label: "Målgrupp & Tajming",
-    ads: "Bred räckvidd till folk som ligger hemma i soffan.",
-    collaktivBold: "Pendlare på språng",
-    collaktivRest: " som precis samlat poäng och söker lokala erbjudanden.",
-  },
-  {
-    label: "Fysiskt material",
-    ads: "Ni måste designa, trycka och bekosta skyltar och dekaler själva.",
-    collaktivBold: "Färdigt butikskit ingår",
-    collaktivRest: " (professionella bordsryttare & fönsterdekaler med QR-kod).",
-  },
-  {
-    label: "Mätbar effekt",
-    ads: "Omöjligt att veta om annonsen gav en enda kund i kassan.",
-    collaktivBold: "Exakt inlösenstatistik i realtid.",
-    collaktivRest: " Ni ser varje genomfört köp i er portal.",
+    num: 3,
+    title: "Ni blir en del av rörelsen",
+    text: "Ni är med och formar en konkret, lokal satsning på hållbart resande i Gävleborg.",
+    highlight: true,
   },
 ];
 
-const MIN_SPEND = 1500;
-const MAX_SPEND = 15000;
-
-const cardVariants = {
-  enter: (direction: number) => ({ x: direction > 0 ? 40 : -40, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (direction: number) => ({ x: direction > 0 ? -40 : 40, opacity: 0 }),
-};
+const bandItems = [
+  {
+    icon: Bus,
+    title: "Fler alternativ till bilen",
+    text: "Varje anslutet företag gör det lättare att välja kollektivtrafiken i vardagen.",
+  },
+  {
+    icon: Users,
+    title: "En gemensam satsning",
+    text: "Lokala företag i hela regionen samlas kring samma ambition.",
+  },
+  {
+    icon: MapPin,
+    title: "Ett mer attraktivt Gävleborg",
+    text: "Tillsammans bidrar vi till en region där hållbara val känns naturliga.",
+  },
+];
 
 export function ComparisonSection() {
-  const [adSpend, setAdSpend] = useState(6000);
-  const [[cardIndex, direction], setCardState] = useState<[number, number]>([0, 0]);
-
-  const standard = getPlan("standard");
-  const collaktivMonthly = CHEAPEST_MONTHLY_PRICE;
-  const monthlySavings = Math.max(0, adSpend - collaktivMonthly);
-  const yearSavings = monthlySavings * 12;
-  const collaktivBarPct = Math.max(3, (collaktivMonthly / MAX_SPEND) * 100);
-
-  function paginate(dir: number) {
-    setCardState(([current]) => [
-      (current + dir + rows.length) % rows.length,
-      dir,
-    ]);
-  }
-
-  function goTo(i: number) {
-    setCardState(([current]) => [i, i > current ? 1 : -1]);
-  }
-
-  function handleDragEnd(_: unknown, info: PanInfo) {
-    if (info.offset.x < -60) paginate(1);
-    else if (info.offset.x > 60) paginate(-1);
-  }
-
-  const card = rows[cardIndex];
-
   return (
     <section className="bg-[var(--color-brand-secondary)]/50 py-16 sm:py-24">
       <Container>
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
-            Jämfört med vanlig annonsering
-          </span>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[var(--color-brand-ink)] sm:text-4xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--color-brand-ink)] sm:text-4xl">
             Varför just Collaktiv?
           </h2>
-          <p className="mt-3 text-sm font-medium text-[var(--color-brand-muted)]">
-            Dra i reglaget och se vad ni sparar.
+          <p className="mt-3.5 text-[14.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+            Bli en del av Gävleborgs mest konkreta satsning på hållbart resande
+            — och visa att ert företag står bakom en grönare vardag.
+            Transporter formar både klimatet och våra städer, och er
+            medverkan är en del av att göra kollektivtrafiken till det enkla
+            valet.
           </p>
         </div>
 
-        <div className="mx-auto mt-10 grid max-w-5xl items-start gap-6 lg:grid-cols-2">
-          {/* Interaktiv besparingskalkylator */}
-          <div className="flex h-full flex-col rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-8">
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-brand-muted)]">
-                Annonsbudget / mån
+        <div className="relative mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-7 sm:grid-cols-3">
+          <div className="pointer-events-none absolute left-[8%] right-[8%] top-[23px] hidden h-px bg-[var(--color-brand-border)] sm:block" />
+          {steps.map((s) => (
+            <div
+              key={s.title}
+              className="relative flex flex-col items-center gap-2.5 text-center"
+            >
+              <span
+                className={`relative z-10 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full text-[16px] font-extrabold ${
+                  s.highlight
+                    ? "bg-[var(--color-brand-accent)] text-[var(--color-brand-ink)] shadow-[0_0_0_6px_rgba(143,211,79,0.22)]"
+                    : "bg-[var(--color-brand-primary)] text-white"
+                }`}
+              >
+                {s.num}
               </span>
-              <span className="text-lg font-extrabold text-[var(--color-brand-ink)]">
-                {formatKr(adSpend)}
-              </span>
+              <h3 className="text-[14px] font-extrabold text-[var(--color-brand-ink)]">
+                {s.title}
+              </h3>
+              <p className="max-w-[220px] text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                {s.text}
+              </p>
             </div>
-            <input
-              type="range"
-              min={MIN_SPEND}
-              max={MAX_SPEND}
-              step={250}
-              value={adSpend}
-              onChange={(e) => setAdSpend(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--color-brand-primary)]"
-            />
+          ))}
+        </div>
+        <p className="mx-auto mt-6 max-w-xl border-t border-[var(--color-brand-border)] pt-4 text-center text-[11.5px] font-semibold leading-relaxed text-[var(--color-brand-muted)]">
+          Collaktiv är tänkt som ett verktyg för att uppmuntra hållbara vanor
+          – inte en garanti för att en resa ersätter en bilresa.
+        </p>
 
-            <div className="mt-4 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[11.5px] font-bold text-[var(--color-brand-primary)]">
-                <span>Collaktiv {standard.name} (-20%, de 50 första)</span>
-                <span>{formatKr(collaktivMonthly)}</span>
+        <div className="mx-auto mt-8 max-w-3xl rounded-[22px] bg-[#0f1f18] p-7 sm:p-8">
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-widest text-[var(--color-brand-accent)]">
+            En växande rörelse i Gävleborg
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-3">
+            {bandItems.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex items-start gap-3">
+                <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/10 text-[var(--color-brand-accent)]">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 className="text-[13px] font-extrabold text-white">
+                    {title}
+                  </h4>
+                  <p className="mt-0.5 text-[12px] font-medium leading-relaxed text-white/65">
+                    {text}
+                  </p>
+                </div>
               </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
-                <div
-                  className="h-full rounded-full bg-[var(--color-brand-primary)] transition-all duration-300"
-                  style={{ width: `${collaktivBarPct}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-xl bg-[var(--color-brand-mint)] p-5">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]/70">
-                Ni sparar
-              </p>
-              <p className="mt-1 text-3xl font-extrabold leading-none text-[var(--color-brand-primary)]">
-                {formatKr(monthlySavings)}
-                <span className="text-sm font-bold text-[var(--color-brand-ink)]/60"> /mån</span>
-              </p>
-              <p className="mt-1 text-xs font-bold text-[var(--color-brand-ink)]/70">
-                = {formatKr(yearSavings)} per år
-              </p>
-            </div>
-
-            <div className="mt-5 flex flex-1 items-start gap-2 border-t border-[var(--color-brand-border)] pt-5">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
-              <p className="text-[12.5px] font-semibold leading-relaxed text-[var(--color-brand-ink)]">
-                Och ni får mer värde för pengarna: exakt statistik på vem som
-                faktiskt handlar, synlighet dygnet runt och inga tryck- eller
-                designkostnader – sånt traditionella annonser aldrig kan ge.
-              </p>
-            </div>
+            ))}
           </div>
+          <p className="mt-5 border-t border-white/10 pt-4 text-center text-[11.5px] font-semibold leading-relaxed text-white/70">
+            Ju fler företag som är med, desto starkare blir den gemensamma
+            satsningen – det är själva poängen med Collaktiv.
+          </p>
+        </div>
 
-          {/* Swipebara jämförelsekort */}
-          <div className="flex h-full flex-col rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-8">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
-                Punkt {cardIndex + 1} av {rows.length}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => paginate(-1)}
-                  aria-label="Föregående"
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--color-brand-border)] text-[var(--color-brand-muted)] transition-colors hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => paginate(1)}
-                  aria-label="Nästa"
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--color-brand-border)] text-[var(--color-brand-muted)] transition-colors hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+        <p className="mx-auto mt-6 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
+          En resa i taget – tillsammans gör vi skillnad. Statistik om
+          verifierade resor och engagemang visas här så snart den finns
+          tillgänglig.
+        </p>
 
-            <div className="relative mt-4 flex-1 overflow-hidden">
-              <AnimatePresence mode="wait" custom={direction} initial={false}>
-                <motion.div
-                  key={cardIndex}
-                  custom={direction}
-                  variants={cardVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.6}
-                  onDragEnd={handleDragEnd}
-                  className="cursor-grab touch-pan-y active:cursor-grabbing"
-                >
-                  <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-                    {card.label}
-                  </h3>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-[var(--color-brand-secondary)]/60 p-3.5">
-                      <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
-                        <X className="h-3 w-3" /> Traditionellt
-                      </p>
-                      <p className="mt-2 text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-                        {card.ads}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-[var(--color-brand-mint)]/40 p-3.5">
-                      <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]">
-                        <Check className="h-3 w-3" /> Collaktiv
-                      </p>
-                      <p className="mt-2 text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-ink)]">
-                        <span className="font-extrabold">{card.collaktivBold}</span>
-                        {card.collaktivRest}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="mt-5 flex items-center justify-center gap-1.5">
-              {rows.map((row, i) => (
-                <button
-                  key={row.label}
-                  onClick={() => goTo(i)}
-                  aria-label={`Visa ${row.label}`}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === cardIndex
-                      ? "w-5 bg-[var(--color-brand-primary)]"
-                      : "w-1.5 bg-[var(--color-brand-border)]"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="mt-6 flex flex-col items-center gap-2.5">
+          <Button
+            href="/registrera"
+            size="lg"
+            icon={<ArrowRight className="h-4.5 w-4.5" />}
+          >
+            Bli en del av Collaktiv
+          </Button>
+          <p className="text-[11.5px] font-semibold text-[var(--color-brand-muted)]">
+            Gratis att komma igång – inget säljsamtal, ingen bindningstid.
+          </p>
         </div>
       </Container>
     </section>
