@@ -81,12 +81,8 @@ export function ComparisonSection() {
             </div>
           ))}
         </div>
-        <p className="mx-auto mt-6 max-w-xl border-t border-[var(--color-brand-border)] pt-4 text-center text-[11.5px] font-semibold leading-relaxed text-[var(--color-brand-muted)]">
-          Collaktiv är tänkt som ett verktyg för att uppmuntra hållbara vanor
-          – inte en garanti för att en resa ersätter en bilresa.
-        </p>
 
-        <div className="mx-auto mt-8 max-w-3xl rounded-[22px] bg-[#0f1f18] p-7 sm:p-8">
+        <div className="mx-auto mt-10 max-w-3xl rounded-[22px] bg-[#0f1f18] p-7 sm:p-8">
           <p className="text-center text-[11px] font-extrabold uppercase tracking-widest text-[var(--color-brand-accent)]">
             En växande rörelse i Gävleborg
           </p>
