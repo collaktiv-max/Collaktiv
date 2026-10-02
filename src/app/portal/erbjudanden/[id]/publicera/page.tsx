@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
 import { REGION } from "@/lib/config";
 import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
@@ -206,32 +205,49 @@ export default function PubliceraErbjudandePage() {
       <p className="mb-4 -mt-2 text-xs font-bold text-[#e0432c]">
         De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på hela paketet – priserna nedan visar det.
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
         {PLANS.map((plan) => {
           const active = selectedTier === plan.id;
+          const isPremium = plan.id === "premium";
           const regularMonthly = getMonthly(plan, period);
           const discountedMonthly = getDiscountedMonthly(plan, period);
           return (
             <button
               key={plan.id}
               onClick={() => setSelectedTier(plan.id)}
-              className={`rounded-2xl border-2 p-6 text-left transition ${
-                active
-                  ? "border-[var(--color-brand-primary)] bg-white shadow-md"
-                  : "border-[var(--color-brand-border)] bg-white hover:border-[var(--color-brand-primary)]/40"
+              className={`relative rounded-2xl text-left transition ${
+                isPremium
+                  ? `border-2 bg-gradient-to-b from-[var(--color-brand-secondary)]/70 to-white p-7 pt-8 shadow-lg shadow-[var(--color-brand-primary)]/10 sm:-mt-3 sm:pb-9 ${
+                      active
+                        ? "border-[var(--color-brand-primary)] ring-2 ring-[var(--color-brand-primary)] ring-offset-2"
+                        : "border-[var(--color-brand-primary)]/60 hover:border-[var(--color-brand-primary)]"
+                    }`
+                  : `border-2 bg-white p-6 ${
+                      active
+                        ? "border-[var(--color-brand-primary)] shadow-md"
+                        : "border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)]/40"
+                    }`
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-base font-extrabold text-[var(--color-brand-ink)]">
-                  {plan.name}
+              {isPremium && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[var(--color-brand-primary)] px-3.5 py-1 text-[10.5px] font-extrabold uppercase tracking-wide text-white shadow-md">
+                  Mest populär
                 </span>
-                {plan.id === "premium" && <Badge variant="accent">Mest populär</Badge>}
-              </div>
+              )}
+              <span
+                className={`font-extrabold text-[var(--color-brand-ink)] ${
+                  isPremium ? "text-lg" : "text-base"
+                }`}
+              >
+                {plan.name}
+              </span>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
                   {regularMonthly} kr
                 </span>
-                <span className="text-xl font-extrabold text-[#e0432c]">
+                <span
+                  className={`font-extrabold text-[#e0432c] ${isPremium ? "text-2xl" : "text-xl"}`}
+                >
                   {discountedMonthly} kr/mån
                 </span>
               </div>
