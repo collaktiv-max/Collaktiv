@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
@@ -45,12 +45,28 @@ const initialForm: FormState = {
 };
 
 export default function RegistreraPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegistreraForm />
+    </Suspense>
+  );
+}
+
+function RegistreraForm() {
   const { registerCompany } = useAppState();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [referredByCompanyId, setReferredByCompanyId] = useState<string | undefined>(undefined);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (ref) setReferredByCompanyId(ref);
+  }, [searchParams]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -91,6 +107,7 @@ export default function RegistreraPage() {
       contactPhone: form.contactPhone,
       address: form.address,
       password: form.password,
+      referredByCompanyId,
     });
     setSubmitting(false);
     if (result.ok) {

@@ -1,27 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import { Gift, Loader2, Send } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Field";
+import { useEffect, useState } from "react";
+import { Check, Copy, Gift, Mail } from "lucide-react";
 import { useAppState } from "@/lib/store";
 
 export function ReferralCard() {
-  const { referralCount, inviteReferral } = useAppState();
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const { currentCompany, referralCount } = useAppState();
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  async function handleInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSending(true);
-    await inviteReferral(email);
-    setSending(false);
-    setSent(true);
-    setEmail("");
-    setTimeout(() => setSent(false), 2500);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrigin(window.location.origin);
+  }, []);
+
+  if (!currentCompany) return null;
+
+  const link = origin ? `${origin}/registrera?ref=${currentCompany.id}` : "";
+
+  async function handleCopy() {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard-API kan vara blockerad – länken går fortfarande att
+      // markera och kopiera manuellt ur fältet.
+    }
   }
+
+  const mailBody = `Hej!\n\nJag vill tipsa er om Collaktiv – en plattform där ni syns för hållbara resenärer i Gävleborg.\n\nRegistrera ert företag här: ${link}\n\nHälsningar ${currentCompany.name}`;
+  const mailtoHref = `mailto:?subject=${encodeURIComponent(
+    "Tips: bli partner på Collaktiv"
+  )}&body=${encodeURIComponent(mailBody)}`;
 
   return (
     <div
@@ -35,39 +47,41 @@ export function ReferralCard() {
         Bjud in ett annat företag
       </h3>
       <p className="mt-1.5 text-[12.5px] font-medium leading-relaxed text-white/70">
-        För varje företag som registrerar sig via er inbjudan får ni en
-        månad extra exponering på Premium – helt gratis.
+        Dela er personliga länk. När ett företag registrerar sig via den
+        och betalar för sitt första paket får ni en gratis bonusmånad –
+        Standard om ni inget paket har, annars förlängs ert nuvarande
+        paket en månad.
       </p>
 
-      <form onSubmit={handleInvite} className="mt-4 flex gap-2">
-        <Input
-          type="email"
-          required
-          placeholder="foretag@exempel.se"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border-white/15 bg-white/10 text-white placeholder:text-white/40 focus:border-white/40 focus:ring-white/10"
+      <div className="mt-4 flex gap-2">
+        <input
+          readOnly
+          value={link}
+          placeholder="Laddar länk..."
+          onFocus={(e) => e.currentTarget.select()}
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
         />
-        <Button
-          type="submit"
-          size="sm"
-          variant="white"
-          disabled={sending}
-          icon={
-            sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )
-          }
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={!link}
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2.5 text-xs font-extrabold text-[var(--color-brand-primary)] transition hover:bg-white/90 disabled:opacity-60"
         >
-          {sent ? "Skickat!" : "Bjud in"}
-        </Button>
-      </form>
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Kopierat!" : "Kopiera"}
+        </button>
+      </div>
+
+      <a
+        href={mailtoHref}
+        className="mt-2.5 inline-flex items-center gap-1.5 text-[12px] font-extrabold text-white/80 hover:text-white"
+      >
+        <Mail className="h-3.5 w-3.5" /> Dela via mejl
+      </a>
 
       {referralCount > 0 && (
         <p className="mt-3 text-[11px] font-bold text-white/50">
-          {referralCount} inbjudan{referralCount === 1 ? "" : "ar"} skickade hittills
+          {referralCount} företag har registrerat sig via er länk
         </p>
       )}
     </div>

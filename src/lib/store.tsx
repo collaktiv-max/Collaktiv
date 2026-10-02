@@ -22,6 +22,7 @@ interface RegisterInput {
   description?: string;
   logoDataUrl?: string;
   address?: string;
+  referredByCompanyId?: string;
 }
 
 interface Ctx {
@@ -38,7 +39,6 @@ interface Ctx {
   updateOffer: (id: string, partial: Partial<Offer>) => Promise<void>;
   deleteOffer: (id: string) => Promise<void>;
   submitOfferForReview: (id: string) => Promise<void>;
-  inviteReferral: (email: string) => Promise<void>;
   createCampaign: (input: { message?: string }) => Promise<void>;
   /** Speglar lokalt state efter en serverbekräftad förändring (t.ex.
    * Stripe-verifiering) utan att göra ett eget nätverksanrop. */
@@ -172,14 +172,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCurrentCompany(company);
   }, []);
 
-  const inviteReferral = useCallback(async (email: string) => {
-    const { count } = await fetchJson<{ count: number }>("/api/referrals", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-    setReferralCount(count);
-  }, []);
-
   const syncCompany = useCallback((company: CompanyProfile) => setCurrentCompany(company), []);
   const syncOffer = useCallback(
     (offer: Offer) =>
@@ -209,7 +201,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     updateOffer,
     deleteOffer,
     submitOfferForReview,
-    inviteReferral,
     createCampaign,
     syncCompany,
     syncOffer,

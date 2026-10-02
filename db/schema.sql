@@ -18,6 +18,12 @@ create table if not exists companies (
   address           text default '',
   latitude          double precision,
   longitude         double precision,
+  -- Vilket företag som bjöd in det här via sin delbara länk, om något.
+  referred_by_company_id uuid references companies (id) on delete set null,
+  -- Sätts/förlängs med 30 dagar när ett företag man bjudit in betalar
+  -- för sitt första paket. Rent informativt kvitto i Profil – appen
+  -- har i övrigt ingen utgångshantering av betalda paket.
+  bonus_access_until timestamptz,
   package_tier      text not null default 'standard'
                       check (package_tier in ('standard','premium')),
   application_status text not null default 'inskickad'
@@ -35,6 +41,12 @@ create table if not exists companies (
 
 create unique index if not exists companies_contact_email_key
   on companies (lower(contact_email));
+
+-- Fanns inte i ursprungsschemat – säkerställer att kolumnerna finns
+-- även på databaser som skapades innan de lades till ovan.
+alter table companies add column if not exists referred_by_company_id uuid references companies (id) on delete set null;
+alter table companies add column if not exists bonus_access_until timestamptz;
+create index if not exists companies_referred_by_idx on companies (referred_by_company_id);
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

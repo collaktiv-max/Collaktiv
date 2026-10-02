@@ -45,6 +45,11 @@ export interface CompanyProfile {
   paymentConfirmed: boolean;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
+  /** Vilket företag som bjöd in det här via sin delbara länk, om något. */
+  referredByCompanyId?: string;
+  /** Bonusåtkomst intjänad via inbjudningar – satt/förlängd 30 dagar
+   * i taget när ett inbjudet företag betalar för sitt första paket. */
+  bonusAccessUntil?: string;
   createdAt: string;
   onboardingChecklist: {
     logo: boolean;
@@ -84,13 +89,6 @@ export interface Offer {
     views: number;
     redemptions: number;
   };
-}
-
-export interface ReferralInvite {
-  id: string;
-  email: string;
-  sentAt: string;
-  status: "skickad" | "registrerad";
 }
 
 // En kampanj = extra synlighet i appen under en period, köpt direkt

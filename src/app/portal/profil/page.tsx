@@ -7,6 +7,7 @@ import {
   Check,
   CreditCard,
   Download,
+  Gift,
   Loader2,
   Mail,
   RefreshCcw,
@@ -373,6 +374,24 @@ function BillingCard({ company }: { company: CompanyProfile }) {
           </Button>
         )}
       </div>
+
+      {company.bonusAccessUntil && new Date(company.bonusAccessUntil) > new Date() && (
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+            <Gift className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-extrabold text-[var(--color-brand-ink)]">
+              Bonus från inbjudningar
+            </p>
+            <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
+              Ett företag ni bjöd in har registrerat sig och betalat – ni
+              har fått en gratis bonusmånad inräknad till och med{" "}
+              {formatDate(company.bonusAccessUntil)}.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 border-t border-[var(--color-brand-border)] pt-5 sm:grid-cols-3">
         <InfoRow

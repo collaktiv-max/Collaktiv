@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless";
 import type {
   CompanyProfile,
   Offer,
-  ReferralInvite,
   Campaign,
   CampaignStatus,
   Payment,
@@ -43,6 +42,8 @@ interface CompanyRow {
   payment_confirmed: boolean;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
+  referred_by_company_id: string | null;
+  bonus_access_until: string | null;
   password_hash: string;
   onboarding_logo: boolean;
   onboarding_first_offer: boolean;
@@ -69,13 +70,6 @@ interface OfferRow {
   views: number;
   redemptions: number;
   created_at: string;
-}
-
-interface ReferralRow {
-  id: string;
-  email: string;
-  status: "skickad" | "registrerad";
-  sent_at: string;
 }
 
 interface CampaignRow {
@@ -106,6 +100,8 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     paymentConfirmed: row.payment_confirmed,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
+    referredByCompanyId: row.referred_by_company_id ?? undefined,
+    bonusAccessUntil: row.bonus_access_until ?? undefined,
     passwordHash: row.password_hash,
     createdAt: row.created_at,
     onboardingChecklist: {
@@ -142,10 +138,6 @@ function toOffer(row: OfferRow): Offer {
     createdAt: row.created_at,
     stats: { views: row.views, redemptions: row.redemptions },
   };
-}
-
-function toReferral(row: ReferralRow): ReferralInvite {
-  return { id: row.id, email: row.email, status: row.status, sentAt: row.sent_at };
 }
 
 function toCampaign(row: CampaignRow): Campaign {
@@ -197,6 +189,7 @@ export async function createCompany(input: {
   address?: string;
   packageTier?: PackageTier;
   applicationStatus?: ApplicationStatus;
+  referredByCompanyId?: string;
   passwordHash: string;
 }): Promise<CompanyProfile> {
   const rows = (await sql`
@@ -204,13 +197,13 @@ export async function createCompany(input: {
       name, logo_data_url, website, description, category,
       contact_name, contact_email, contact_phone, region, address,
       package_tier, application_status, password_hash,
-      onboarding_logo
+      onboarding_logo, referred_by_company_id
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
       ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"},
-      ${input.passwordHash}, ${!!input.logoDataUrl}
+      ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null}
     )
     returning *
   `) as CompanyRow[];
@@ -245,6 +238,7 @@ export async function updateCompany(
       payment_confirmed = ${next.paymentConfirmed},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
+      bonus_access_until = ${next.bonusAccessUntil ?? null},
       onboarding_logo = ${checklist.logo},
       onboarding_first_offer = ${checklist.firstOffer},
       onboarding_profile_complete = ${checklist.profileComplete},
@@ -351,22 +345,44 @@ export async function submitOfferForReview(
 }
 
 // ---------- Referrals ----------
+// Bjud in via en personlig länk (/registrera?ref=<company-id>) istället
+// för att vi skickar mejl åt företaget. Räknas och belönas via
+// referred_by_company_id på det nya företaget, se grantReferralBonus.
 
-export async function createReferral(email: string): Promise<ReferralInvite> {
+export async function getReferralCountForCompany(companyId: string): Promise<number> {
   const rows = (await sql`
-    insert into referrals (email) values (${email}) returning *
-  `) as ReferralRow[];
-  return toReferral(rows[0]);
-}
-
-export async function getReferrals(): Promise<ReferralInvite[]> {
-  const rows = (await sql`select * from referrals order by sent_at desc`) as ReferralRow[];
-  return rows.map(toReferral);
-}
-
-export async function getReferralsCount(): Promise<number> {
-  const rows = (await sql`select count(*)::int as count from referrals`) as { count: number }[];
+    select count(*)::int as count from companies where referred_by_company_id = ${companyId}
+  `) as { count: number }[];
   return rows[0]?.count ?? 0;
+}
+
+const REFERRAL_BONUS_DAYS = 30;
+
+// Körs när ett inbjudet företag bekräftar sin FÖRSTA betalning (se
+// /api/checkout/verify). Har företaget inget betalt paket sedan
+// tidigare låses Standard upp gratis i 30 dagar; har de redan ett
+// betalt paket (Standard eller Premium) förlängs det med 30 dagar.
+// bonus_access_until är ett kvitto på bonusen – appen har i övrigt
+// ingen utgångshantering av betalda paket.
+export async function grantReferralBonus(companyId: string): Promise<CompanyProfile | null> {
+  const company = await getCompanyById(companyId);
+  if (!company) return null;
+
+  const now = new Date();
+  const currentUntil = company.bonusAccessUntil ? new Date(company.bonusAccessUntil) : null;
+  const base = currentUntil && currentUntil > now ? currentUntil : now;
+  const bonusAccessUntil = new Date(
+    base.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  if (!company.paymentConfirmed) {
+    return updateCompany(companyId, {
+      paymentConfirmed: true,
+      packageTier: "standard",
+      bonusAccessUntil,
+    });
+  }
+  return updateCompany(companyId, { bonusAccessUntil });
 }
 
 // ---------- Betalningar ----------
