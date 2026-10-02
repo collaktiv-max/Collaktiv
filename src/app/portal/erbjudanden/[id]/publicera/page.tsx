@@ -2,21 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  Eye,
-  Loader2,
-  Sparkles,
-  Ticket,
-  UserPlus,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
-import { estimateExposure } from "@/lib/mock-stats";
 import { REGION } from "@/lib/config";
 import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
 import {
@@ -93,8 +83,6 @@ export default function PubliceraErbjudandePage() {
       </div>
     );
   }
-
-  const exposure = estimateExposure(offer.id, selectedTier);
 
   const companyApproved = currentCompany.applicationStatus === "godkand";
 
@@ -178,7 +166,7 @@ export default function PubliceraErbjudandePage() {
     <div>
       <PageHeader
         title="Publicera erbjudande"
-        subtitle={`"${offer.title}" är sparat som utkast – se hur mycket exponering ni får innan ni publicerar.`}
+        subtitle={`"${offer.title}" är sparat som utkast – välj paket för att publicera det.`}
         action={
           <Button href={`/portal/erbjudanden/${offer.id}`} variant="ghost" icon={<ArrowLeft className="h-4 w-4" />} iconPosition="left">
             Tillbaka till redigering
@@ -195,35 +183,7 @@ export default function PubliceraErbjudandePage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-[var(--color-brand-primary)]/20 bg-gradient-to-br from-[var(--color-brand-secondary)] to-white p-6 sm:p-8">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-[var(--color-brand-primary)]">
-          <Sparkles className="h-4 w-4" /> Så mycket kan ni nå
-        </div>
-        <p className="mt-2 max-w-xl text-sm font-medium text-[var(--color-brand-muted)]">
-          Uppskattning baserad på er kategori, plats och valt paket – så ni
-          vet vad ni får innan ni betalar något.
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <ExposureStat
-            icon={Eye}
-            value={exposure.monthlyViews.toLocaleString("sv-SE")}
-            label="Visningar / månad"
-          />
-          <ExposureStat
-            icon={Ticket}
-            value={exposure.estRedemptions.toLocaleString("sv-SE")}
-            label="Uppskattade inlösningar"
-          />
-          <ExposureStat
-            icon={UserPlus}
-            value={exposure.estNewCustomers.toLocaleString("sv-SE")}
-            label="Möjliga nya stamkunder"
-          />
-        </div>
-      </div>
-
-      <div className="mb-4 mt-9 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
           Välj paket för att publicera
         </h3>
@@ -331,26 +291,6 @@ export default function PubliceraErbjudandePage() {
                 )} / ${BILLING_LABELS[period].toLowerCase()}`}
         </Button>
       </div>
-    </div>
-  );
-}
-
-function ExposureStat({
-  icon: Icon,
-  value,
-  label,
-}: {
-  icon: typeof Eye;
-  value: string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-xl bg-white/70 p-4">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
-        <Icon className="h-4.5 w-4.5" />
-      </span>
-      <p className="mt-3 text-2xl font-extrabold text-[var(--color-brand-ink)]">{value}</p>
-      <p className="text-xs font-bold text-[var(--color-brand-muted)]">{label}</p>
     </div>
   );
 }
