@@ -359,9 +359,13 @@ export async function getReferralCountForCompany(companyId: string): Promise<num
 const REFERRAL_BONUS_DAYS = 30;
 
 // Körs när ett inbjudet företag bekräftar sin FÖRSTA betalning (se
-// /api/checkout/verify). Har företaget inget betalt paket sedan
-// tidigare låses Standard upp gratis i 30 dagar; har de redan ett
-// betalt paket (Standard eller Premium) förlängs det med 30 dagar.
+// /api/checkout/verify). Tre fall för den som bjöd in:
+//   - Inget betalt paket sedan tidigare -> Standard låses upp gratis i
+//     30 dagar.
+//   - Betalar redan för Standard -> uppgraderas till Premium i 30
+//     dagar (en uppgradering, inte en förlängning av Standard-tiden).
+//   - Betalar redan för Premium -> får 30 extra dagar på det de redan
+//     har kvar (förlängning).
 // bonus_access_until är ett kvitto på bonusen – appen har i övrigt
 // ingen utgångshantering av betalda paket.
 export async function grantReferralBonus(companyId: string): Promise<CompanyProfile | null> {
@@ -369,20 +373,31 @@ export async function grantReferralBonus(companyId: string): Promise<CompanyProf
   if (!company) return null;
 
   const now = new Date();
-  const currentUntil = company.bonusAccessUntil ? new Date(company.bonusAccessUntil) : null;
-  const base = currentUntil && currentUntil > now ? currentUntil : now;
-  const bonusAccessUntil = new Date(
-    base.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
+  const freshBonusUntil = new Date(
+    now.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
 
   if (!company.paymentConfirmed) {
     return updateCompany(companyId, {
       paymentConfirmed: true,
       packageTier: "standard",
-      bonusAccessUntil,
+      bonusAccessUntil: freshBonusUntil,
     });
   }
-  return updateCompany(companyId, { bonusAccessUntil });
+
+  if (company.packageTier === "standard") {
+    return updateCompany(companyId, {
+      packageTier: "premium",
+      bonusAccessUntil: freshBonusUntil,
+    });
+  }
+
+  const currentUntil = company.bonusAccessUntil ? new Date(company.bonusAccessUntil) : null;
+  const base = currentUntil && currentUntil > now ? currentUntil : now;
+  const extendedBonusUntil = new Date(
+    base.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
+  return updateCompany(companyId, { bonusAccessUntil: extendedBonusUntil });
 }
 
 // ---------- Betalningar ----------

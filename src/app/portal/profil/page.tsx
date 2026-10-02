@@ -386,8 +386,8 @@ function BillingCard({ company }: { company: CompanyProfile }) {
             </p>
             <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
               Ett företag ni bjöd in har registrerat sig och betalat – ni
-              har fått en gratis bonusmånad inräknad till och med{" "}
-              {formatDate(company.bonusAccessUntil)}.
+              har fått en gratis bonusmånad med {plan.name} inräknad till
+              och med {formatDate(company.bonusAccessUntil)}.
             </p>
           </div>
         </div>
