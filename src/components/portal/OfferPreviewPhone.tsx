@@ -36,13 +36,7 @@ export function OfferPreviewPhone({
 
   return (
     <div className="sticky top-6 mx-auto w-[260px]">
-      <div
-        className={`rounded-[2.5rem] border-[9px] bg-[#0f1f18] shadow-xl transition-colors ${
-          isPremium
-            ? "border-[var(--color-brand-primary)] shadow-[0_0_0_5px_rgba(22,104,73,0.16)]"
-            : "border-[#0f1f18]"
-        }`}
-      >
+      <div className="rounded-[2.5rem] border-[9px] border-[#0f1f18] bg-[#0f1f18] shadow-xl">
         <div className="absolute left-1/2 top-0 z-10 h-5 w-28 -translate-x-1/2 rounded-b-2xl bg-[#0f1f18]" />
         <div className="overflow-hidden rounded-[1.9rem] bg-white">
           <div className="flex items-center justify-between px-5 pt-3 pb-1 text-[10px] font-bold text-[var(--color-brand-ink)]">
@@ -61,10 +55,10 @@ export function OfferPreviewPhone({
               )}
             </div>
             <div
-              className={`mt-2.5 overflow-hidden rounded-xl border bg-white shadow-sm transition-colors ${
+              className={`mt-2.5 overflow-hidden rounded-xl bg-white shadow-sm transition-colors ${
                 isPremium
-                  ? "border-[var(--color-brand-primary)]/50 shadow-[0_0_16px_-6px_rgba(22,104,73,0.5)]"
-                  : "border-[var(--color-brand-border)]"
+                  ? "border-2 border-[var(--color-brand-primary)] shadow-[0_0_16px_-6px_rgba(22,104,73,0.5)]"
+                  : "border border-[var(--color-brand-border)]"
               }`}
             >
               <div className="relative flex h-24 items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--color-brand-secondary)] to-[#e5f3ea] text-4xl">
