@@ -58,6 +58,7 @@ interface OfferRow {
   description: string;
   discount_type: DiscountType;
   discount_value: string;
+  discount_value_kr: number;
   points_cost: number;
   valid_to: string | null;
   terms: string | null;
@@ -130,6 +131,7 @@ function toOffer(row: OfferRow): Offer {
     description: row.description,
     discountType: row.discount_type,
     discountValue: row.discount_value,
+    discountValueKr: row.discount_value_kr,
     pointsCost: row.points_cost,
     validTo: row.valid_to ?? undefined,
     terms: row.terms ?? undefined,
@@ -282,11 +284,11 @@ export async function createOffer(
   const rows = (await sql`
     insert into offers (
       company_id, title, description, discount_type, discount_value,
-      points_cost, valid_to, terms, image_emoji, image_data_url,
+      discount_value_kr, points_cost, valid_to, terms, image_emoji, image_data_url,
       image_optimized, status
     ) values (
       ${offer.companyId}, ${offer.title}, ${offer.description}, ${offer.discountType},
-      ${offer.discountValue}, ${offer.pointsCost}, ${offer.validTo ?? null}, ${offer.terms ?? null},
+      ${offer.discountValue}, ${offer.discountValueKr ?? 0}, ${offer.pointsCost}, ${offer.validTo ?? null}, ${offer.terms ?? null},
       ${offer.imageEmoji}, ${offer.imageDataUrl ?? null}, ${!!offer.imageOptimized}, ${offer.status}
     )
     returning *
@@ -306,6 +308,7 @@ export async function updateOffer(id: string, partial: Partial<Offer>): Promise<
       description = ${next.description},
       discount_type = ${next.discountType},
       discount_value = ${next.discountValue},
+      discount_value_kr = ${next.discountValueKr ?? 0},
       points_cost = ${next.pointsCost},
       valid_to = ${next.validTo ?? null},
       terms = ${next.terms ?? null},

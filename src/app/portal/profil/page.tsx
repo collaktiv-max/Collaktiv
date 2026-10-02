@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   CreditCard,
+  Download,
   Loader2,
   Mail,
   RefreshCcw,
@@ -18,6 +19,7 @@ import { Badge } from "@/components/ui/Badge";
 import { LogoUpload } from "@/components/onboarding/LogoUpload";
 import { useAppState } from "@/lib/store";
 import { fetchJson } from "@/lib/apiClient";
+import { generateStatsPdf } from "@/lib/pdf";
 import { getPlan, BILLING_LABELS, formatKr, type BillingPeriod } from "@/lib/pricing";
 import { CATEGORY_LABELS, type Category, type CompanyProfile, type Payment } from "@/lib/types";
 
@@ -284,7 +286,18 @@ function InfoRow({ icon: Icon, label, description }: { icon: typeof ShieldCheck;
 
 function BillingCard({ company }: { company: CompanyProfile }) {
   const router = useRouter();
+  const { companyOffers } = useAppState();
   const [payments, setPayments] = useState<Payment[] | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportPdf() {
+    setExporting(true);
+    try {
+      generateStatsPdf(company, companyOffers);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -377,6 +390,31 @@ function BillingCard({ company }: { company: CompanyProfile }) {
           label="Kvitto"
           description="Ett kvitto för varje betalning skickas automatiskt till er e-post av Stripe."
         />
+      </div>
+
+      <div className="mt-6 flex flex-col items-start gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+            <Download className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-extrabold text-[var(--color-brand-ink)]">Statistikrapport</p>
+            <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+              {company.packageTier === "premium"
+                ? "Full rapport med statistik per erbjudande."
+                : "Rapport med totala visningar. Uppgradera till Premium för fullständig statistik."}
+            </p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExportPdf}
+          disabled={exporting}
+          icon={exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        >
+          Exportera PDF
+        </Button>
       </div>
 
       {payments && payments.length > 0 && (

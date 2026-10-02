@@ -44,6 +44,10 @@ create table if not exists offers (
   discount_type    text not null default 'procent'
                      check (discount_type in ('procent','belopp','erbjudande')),
   discount_value   text not null default '',
+  -- Rabattens värde i kronor, oavsett vad som visas i appen (procent,
+  -- kronor eller fritt erbjudande). Används bara internt för att räkna
+  -- ut ett rimligt poängkostnadsintervall.
+  discount_value_kr integer not null default 0,
   points_cost      integer not null default 0,
   valid_to         timestamptz,
   terms            text,
@@ -59,6 +63,10 @@ create table if not exists offers (
 
 create index if not exists offers_company_id_idx on offers (company_id);
 create index if not exists offers_status_idx on offers (status);
+
+-- Fanns inte i ursprungsschemat – säkerställer att kolumnen finns även
+-- på databaser som skapades innan den lades till ovan.
+alter table offers add column if not exists discount_value_kr integer not null default 0;
 
 create table if not exists referrals (
   id         uuid primary key default gen_random_uuid(),

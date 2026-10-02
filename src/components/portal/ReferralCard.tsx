@@ -24,7 +24,10 @@ export function ReferralCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[#0f1f18] to-[#163627] p-6 text-white">
+    <div
+      id="bjud-in-foretag"
+      className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[#0f1f18] to-[#163627] p-6 text-white scroll-mt-6"
+    >
       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-[var(--color-brand-accent)]">
         <Gift className="h-5 w-5" />
       </span>

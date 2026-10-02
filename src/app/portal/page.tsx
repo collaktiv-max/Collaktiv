@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, Clock, Eye, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
+import { BarChart3, Clock, Eye, Gift, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { PremiumGate } from "@/components/portal/PremiumGate";
@@ -33,15 +33,24 @@ export default function OversiktPage() {
 
   const goUnlock = () => router.push("/portal/erbjudanden");
 
+  const scrollToInvite = () => {
+    document.getElementById("bjud-in-foretag")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div>
       <PageHeader
         title={`Hej, ${currentCompany.name}!`}
         subtitle="Här är en översikt av hur ert erbjudande presterar just nu."
         action={
-          <Button href="/portal/erbjudanden/nytt" icon={<Plus className="h-4 w-4" />}>
-            Nytt erbjudande
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button href="/portal/erbjudanden/nytt" icon={<Plus className="h-4 w-4" />}>
+              Nytt erbjudande
+            </Button>
+            <Button variant="outline" size="sm" onClick={scrollToInvite} icon={<Gift className="h-4 w-4" />}>
+              Bjud in företag
+            </Button>
+          </div>
         }
       />
 

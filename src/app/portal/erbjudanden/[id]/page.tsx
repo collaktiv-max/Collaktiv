@@ -36,6 +36,7 @@ export default function RedigeraErbjudandePage() {
     description: offer.description,
     discountType: offer.discountType,
     discountValue: offer.discountValue,
+    discountValueKr: offer.discountValueKr,
     pointsCost: offer.pointsCost,
     validTo: offer.validTo ?? "",
     terms: offer.terms ?? "",
@@ -51,6 +52,7 @@ export default function RedigeraErbjudandePage() {
       description: values.description,
       discountType: values.discountType,
       discountValue: values.discountValue,
+      discountValueKr: values.discountValueKr,
       pointsCost: values.pointsCost,
       validTo: values.validTo || undefined,
       terms: values.terms || undefined,
@@ -83,6 +85,7 @@ export default function RedigeraErbjudandePage() {
         initial={initial}
         companyName={currentCompany.name}
         category={currentCompany.category}
+        initialTier={currentCompany.packageTier}
         onSave={handleSave}
         saveLabel="Spara ändringar"
         saving={saving}

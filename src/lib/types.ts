@@ -69,6 +69,9 @@ export interface Offer {
   description: string;
   discountType: DiscountType;
   discountValue: string;
+  /** Rabattens värde i kronor – anges alltid, oavsett vilken typ som
+   * visas i appen, så poängkostnaden kan räknas ut korrekt. */
+  discountValueKr: number;
   pointsCost: number;
   validTo?: string;
   terms?: string;

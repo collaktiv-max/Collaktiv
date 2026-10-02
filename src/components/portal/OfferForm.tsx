@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
+  Crown,
   ImagePlus,
   Loader2,
   Sparkles,
@@ -17,14 +18,16 @@ import {
   improveOfferCopy,
   suggestPointsRange,
   wait,
+  type OfferSuggestion,
 } from "@/lib/ai-mock";
-import type { Category, DiscountType } from "@/lib/types";
+import type { Category, DiscountType, PackageTier } from "@/lib/types";
 
 export interface OfferFormValues {
   title: string;
   description: string;
   discountType: DiscountType;
   discountValue: string;
+  discountValueKr: number;
   pointsCost: number;
   validTo: string;
   terms: string;
@@ -35,10 +38,16 @@ export interface OfferFormValues {
 
 const EMOJI_OPTIONS = ["🛍️", "☕", "🍔", "💪", "🎬", "✂️", "🌿", "🎁", "✨", "🥗"];
 
+const TIER_OPTIONS: { id: PackageTier; label: string; tagline: string }[] = [
+  { id: "standard", label: "Standard", tagline: "Så ser erbjudandet ut idag" },
+  { id: "premium", label: "Premium", tagline: "Grön kant, prioriterad placering + Veckans erbjudande" },
+];
+
 export function OfferForm({
   initial,
   companyName,
   category,
+  initialTier = "standard",
   onSave,
   saveLabel = "Spara utkast",
   saving = false,
@@ -46,14 +55,15 @@ export function OfferForm({
   initial: OfferFormValues;
   companyName: string;
   category: Category;
+  initialTier?: PackageTier;
   onSave: (values: OfferFormValues) => void;
   saveLabel?: string;
   saving?: boolean;
 }) {
   const [values, setValues] = useState<OfferFormValues>(initial);
-  const [suggestions, setSuggestions] = useState<
-    { title: string; description: string; discountValue: string }[] | null
-  >(null);
+  const [previewTier, setPreviewTier] = useState<PackageTier>(initialTier);
+  const [suggestions, setSuggestions] = useState<OfferSuggestion[] | null>(null);
+  const [shownTitles, setShownTitles] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [improving, setImproving] = useState(false);
   const [pointsRange, setPointsRange] = useState<{ min: number; max: number; recommended: number } | null>(null);
@@ -66,28 +76,30 @@ export function OfferForm({
 
   useEffect(() => {
     let cancelled = false;
-    suggestPointsRange(values.discountType, values.discountValue).then((r) => {
+    suggestPointsRange(values.discountValueKr).then((r) => {
       if (!cancelled) setPointsRange(r);
     });
     return () => {
       cancelled = true;
     };
-  }, [values.discountType, values.discountValue]);
+  }, [values.discountValueKr]);
 
   async function handleGenerateSuggestions() {
     setLoadingSuggestions(true);
-    const result = await generateOfferSuggestions(category);
+    const result = await generateOfferSuggestions(category, shownTitles);
     setSuggestions(result);
+    setShownTitles((prev) => [...prev, ...result.map((s) => s.title)]);
     setLoadingSuggestions(false);
   }
 
-  function applySuggestion(s: { title: string; description: string; discountValue: string }) {
+  function applySuggestion(s: OfferSuggestion) {
     setValues((v) => ({
       ...v,
       title: s.title,
       description: s.description,
+      discountType: s.discountType,
       discountValue: s.discountValue,
-      discountType: "procent",
+      discountValueKr: s.discountValueKr,
     }));
     setSuggestions(null);
   }
@@ -116,6 +128,53 @@ export function OfferForm({
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
       <div className="flex flex-col gap-6">
+        {/* Paketförhandsgranskning */}
+        <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-5">
+          <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
+            Förhandsgranska som
+          </p>
+          <p className="mt-0.5 text-xs font-medium text-[var(--color-brand-muted)]">
+            Se skillnaden direkt i mobilen till höger. Paketet väljer och
+            betalar ni för när erbjudandet publiceras.
+          </p>
+          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2">
+            {TIER_OPTIONS.map((t) => {
+              const active = previewTier === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setPreviewTier(t.id)}
+                  className={`flex items-start gap-2.5 rounded-xl border-2 p-3.5 text-left transition ${
+                    active
+                      ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-secondary)]/60"
+                      : "border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)]/40"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                      active
+                        ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]"
+                        : "border-[var(--color-brand-border)]"
+                    }`}
+                  >
+                    {active && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                  </span>
+                  <div>
+                    <span className="flex items-center gap-1.5 text-[13px] font-extrabold text-[var(--color-brand-ink)]">
+                      {t.id === "premium" && <Crown className="h-3.5 w-3.5 text-[var(--color-brand-primary)]" />}
+                      {t.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                      {t.tagline}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* AI-förslag */}
         <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/50 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -145,7 +204,11 @@ export function OfferForm({
                 )
               }
             >
-              {loadingSuggestions ? "Genererar..." : "Generera förslag"}
+              {loadingSuggestions
+                ? "Genererar..."
+                : suggestions || shownTitles.length > 0
+                  ? "Generera nya förslag"
+                  : "Generera förslag"}
             </Button>
           </div>
 
@@ -208,7 +271,7 @@ export function OfferForm({
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-3">
           <Field label="Typ av rabatt" required>
             <Select
               value={values.discountType}
@@ -219,7 +282,7 @@ export function OfferForm({
               <option value="erbjudande">Fritt erbjudande</option>
             </Select>
           </Field>
-          <Field label="Rabattvärde" required>
+          <Field label="Rabattvärde i appen" required>
             <Input
               value={values.discountValue}
               onChange={(e) => update("discountValue", e.target.value)}
@@ -232,6 +295,19 @@ export function OfferForm({
               }
             />
           </Field>
+          <Field
+            label="Rabattvärde i kronor"
+            required
+            hint="Används bara för att räkna ut poängkostnaden – visas inte för resenären"
+          >
+            <Input
+              type="number"
+              min={0}
+              value={values.discountValueKr}
+              onChange={(e) => update("discountValueKr", Number(e.target.value))}
+              placeholder="T.ex. 35"
+            />
+          </Field>
         </div>
 
         <Field
@@ -239,7 +315,7 @@ export function OfferForm({
           required
           hint={
             pointsRange
-              ? `Föreslaget intervall för denna rabatt: ${pointsRange.min}–${pointsRange.max} poäng`
+              ? `Föreslaget intervall baserat på kronovärdet: ${pointsRange.min}–${pointsRange.max} poäng`
               : undefined
           }
         >
@@ -375,6 +451,7 @@ export function OfferForm({
           pointsCost={values.pointsCost}
           emoji={values.imageEmoji}
           imageDataUrl={values.imageDataUrl}
+          tier={previewTier}
         />
       </div>
     </div>

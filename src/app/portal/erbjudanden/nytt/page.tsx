@@ -11,6 +11,7 @@ const emptyValues: OfferFormValues = {
   description: "",
   discountType: "procent",
   discountValue: "",
+  discountValueKr: 0,
   pointsCost: 20,
   validTo: "",
   terms: "",
@@ -31,6 +32,7 @@ export default function NyttErbjudandePage() {
       description: values.description,
       discountType: values.discountType,
       discountValue: values.discountValue,
+      discountValueKr: values.discountValueKr,
       pointsCost: values.pointsCost,
       validTo: values.validTo || undefined,
       terms: values.terms || undefined,
@@ -53,6 +55,7 @@ export default function NyttErbjudandePage() {
         initial={emptyValues}
         companyName={currentCompany.name}
         category={currentCompany.category}
+        initialTier={currentCompany.packageTier}
         onSave={handleSave}
         saveLabel="Spara och fortsätt"
         saving={saving}
