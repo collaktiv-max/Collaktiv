@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Flame, Sparkles, ArrowRight } from "lucide-react";
+import { Flame, Sparkles, ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { FeatureList } from "@/components/ui/FeatureList";
 import {
   PLANS,
   BILLING_LABELS,
@@ -163,21 +164,13 @@ export function PricingSection() {
                   Välj {plan.name}
                 </Button>
 
-                <ul className="mt-6 flex flex-col gap-2.5 border-t border-[var(--color-brand-border)] pt-6">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2.5 text-[13.5px] font-semibold text-[var(--color-brand-ink)]"
-                    >
-                      <Check
-                        className={`mt-0.5 h-4 w-4 shrink-0 ${
-                          isPremium ? "text-[var(--color-brand-primary)]" : "text-[var(--color-brand-muted)]"
-                        }`}
-                      />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <FeatureList
+                  features={plan.features}
+                  checkClassName={
+                    isPremium ? "text-[var(--color-brand-primary)]" : "text-[var(--color-brand-muted)]"
+                  }
+                  className="mt-6 border-t border-[var(--color-brand-border)] pt-6"
+                />
               </div>
             );
           })}

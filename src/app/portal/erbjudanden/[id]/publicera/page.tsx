@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { FeatureList } from "@/components/ui/FeatureList";
 import { useAppState } from "@/lib/store";
 import { REGION } from "@/lib/config";
 import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
@@ -253,17 +254,11 @@ export default function PubliceraErbjudandePage() {
               <p className="text-xs font-semibold text-[var(--color-brand-muted)]">
                 {plan.tagline}
               </p>
-              <ul className="mt-4 flex flex-col gap-2">
-                {plan.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2 text-[13px] font-medium text-[var(--color-brand-ink)]"
-                  >
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-brand-primary)]" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+              <FeatureList
+                features={plan.features}
+                checkClassName="text-[var(--color-brand-primary)]"
+                className="mt-4"
+              />
               <button
                 type="button"
                 onClick={() => setSelectedTier(plan.id)}

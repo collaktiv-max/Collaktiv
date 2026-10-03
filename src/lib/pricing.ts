@@ -8,12 +8,19 @@ export type PlanId = "standard" | "premium";
 export const EARLY_BIRD_SLOTS = 50;
 export const EARLY_BIRD_DISCOUNT = 0.2; // 20%
 
+export interface PlanFeature {
+  /** Kort rad, visas direkt i listan. */
+  label: string;
+  /** Längre förklaring, visas via info-knappen. */
+  detail: string;
+}
+
 export interface PlanDefinition {
   id: PlanId;
   name: string;
   tagline: string;
   prices: Record<BillingPeriod, number>;
-  features: string[];
+  features: PlanFeature[];
 }
 
 export const PLANS: PlanDefinition[] = [
@@ -26,10 +33,22 @@ export const PLANS: PlanDefinition[] = [
       year: 5399,
     },
     features: [
-      "Begränsad synlighet",
-      "Begränsad statistik",
-      "Max 2 erbjudanden",
-      "Ett presentationsinlägg",
+      {
+        label: "Begränsad synlighet",
+        detail: "Erbjudandet visas i appen med er logga.",
+      },
+      {
+        label: "Begränsad statistik",
+        detail: "Enbart antal visningar på era erbjudanden.",
+      },
+      {
+        label: "Max 2 erbjudanden",
+        detail: "Ni kan ha max två aktiva erbjudanden publicerade samtidigt i appen.",
+      },
+      {
+        label: "Ett presentationsinlägg",
+        detail: "Ni får en kort presentation av ert företag på sociala medier som visas för resenärer.",
+      },
     ],
   },
   {
@@ -41,12 +60,39 @@ export const PLANS: PlanDefinition[] = [
       year: 7599,
     },
     features: [
-      "Prioriterad placering",
-      "Veckans erbjudande",
-      "Full tillgång till statistik",
-      "Max 5 erbjudanden",
-      "Större synlighet på sociala medier",
-      "Möjlighet till en riktad kampanj",
+      {
+        label: "Prioriterad placering",
+        detail:
+          "Erbjudandet visas högre upp och syns före Standard-företagens erbjudanden när resenärer bläddrar i appen.",
+      },
+      {
+        label: "Max 5 erbjudanden",
+        detail: "Ni kan ha upp till fem aktiva erbjudanden publicerade samtidigt.",
+      },
+      {
+        label: "Extra synlighet",
+        detail:
+          "Mer exklusiv design på ert erbjudande. Ni är med i belöningsvalen när resenärer når en ny nivå eller streak.",
+      },
+      {
+        label: "Utökad erbjudandevy",
+        detail: "Resenären ser utökad beskrivning, er adress och länk till hemsida.",
+      },
+      {
+        label: "Veckans erbjudande",
+        detail:
+          'Ni lyfts som "Veckans erbjudande" under en period. Extra synlighet precis i resenärens blickfång.',
+      },
+      {
+        label: "Full tillgång till statistik",
+        detail:
+          "Ni ser allt: inlösningar, konverteringsgrad, mest populära erbjudande och en fullständig nedbrytning per erbjudande. Även möjlighet till PDF-nedladdning.",
+      },
+      {
+        label: "Större synlighet på sociala medier",
+        detail:
+          "Ert företag får större chans att lyftas fram i Collaktivs egna kanaler på sociala medier, utöver synligheten i appen.",
+      },
     ],
   },
 ];
