@@ -47,6 +47,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, "exact" in item && item.exact);
             const Icon = item.icon;
+            const comingSoon = "comingSoon" in item && item.comingSoon;
             return (
               <Link
                 key={item.href}
@@ -58,7 +59,18 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 }`}
               >
                 <Icon className="h-[18px] w-[18px]" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {comingSoon && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]"
+                    }`}
+                  >
+                    Snart
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -140,6 +152,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 {navItems.map((item) => {
                   const active = isActive(pathname, item.href, "exact" in item && item.exact);
                   const Icon = item.icon;
+                  const comingSoon = "comingSoon" in item && item.comingSoon;
                   return (
                     <Link
                       key={item.href}
@@ -152,7 +165,18 @@ export function PortalShell({ children }: { children: ReactNode }) {
                       }`}
                     >
                       <Icon className="h-[18px] w-[18px]" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {comingSoon && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                            active
+                              ? "bg-white/20 text-white"
+                              : "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]"
+                          }`}
+                        >
+                          Snart
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -181,6 +205,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, "exact" in item && item.exact);
             const Icon = item.icon;
+            const comingSoon = "comingSoon" in item && item.comingSoon;
             return (
               <Link
                 key={item.href}
@@ -189,7 +214,12 @@ export function PortalShell({ children }: { children: ReactNode }) {
                   active ? "text-[var(--color-brand-primary)]" : "text-[var(--color-brand-muted)]"
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <span className="relative">
+                  <Icon className="h-5 w-5" />
+                  {comingSoon && (
+                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-[#e0432c]" />
+                  )}
+                </span>
                 {item.label}
               </Link>
             );
