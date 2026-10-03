@@ -31,6 +31,14 @@ create table if not exists companies (
   payment_confirmed boolean not null default false,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
+  -- Sätts automatiskt när ansökan godkänns/första betalningen
+  -- bekräftas – används för att räkna ut när påminnelsemejl ska gå ut.
+  approved_at                timestamptz,
+  payment_confirmed_at       timestamptz,
+  -- Senast ett påminnelsemejl av respektive typ skickades, så vi inte
+  -- mejlar samma företag varje dag – se src/lib/reminders.ts.
+  payment_reminder_sent_at   timestamptz,
+  offer_reminder_sent_at     timestamptz,
   password_hash     text not null,
   onboarding_logo             boolean not null default false,
   onboarding_first_offer      boolean not null default false,
@@ -47,6 +55,10 @@ create unique index if not exists companies_contact_email_key
 alter table companies add column if not exists referred_by_company_id uuid references companies (id) on delete set null;
 alter table companies add column if not exists bonus_access_until timestamptz;
 create index if not exists companies_referred_by_idx on companies (referred_by_company_id);
+alter table companies add column if not exists approved_at timestamptz;
+alter table companies add column if not exists payment_confirmed_at timestamptz;
+alter table companies add column if not exists payment_reminder_sent_at timestamptz;
+alter table companies add column if not exists offer_reminder_sent_at timestamptz;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

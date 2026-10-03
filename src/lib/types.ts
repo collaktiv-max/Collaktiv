@@ -50,6 +50,13 @@ export interface CompanyProfile {
   /** Bonusåtkomst intjänad via inbjudningar – satt/förlängd 30 dagar
    * i taget när ett inbjudet företag betalar för sitt första paket. */
   bonusAccessUntil?: string;
+  /** Sätts automatiskt när ansökan godkänns/första betalningen
+   * bekräftas – grunden för när påminnelsemejl skickas. */
+  approvedAt?: string;
+  paymentConfirmedAt?: string;
+  /** Senast ett påminnelsemejl av respektive typ skickades. */
+  paymentReminderSentAt?: string;
+  offerReminderSentAt?: string;
   createdAt: string;
   onboardingChecklist: {
     logo: boolean;

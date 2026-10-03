@@ -44,6 +44,10 @@ interface CompanyRow {
   contest_prize_description: string | null;
   referred_by_company_id: string | null;
   bonus_access_until: string | null;
+  approved_at: string | null;
+  payment_confirmed_at: string | null;
+  payment_reminder_sent_at: string | null;
+  offer_reminder_sent_at: string | null;
   password_hash: string;
   onboarding_logo: boolean;
   onboarding_first_offer: boolean;
@@ -102,6 +106,10 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
     bonusAccessUntil: row.bonus_access_until ?? undefined,
+    approvedAt: row.approved_at ?? undefined,
+    paymentConfirmedAt: row.payment_confirmed_at ?? undefined,
+    paymentReminderSentAt: row.payment_reminder_sent_at ?? undefined,
+    offerReminderSentAt: row.offer_reminder_sent_at ?? undefined,
     passwordHash: row.password_hash,
     createdAt: row.created_at,
     onboardingChecklist: {
@@ -219,6 +227,17 @@ export async function updateCompany(
   const next = { ...current, ...partial };
   const checklist = { ...current.onboardingChecklist, ...partial.onboardingChecklist };
 
+  // Sätts automatiskt första gången, så vi vet när 2-/3-dagarsklockan
+  // för påminnelsemejl (se src/lib/reminders.ts) ska börja räkna.
+  const approvedAt =
+    current.applicationStatus !== "godkand" && next.applicationStatus === "godkand"
+      ? new Date().toISOString()
+      : next.approvedAt;
+  const paymentConfirmedAt =
+    !current.paymentConfirmed && next.paymentConfirmed && !current.paymentConfirmedAt
+      ? new Date().toISOString()
+      : next.paymentConfirmedAt;
+
   const rows = (await sql`
     update companies set
       name = ${next.name},
@@ -239,6 +258,10 @@ export async function updateCompany(
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
+      approved_at = ${approvedAt ?? null},
+      payment_confirmed_at = ${paymentConfirmedAt ?? null},
+      payment_reminder_sent_at = ${next.paymentReminderSentAt ?? null},
+      offer_reminder_sent_at = ${next.offerReminderSentAt ?? null},
       onboarding_logo = ${checklist.logo},
       onboarding_first_offer = ${checklist.firstOffer},
       onboarding_profile_complete = ${checklist.profileComplete},
@@ -251,6 +274,45 @@ export async function updateCompany(
 
 export async function updateCompanyPassword(id: string, passwordHash: string): Promise<void> {
   await sql`update companies set password_hash = ${passwordHash} where id = ${id}`;
+}
+
+// ---------- Påminnelser ----------
+// Se src/lib/reminders.ts för hur de här används (daglig cron-körning).
+
+// Godkända företag som inte valt/betalat för ett paket, minst 2 dagar
+// efter godkännande, och inte redan påminda de senaste 5 dagarna.
+export async function getCompaniesNeedingPaymentReminder(): Promise<CompanyProfile[]> {
+  const rows = (await sql`
+    select * from companies
+    where application_status = 'godkand'
+      and payment_confirmed = false
+      and approved_at is not null
+      and approved_at <= now() - interval '2 days'
+      and (payment_reminder_sent_at is null or payment_reminder_sent_at <= now() - interval '5 days')
+  `) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
+}
+
+// Företag som betalat men inte skapat något erbjudande, minst 3 dagar
+// efter betalningen, och inte redan påminda de senaste 5 dagarna.
+export async function getCompaniesNeedingOfferReminder(): Promise<CompanyProfile[]> {
+  const rows = (await sql`
+    select c.* from companies c
+    where c.payment_confirmed = true
+      and c.payment_confirmed_at is not null
+      and c.payment_confirmed_at <= now() - interval '3 days'
+      and (c.offer_reminder_sent_at is null or c.offer_reminder_sent_at <= now() - interval '5 days')
+      and not exists (select 1 from offers o where o.company_id = c.id)
+  `) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
+}
+
+export async function markPaymentReminderSent(id: string): Promise<void> {
+  await sql`update companies set payment_reminder_sent_at = now() where id = ${id}`;
+}
+
+export async function markOfferReminderSent(id: string): Promise<void> {
+  await sql`update companies set offer_reminder_sent_at = now() where id = ${id}`;
 }
 
 // ---------- Erbjudanden ----------

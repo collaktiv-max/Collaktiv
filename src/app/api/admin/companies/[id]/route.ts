@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUnrefundedPaymentsByCompany, markPaymentRefunded, updateCompany } from "@/lib/db";
+import {
+  getCompanyById,
+  getUnrefundedPaymentsByCompany,
+  markPaymentRefunded,
+  updateCompany,
+} from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import { sendApprovalEmail } from "@/lib/email";
 import type { CompanyProfile } from "@/lib/types";
 
 export async function PATCH(
@@ -9,6 +15,13 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const partial = (await req.json()) as Partial<CompanyProfile>;
+
+  // Hämtas innan uppdateringen för att veta om det här faktiskt är en
+  // ny godkännande-övergång – annars skulle varje efterföljande PATCH
+  // (t.ex. byte av paket) trigga om godkännandemejlet.
+  const existing = await getCompanyById(id);
+  const isNewApproval =
+    partial.applicationStatus === "godkand" && existing?.applicationStatus !== "godkand";
 
   let refundedAmount = 0;
   const refundErrors: string[] = [];
@@ -43,5 +56,10 @@ export async function PATCH(
   if (!company) {
     return NextResponse.json({ error: "Företaget hittades inte." }, { status: 404 });
   }
+
+  if (isNewApproval) {
+    await sendApprovalEmail(company);
+  }
+
   return NextResponse.json({ company, refundedAmount, refundErrors });
 }
