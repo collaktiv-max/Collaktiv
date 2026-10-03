@@ -1,6 +1,6 @@
 import {
   Eye,
-  Users,
+  Leaf,
   Smartphone,
   BarChart3,
   TrendingUp,
@@ -17,10 +17,10 @@ const cards = [
     iconBg: "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]",
   },
   {
-    icon: Users,
-    title: "Ny kundgrupp",
-    text: "Nå unga, hållbara resenärer som upptäcker nya favoritställen via appen.",
-    iconBg: "bg-[#fce8da] text-[#c2703a]",
+    icon: Leaf,
+    title: "En del av lösningen",
+    text: "Ni är med och formar satsningen för hållbart resande i Gävleborg.",
+    iconBg: "bg-[var(--color-brand-mint)] text-[var(--color-brand-primary-hover)]",
   },
   {
     icon: Smartphone,
