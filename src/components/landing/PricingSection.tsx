@@ -160,7 +160,7 @@ export function PricingSection() {
                   className="mt-6 w-full justify-center"
                   icon={<ArrowRight className="h-4 w-4" />}
                 >
-                  Kom igång med {plan.name}
+                  Välj {plan.name}
                 </Button>
 
                 <ul className="mt-6 flex flex-col gap-2.5 border-t border-[var(--color-brand-border)] pt-6">
