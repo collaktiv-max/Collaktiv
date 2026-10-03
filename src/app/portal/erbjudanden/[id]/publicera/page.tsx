@@ -212,10 +212,9 @@ export default function PubliceraErbjudandePage() {
           const regularMonthly = getMonthly(plan, period);
           const discountedMonthly = getDiscountedMonthly(plan, period);
           return (
-            <button
+            <div
               key={plan.id}
-              onClick={() => setSelectedTier(plan.id)}
-              className={`relative rounded-2xl text-left transition ${
+              className={`relative rounded-2xl transition ${
                 isPremium
                   ? `border-2 bg-gradient-to-b from-[var(--color-brand-secondary)]/70 to-white p-7 pt-8 shadow-lg shadow-[var(--color-brand-primary)]/10 sm:-mt-3 sm:pb-9 ${
                       active
@@ -265,16 +264,19 @@ export default function PubliceraErbjudandePage() {
                   </li>
                 ))}
               </ul>
-              <div
-                className={`mt-5 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                  active
-                    ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]"
-                    : "border-[var(--color-brand-border)]"
+              <button
+                type="button"
+                onClick={() => setSelectedTier(plan.id)}
+                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[15px] font-extrabold transition ${
+                  isPremium
+                    ? "bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-hover)]"
+                    : "border-2 border-[var(--color-brand-primary)]/25 bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)] hover:border-[var(--color-brand-primary)]/50"
                 }`}
               >
-                {active && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-              </div>
-            </button>
+                {active && <Check className="h-4 w-4" strokeWidth={3} />}
+                Välj {plan.name}
+              </button>
+            </div>
           );
         })}
       </div>
