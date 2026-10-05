@@ -37,11 +37,9 @@ export default function VillkorPage() {
             Collaktiv Företagsportalen (&rdquo;portalen&rdquo;).
           </p>
 
-          <div className="mt-6 rounded-xl border border-dashed border-[#e0432c]/40 bg-[#fdecea]/60 p-4 text-xs font-bold text-[#c0392b]">
-            Platshållare att fylla i innan sidan publiceras skarpt: bolagets
-            registrerade namn, organisationsnummer, säte/adress och eventuellt
-            momsregistreringsnummer. Juridisk part i avtalet nedan är markerad
-            [COLLAKTIV AB, ORG.NR XXXXXX-XXXX].
+          <div className="mt-6 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4 text-xs font-bold text-[var(--color-brand-ink)]">
+            Avtalspart: Collaktiv AB, org.nr 559603-5682, c/o Mossnelid,
+            Vårbackavägen 9a, 805 95 Gävle.
           </div>
 
           <Section title="1. Tjänsten">
@@ -161,6 +159,11 @@ export default function VillkorPage() {
                 partner@collaktiv.se
               </a>
               .
+            </p>
+            <p>
+              Collaktiv AB, org.nr 559603-5682
+              <br />
+              c/o Mossnelid, Vårbackavägen 9a, 805 95 Gävle
             </p>
           </Section>
         </Container>
