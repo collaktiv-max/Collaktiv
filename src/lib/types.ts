@@ -70,6 +70,7 @@ export type OfferStatus =
   | "utkast"
   | "granskas"
   | "publicerad"
+  | "pausad"
   | "arkiverad";
 
 export type DiscountType = "procent" | "belopp" | "erbjudande";

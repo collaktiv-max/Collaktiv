@@ -15,6 +15,7 @@ const STATUS_LABELS: Record<Offer["status"], string> = {
   utkast: "Utkast",
   granskas: "Granskas",
   publicerad: "Publicerad",
+  pausad: "Pausad",
   arkiverad: "Arkiverad",
 };
 

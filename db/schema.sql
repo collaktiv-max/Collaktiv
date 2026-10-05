@@ -79,7 +79,7 @@ create table if not exists offers (
   image_data_url   text,
   image_optimized  boolean not null default false,
   status           text not null default 'utkast'
-                     check (status in ('utkast','granskas','publicerad','arkiverad')),
+                     check (status in ('utkast','granskas','publicerad','pausad','arkiverad')),
   views            integer not null default 0,
   redemptions      integer not null default 0,
   created_at       timestamptz not null default now()
@@ -91,6 +91,13 @@ create index if not exists offers_status_idx on offers (status);
 -- Fanns inte i ursprungsschemat – säkerställer att kolumnen finns även
 -- på databaser som skapades innan den lades till ovan.
 alter table offers add column if not exists discount_value_kr integer not null default 0;
+
+-- 'pausad' fanns inte i ursprungsschemat – ett publicerat erbjudande
+-- kan pausas (döljs i appen) och återupptas av företaget själva, utan
+-- ny betalning, se src/app/api/offers/[id].
+alter table offers drop constraint if exists offers_status_check;
+alter table offers add constraint offers_status_check
+  check (status in ('utkast','granskas','publicerad','pausad','arkiverad'));
 
 create table if not exists referrals (
   id         uuid primary key default gen_random_uuid(),

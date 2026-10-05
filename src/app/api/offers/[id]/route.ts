@@ -19,6 +19,22 @@ export async function PATCH(
   }
 
   const partial = (await req.json()) as Partial<Offer>;
+
+  // Statusflödet (utkast → granskas → publicerad) styrs annars av
+  // betalning/admin-godkännande – ett företag får bara själva växla
+  // mellan publicerad och pausad, aldrig hoppa förbi betalning/granskning.
+  if (partial.status !== undefined) {
+    const allowedTransition =
+      (existing.status === "publicerad" && partial.status === "pausad") ||
+      (existing.status === "pausad" && partial.status === "publicerad");
+    if (!allowedTransition) {
+      return NextResponse.json(
+        { error: "Den statusändringen kan inte göras härifrån." },
+        { status: 400 }
+      );
+    }
+  }
+
   const offer = await updateOffer(id, partial);
   return NextResponse.json({ offer });
 }

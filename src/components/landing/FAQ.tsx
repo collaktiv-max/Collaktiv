@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "Är det någon bindningstid?",
-    a: "Nej. Ni väljer själva hur länge ett erbjudande ska vara aktivt och kan pausa eller avsluta det när ni vill från portalen.",
+    a: "Nej, ingen prenumeration – ni betalar en gång för en period (6 eller 12 månader), utan automatisk förnyelse. Ni kan pausa erbjudandet när ni vill i portalen utan extra kostnad, men perioden ni redan betalat för återbetalas inte.",
   },
   {
     q: "Hur snabbt kommer vi igång?",

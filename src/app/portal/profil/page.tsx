@@ -419,7 +419,7 @@ function BillingCard({ company }: { company: CompanyProfile }) {
         <InfoRow
           icon={ShieldCheck}
           label="Ingen bindningstid"
-          description="Pausa eller avsluta när ni vill – nästa publicering är alltid ett fritt val."
+          description="Pausa erbjudandet när ni vill, utan extra kostnad – perioden ni betalat för återbetalas dock inte."
         />
         <InfoRow
           icon={RefreshCcw}

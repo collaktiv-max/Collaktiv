@@ -330,7 +330,7 @@ export default function PubliceraErbjudandePage() {
 
       <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:flex-row sm:justify-between">
         <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-          Ingen bindningstid – pausa eller avsluta när ni vill från portalen.
+          Ingen prenumeration – betalningen gäller hela perioden, men ni kan pausa erbjudandet när ni vill från portalen utan extra kostnad.
           {companyApproved
             ? " Vi granskar erbjudandet innan det går live."
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}

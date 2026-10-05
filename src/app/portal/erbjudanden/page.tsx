@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, Rocket, Ticket, Trash2 } from "lucide-react";
+import { Eye, Pause, Pencil, Play, Plus, Rocket, Ticket, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -12,11 +13,22 @@ const STATUS_CONFIG: Record<OfferStatus, { label: string; variant: "light" | "ac
   utkast: { label: "Utkast", variant: "outline" },
   granskas: { label: "Under granskning", variant: "light" },
   publicerad: { label: "Publicerad", variant: "accent" },
+  pausad: { label: "Pausad", variant: "light" },
   arkiverad: { label: "Arkiverad", variant: "outline" },
 };
 
 export default function ErbjudandenPage() {
-  const { companyOffers, deleteOffer } = useAppState();
+  const { companyOffers, deleteOffer, updateOffer } = useAppState();
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function handleToggle(offerId: string, nextStatus: "publicerad" | "pausad") {
+    setTogglingId(offerId);
+    try {
+      await updateOffer(offerId, { status: nextStatus });
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   return (
     <div>
@@ -88,6 +100,12 @@ export default function ErbjudandenPage() {
                   </span>
                 </div>
 
+                {offer.status === "pausad" && (
+                  <p className="mt-3 text-[11px] font-bold text-[var(--color-brand-muted)]">
+                    Dold i appen – ni har fortfarande kvar er betalda period.
+                  </p>
+                )}
+
                 <div className="mt-4 flex items-center gap-2 border-t border-[var(--color-brand-border)] pt-4">
                   <Link
                     href={`/portal/erbjudanden/${offer.id}`}
@@ -102,6 +120,25 @@ export default function ErbjudandenPage() {
                     >
                       <Rocket className="h-3.5 w-3.5" /> Publicera
                     </Link>
+                  )}
+                  {(offer.status === "publicerad" || offer.status === "pausad") && (
+                    <button
+                      onClick={() =>
+                        handleToggle(offer.id, offer.status === "publicerad" ? "pausad" : "publicerad")
+                      }
+                      disabled={togglingId === offer.id}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] py-2 text-xs font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-50"
+                    >
+                      {offer.status === "publicerad" ? (
+                        <>
+                          <Pause className="h-3.5 w-3.5" /> Pausa
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3.5 w-3.5" /> Återuppta
+                        </>
+                      )}
+                    </button>
                   )}
                   <button
                     onClick={() => {
