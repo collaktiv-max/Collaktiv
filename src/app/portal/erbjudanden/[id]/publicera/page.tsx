@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
@@ -336,6 +337,15 @@ export default function PubliceraErbjudandePage() {
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
           {!alreadyPaidForTier &&
             " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
+          {!alreadyPaidForTier && (
+            <>
+              {" "}Genom att skicka in godkänner ni våra{" "}
+              <Link href="/villkor" target="_blank" className="font-bold text-[var(--color-brand-primary)] underline">
+                villkor
+              </Link>
+              .
+            </>
+          )}
         </p>
         <div className="flex flex-col items-center gap-2 sm:items-end">
           <Button

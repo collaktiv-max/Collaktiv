@@ -20,6 +20,9 @@ export function Footer() {
           <Link href="/logga-in" className="hover:text-[var(--color-brand-primary)]">
             Logga in
           </Link>
+          <Link href="/villkor" className="hover:text-[var(--color-brand-primary)]">
+            Villkor
+          </Link>
         </nav>
         <p className="text-xs font-medium text-[var(--color-brand-muted)]">
           © {new Date().getFullYear()} Collaktiv
