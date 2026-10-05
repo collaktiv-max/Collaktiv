@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
+  Clock,
   CreditCard,
   Download,
   Gift,
@@ -316,31 +317,52 @@ function BillingCard({ company }: { company: CompanyProfile }) {
 
   const goToPackages = () => router.push("/portal/erbjudanden");
   const latestPaid = payments?.find((p) => p.status === "paid");
+  const pendingInvoice = payments?.find((p) => p.status === "pending");
 
   if (!company.paymentConfirmed) {
     return (
       <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
         <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Paket & fakturering</h2>
-        <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-brand-muted)]">
-              <CreditCard className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">Inget aktivt paket</p>
-              <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-                Välj Standard eller Premium och betala när ni publicerar ert erbjudande.
-              </p>
+        {pendingInvoice ? (
+          <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#b5862b]">
+                <Clock className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
+                  Faktura skickad – väntar på betalning
+                </p>
+                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                  {getPlan(pendingInvoice.planId as CompanyProfile["packageTier"]).name} ·{" "}
+                  {formatKr(pendingInvoice.amount)} · skickad {formatDate(pendingInvoice.createdAt)}.
+                  Paketet aktiveras automatiskt så fort fakturan är betald.
+                </p>
+              </div>
             </div>
           </div>
-          <Button
-            size="sm"
-            onClick={goToPackages}
-            icon={<ArrowRight className="h-4 w-4" />}
-          >
-            Se paket och betala
-          </Button>
-        </div>
+        ) : (
+          <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-brand-muted)]">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">Inget aktivt paket</p>
+                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                  Välj Standard eller Premium och betala när ni publicerar ert erbjudande.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={goToPackages}
+              icon={<ArrowRight className="h-4 w-4" />}
+            >
+              Se paket och betala
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -455,8 +477,16 @@ function BillingCard({ company }: { company: CompanyProfile }) {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-[var(--color-brand-ink)]">{formatKr(p.amount)}</p>
-                  <Badge variant={p.status === "refunded" ? "outline" : "accent"}>
-                    {p.status === "refunded" ? "Återbetald" : "Betald"}
+                  <Badge
+                    variant={
+                      p.status === "refunded" ? "outline" : p.status === "pending" ? "light" : "accent"
+                    }
+                  >
+                    {p.status === "refunded"
+                      ? "Återbetald"
+                      : p.status === "pending"
+                        ? "Väntar på betalning"
+                        : "Betald"}
                   </Badge>
                 </div>
               </div>

@@ -31,6 +31,10 @@ export default function PubliceraErbjudandePage() {
   );
   const [period, setPeriod] = useState<BillingPeriod>("year");
   const [processing, setProcessing] = useState(false);
+  const [invoicing, setInvoicing] = useState(false);
+  const [invoiceSent, setInvoiceSent] = useState<{ email: string; dueInDays: number } | null>(
+    null
+  );
   const [verifying, setVerifying] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +131,54 @@ export default function PubliceraErbjudandePage() {
       setError("Kunde inte starta betalningen. Försök igen om en stund.");
       setProcessing(false);
     }
+  }
+
+  async function handleInvoice() {
+    setInvoicing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offerId: offer!.id,
+          planId: selectedTier,
+          period,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Kunde inte skicka fakturan.");
+      }
+      setInvoiceSent({ email: currentCompany!.contactEmail, dueInDays: data.dueInDays ?? 30 });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte skicka fakturan. Försök igen.");
+    } finally {
+      setInvoicing(false);
+    }
+  }
+
+  if (invoiceSent) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-border)] bg-white p-8 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
+            <Check className="h-7 w-7" />
+          </span>
+          <h2 className="mt-4 text-lg font-extrabold text-[var(--color-brand-ink)]">
+            Faktura skickad!
+          </h2>
+          <p className="mt-2 text-sm font-medium text-[var(--color-brand-muted)]">
+            Vi har skickat en faktura till <strong>{invoiceSent.email}</strong> med{" "}
+            {invoiceSent.dueInDays} dagars betalningsvillkor. Så fort den är betald skickas
+            erbjudandet automatiskt in för granskning.
+          </p>
+          <Button href="/portal/erbjudanden" className="mt-5">
+            Tillbaka till erbjudanden
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (verifying) {
@@ -285,24 +337,36 @@ export default function PubliceraErbjudandePage() {
           {!alreadyPaidForTier &&
             " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
         </p>
-        <Button
-          onClick={handlePublish}
-          disabled={processing}
-          size="lg"
-          className="w-full sm:w-auto"
-          icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-        >
-          {processing
-            ? "Skickar in..."
-            : alreadyPaidForTier
-              ? "Skicka in för granskning – redan betalt"
-              : `Skicka in för ${formatKr(
-                  getDiscountedTotal(
-                    PLANS.find((p) => p.id === selectedTier)!,
-                    period
-                  )
-                )} / ${BILLING_LABELS[period].toLowerCase()}`}
-        </Button>
+        <div className="flex flex-col items-center gap-2 sm:items-end">
+          <Button
+            onClick={handlePublish}
+            disabled={processing || invoicing}
+            size="lg"
+            className="w-full sm:w-auto"
+            icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          >
+            {processing
+              ? "Skickar in..."
+              : alreadyPaidForTier
+                ? "Skicka in för granskning – redan betalt"
+                : `Skicka in för ${formatKr(
+                    getDiscountedTotal(
+                      PLANS.find((p) => p.id === selectedTier)!,
+                      period
+                    )
+                  )} / ${BILLING_LABELS[period].toLowerCase()}`}
+          </Button>
+          {!alreadyPaidForTier && (
+            <button
+              type="button"
+              onClick={handleInvoice}
+              disabled={processing || invoicing}
+              className="text-xs font-bold text-[var(--color-brand-muted)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-brand-primary)] disabled:opacity-50"
+            >
+              {invoicing ? "Skickar faktura..." : "Betala mot faktura istället (30 dagars betalningsvillkor)"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

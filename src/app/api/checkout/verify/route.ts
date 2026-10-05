@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
 import { stripe } from "@/lib/stripe";
-import {
-  createPayment,
-  getCompanyById,
-  grantReferralBonus,
-  submitOfferForReview,
-  updateCompany,
-} from "@/lib/db";
+import { createPayment } from "@/lib/db";
+import { completePaidOffer } from "@/lib/payment-completion";
 import type { PackageTier } from "@/lib/types";
 import type { BillingPeriod } from "@/lib/pricing";
 
@@ -49,19 +44,7 @@ export async function GET(req: NextRequest) {
     period,
   });
 
-  // Hämtas innan uppdateringen för att veta om det här är företagets
-  // FÖRSTA betalning – bara då ska en ev. inbjudningsbonus delas ut,
-  // inte vid en senare uppgradering/ny publicering.
-  const existingCompany = await getCompanyById(companyId);
-  const isFirstPayment = !existingCompany?.paymentConfirmed;
-
-  await updateCompany(companyId, { packageTier: planId, paymentConfirmed: true });
-
-  if (isFirstPayment && existingCompany?.referredByCompanyId) {
-    await grantReferralBonus(existingCompany.referredByCompanyId);
-  }
-
-  const result = await submitOfferForReview(offerId, companyId);
+  const result = await completePaidOffer({ companyId, offerId, planId });
   if (!result) {
     return NextResponse.json({ paid: false });
   }

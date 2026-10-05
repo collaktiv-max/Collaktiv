@@ -116,13 +116,19 @@ create table if not exists payments (
   plan_id                   text not null,
   period                    text not null,
   status                    text not null default 'paid'
-                              check (status in ('paid','refunded')),
+                              check (status in ('paid','pending','refunded')),
   created_at                timestamptz not null default now()
 );
 
 create index if not exists payments_company_id_idx on payments (company_id);
 create unique index if not exists payments_stripe_session_id_key
   on payments (stripe_session_id);
+
+-- 'pending' fanns inte i ursprungsschemat – används för en Stripe-
+-- faktura som skickats men inte betalats än, se src/app/api/invoice.
+alter table payments drop constraint if exists payments_status_check;
+alter table payments add constraint payments_status_check
+  check (status in ('paid','pending','refunded'));
 
 -- Intresseanmälan om att köpa extra synlighet i appen under en
 -- period, direkt i portalen. Vilket värde det ger företaget och vad

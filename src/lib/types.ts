@@ -112,7 +112,7 @@ export interface Campaign {
   createdAt: string;
 }
 
-export type PaymentStatus = "paid" | "refunded";
+export type PaymentStatus = "paid" | "pending" | "refunded";
 
 export interface Payment {
   id: string;

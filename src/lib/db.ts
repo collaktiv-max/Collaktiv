@@ -503,17 +503,23 @@ export async function createPayment(input: {
   currency?: string;
   planId: string;
   period: string;
+  status?: PaymentStatus;
 }): Promise<Payment> {
   const rows = (await sql`
     insert into payments (
       company_id, offer_id, stripe_session_id, stripe_payment_intent_id,
-      amount, currency, plan_id, period
+      amount, currency, plan_id, period, status
     ) values (
       ${input.companyId}, ${input.offerId ?? null}, ${input.stripeSessionId},
       ${input.stripePaymentIntentId ?? null}, ${input.amount}, ${input.currency ?? "sek"},
-      ${input.planId}, ${input.period}
+      ${input.planId}, ${input.period}, ${input.status ?? "paid"}
     )
-    on conflict (stripe_session_id) do update set stripe_session_id = excluded.stripe_session_id
+    -- En faktura skrivs in som 'pending' när den skickas och uppdateras
+    -- till 'paid' av webhooken när Stripe bekräftar att den är betald.
+    on conflict (stripe_session_id) do update set
+      stripe_payment_intent_id = excluded.stripe_payment_intent_id,
+      amount = excluded.amount,
+      status = excluded.status
     returning *
   `) as PaymentRow[];
   return toPayment(rows[0]);
