@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;
-    const { companyId, offerId, planId, period } = invoice.metadata ?? {};
+    const { companyId, offerId, planId, period, termsVersion, termsAcceptedAt } =
+      invoice.metadata ?? {};
 
     if (companyId && offerId && planId && period) {
       // Nyare Stripe-API:er kopplar en betalning till fakturan via ett
@@ -54,6 +55,8 @@ export async function POST(req: NextRequest) {
         planId,
         period,
         status: "paid",
+        termsVersion,
+        termsAcceptedAt,
       });
 
       await completePaidOffer({ companyId, offerId, planId: planId as PackageTier });

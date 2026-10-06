@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
     currency: session.currency ?? "sek",
     planId,
     period,
+    termsVersion: session.metadata?.termsVersion,
+    termsAcceptedAt: session.metadata?.termsAcceptedAt,
   });
 
   const result = await completePaidOffer({ companyId, offerId, planId });

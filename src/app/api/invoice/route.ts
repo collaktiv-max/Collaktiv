@@ -4,11 +4,13 @@ import { getCompanyById, getOfferById, createPayment } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { getPlan, getDiscountedTotal, BILLING_LABELS, type BillingPeriod } from "@/lib/pricing";
 import type { PlanId } from "@/lib/pricing";
+import { TERMS_VERSION } from "@/lib/legal";
 
 interface InvoiceBody {
   offerId: string;
   planId: PlanId;
   period: BillingPeriod;
+  termsAccepted: boolean;
 }
 
 const DAYS_UNTIL_DUE = 30;
@@ -48,10 +50,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json()) as Partial<InvoiceBody>;
-  const { offerId, planId, period } = body;
+  const { offerId, planId, period, termsAccepted } = body;
   if (!offerId || !planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
+  if (!termsAccepted) {
+    return NextResponse.json({ error: "Ni måste godkänna villkoren för att publicera." }, { status: 400 });
+  }
+  const termsAcceptedAt = new Date().toISOString();
 
   const [company, offer] = await Promise.all([getCompanyById(companyId), getOfferById(offerId)]);
   if (!company) {
@@ -90,7 +96,7 @@ export async function POST(req: NextRequest) {
     customer: customer.id,
     collection_method: "send_invoice",
     days_until_due: DAYS_UNTIL_DUE,
-    metadata: { companyId, offerId, planId, period },
+    metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
   });
 
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
@@ -114,6 +120,8 @@ export async function POST(req: NextRequest) {
     planId,
     period,
     status: finalized.status === "paid" ? "paid" : "pending",
+    termsVersion: TERMS_VERSION,
+    termsAcceptedAt,
   });
 
   return NextResponse.json({

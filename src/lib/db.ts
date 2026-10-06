@@ -475,6 +475,8 @@ interface PaymentRow {
   plan_id: string;
   period: string;
   status: PaymentStatus;
+  terms_version: string | null;
+  terms_accepted_at: string | null;
   created_at: string;
 }
 
@@ -490,6 +492,8 @@ function toPayment(row: PaymentRow): Payment {
     planId: row.plan_id,
     period: row.period,
     status: row.status,
+    termsVersion: row.terms_version,
+    termsAcceptedAt: row.terms_accepted_at,
     createdAt: row.created_at,
   };
 }
@@ -504,22 +508,30 @@ export async function createPayment(input: {
   planId: string;
   period: string;
   status?: PaymentStatus;
+  termsVersion?: string;
+  termsAcceptedAt?: string;
 }): Promise<Payment> {
   const rows = (await sql`
     insert into payments (
       company_id, offer_id, stripe_session_id, stripe_payment_intent_id,
-      amount, currency, plan_id, period, status
+      amount, currency, plan_id, period, status, terms_version, terms_accepted_at
     ) values (
       ${input.companyId}, ${input.offerId ?? null}, ${input.stripeSessionId},
       ${input.stripePaymentIntentId ?? null}, ${input.amount}, ${input.currency ?? "sek"},
-      ${input.planId}, ${input.period}, ${input.status ?? "paid"}
+      ${input.planId}, ${input.period}, ${input.status ?? "paid"},
+      ${input.termsVersion ?? null}, ${input.termsAcceptedAt ?? null}
     )
     -- En faktura skrivs in som 'pending' när den skickas och uppdateras
     -- till 'paid' av webhooken när Stripe bekräftar att den är betald.
+    -- terms_version/terms_accepted_at skrivs bara över om det nya
+    -- anropet faktiskt har dem, så webhooken aldrig nollar ut vad
+    -- företaget godkände vid det ursprungliga köpet.
     on conflict (stripe_session_id) do update set
       stripe_payment_intent_id = excluded.stripe_payment_intent_id,
       amount = excluded.amount,
-      status = excluded.status
+      status = excluded.status,
+      terms_version = coalesce(excluded.terms_version, payments.terms_version),
+      terms_accepted_at = coalesce(excluded.terms_accepted_at, payments.terms_accepted_at)
     returning *
   `) as PaymentRow[];
   return toPayment(rows[0]);

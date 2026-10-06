@@ -124,12 +124,21 @@ create table if not exists payments (
   period                    text not null,
   status                    text not null default 'paid'
                               check (status in ('paid','pending','refunded')),
+  -- Vilken version av /villkor (se src/lib/legal.ts) företaget
+  -- godkände, och exakt när – ifyllt av företaget själva via
+  -- kryssrutan vid publicering, inte satt av oss i efterhand. Ger ett
+  -- bevis per betalning om en tvist om villkoren skulle uppstå.
+  terms_version             text,
+  terms_accepted_at         timestamptz,
   created_at                timestamptz not null default now()
 );
 
 create index if not exists payments_company_id_idx on payments (company_id);
 create unique index if not exists payments_stripe_session_id_key
   on payments (stripe_session_id);
+
+alter table payments add column if not exists terms_version text;
+alter table payments add column if not exists terms_accepted_at timestamptz;
 
 -- 'pending' fanns inte i ursprungsschemat – används för en Stripe-
 -- faktura som skickats men inte betalats än, se src/app/api/invoice.

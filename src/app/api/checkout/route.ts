@@ -4,11 +4,13 @@ import { getCompanyById, getOfferById } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { getPlan, getDiscountedTotal, BILLING_LABELS, type BillingPeriod } from "@/lib/pricing";
 import type { PlanId } from "@/lib/pricing";
+import { TERMS_VERSION } from "@/lib/legal";
 
 interface CheckoutBody {
   offerId: string;
   planId: PlanId;
   period: BillingPeriod;
+  termsAccepted: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -18,10 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json()) as Partial<CheckoutBody>;
-  const { offerId, planId, period } = body;
+  const { offerId, planId, period, termsAccepted } = body;
   if (!offerId || !planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
+  if (!termsAccepted) {
+    return NextResponse.json({ error: "Ni måste godkänna villkoren för att publicera." }, { status: 400 });
+  }
+  const termsAcceptedAt = new Date().toISOString();
 
   const [company, offer] = await Promise.all([getCompanyById(companyId), getOfferById(offerId)]);
   if (!company) {
@@ -53,7 +59,7 @@ export async function POST(req: NextRequest) {
         },
       },
     ],
-    metadata: { companyId, offerId, planId, period },
+    metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
     success_url: `${origin}/portal/erbjudanden/${offerId}/publicera?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/portal/erbjudanden/${offerId}/publicera?canceled=1`,
   });

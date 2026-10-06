@@ -126,5 +126,7 @@ export interface Payment {
   planId: string;
   period: string;
   status: PaymentStatus;
+  termsVersion: string | null;
+  termsAcceptedAt: string | null;
   createdAt: string;
 }

@@ -31,6 +31,7 @@ export default function PubliceraErbjudandePage() {
     currentCompany?.packageTier ?? "standard"
   );
   const [period, setPeriod] = useState<BillingPeriod>("year");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [invoicing, setInvoicing] = useState(false);
   const [invoiceSent, setInvoiceSent] = useState<{ email: string; dueInDays: number } | null>(
@@ -121,6 +122,7 @@ export default function PubliceraErbjudandePage() {
           offerId: offer!.id,
           planId: selectedTier,
           period,
+          termsAccepted,
         }),
       });
       const data = await res.json();
@@ -145,6 +147,7 @@ export default function PubliceraErbjudandePage() {
           offerId: offer!.id,
           planId: selectedTier,
           period,
+          termsAccepted,
         }),
       });
       const data = await res.json();
@@ -329,7 +332,7 @@ export default function PubliceraErbjudandePage() {
         })}
       </div>
 
-      <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:flex-row sm:justify-between">
+      <div className="mt-8 rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
         <p className="text-xs font-medium text-[var(--color-brand-muted)]">
           Ingen prenumeration – betalningen gäller hela perioden, men ni kan pausa erbjudandet när ni vill från portalen utan extra kostnad.
           {companyApproved
@@ -337,45 +340,61 @@ export default function PubliceraErbjudandePage() {
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
           {!alreadyPaidForTier &&
             " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
-          {!alreadyPaidForTier && (
-            <>
-              {" "}Genom att skicka in godkänner ni våra{" "}
-              <Link href="/villkor" target="_blank" className="font-bold text-[var(--color-brand-primary)] underline">
+        </p>
+
+        {!alreadyPaidForTier && (
+          <label className="mt-4 flex items-start gap-2.5 text-xs font-semibold text-[var(--color-brand-ink)]">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-brand-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
+            />
+            <span>
+              Jag har läst och godkänner Collaktivs{" "}
+              <Link
+                href="/villkor"
+                target="_blank"
+                className="font-bold text-[var(--color-brand-primary)] underline"
+              >
                 villkor
               </Link>
-              .
-            </>
-          )}
-        </p>
-        <div className="flex flex-col items-center gap-2 sm:items-end">
-          <Button
-            onClick={handlePublish}
-            disabled={processing || invoicing}
-            size="lg"
-            className="w-full sm:w-auto"
-            icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-          >
-            {processing
-              ? "Skickar in..."
-              : alreadyPaidForTier
-                ? "Skicka in för granskning – redan betalt"
-                : `Skicka in för ${formatKr(
-                    getDiscountedTotal(
-                      PLANS.find((p) => p.id === selectedTier)!,
-                      period
-                    )
-                  )} / ${BILLING_LABELS[period].toLowerCase()}`}
-          </Button>
-          {!alreadyPaidForTier && (
-            <button
-              type="button"
-              onClick={handleInvoice}
-              disabled={processing || invoicing}
-              className="text-xs font-bold text-[var(--color-brand-muted)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-brand-primary)] disabled:opacity-50"
+              , inklusive betalningsvillkoren.
+            </span>
+          </label>
+        )}
+
+        <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
+          <div className="flex flex-col items-center gap-2 sm:items-end">
+            <Button
+              onClick={handlePublish}
+              disabled={processing || invoicing || (!alreadyPaidForTier && !termsAccepted)}
+              size="lg"
+              className="w-full sm:w-auto"
+              icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
             >
-              {invoicing ? "Skickar faktura..." : "Betala mot faktura istället (30 dagars betalningsvillkor)"}
-            </button>
-          )}
+              {processing
+                ? "Skickar in..."
+                : alreadyPaidForTier
+                  ? "Skicka in för granskning – redan betalt"
+                  : `Skicka in för ${formatKr(
+                      getDiscountedTotal(
+                        PLANS.find((p) => p.id === selectedTier)!,
+                        period
+                      )
+                    )} / ${BILLING_LABELS[period].toLowerCase()}`}
+            </Button>
+            {!alreadyPaidForTier && (
+              <button
+                type="button"
+                onClick={handleInvoice}
+                disabled={processing || invoicing || !termsAccepted}
+                className="text-xs font-bold text-[var(--color-brand-muted)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-brand-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {invoicing ? "Skickar faktura..." : "Betala mot faktura istället (30 dagars betalningsvillkor)"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

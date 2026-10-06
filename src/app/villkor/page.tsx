@@ -4,13 +4,14 @@ import { PublicHeader } from "@/components/landing/PublicHeader";
 import { Footer } from "@/components/landing/Footer";
 import { Container } from "@/components/ui/Container";
 import { PLANS, BILLING_LABELS, EARLY_BIRD_SLOTS, EARLY_BIRD_DISCOUNT } from "@/lib/pricing";
+import { formatTermsDate } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Villkor – Collaktiv Företagsportalen",
   description: "Allmänna villkor och betalningsvillkor för partnerföretag i Collaktiv.",
 };
 
-const UPDATED = "5 oktober 2026";
+const UPDATED = formatTermsDate();
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
