@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowLeft, Check, Loader2, Receipt } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Clock, Loader2, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
@@ -20,6 +20,11 @@ import {
   formatKr,
   type BillingPeriod,
 } from "@/lib/pricing";
+
+// TILLFÄLLIGT: Stripe tar inte emot riktiga betalningar än (bankkonto
+// saknas). Sätt till true (eller ta bort hela blocket där den
+// används nedan) så fort betalningarna är igång skarpt.
+const PAYMENTS_ENABLED = false;
 
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
@@ -364,11 +369,22 @@ export default function PubliceraErbjudandePage() {
           </label>
         )}
 
+        {!PAYMENTS_ENABLED && !alreadyPaidForTier && (
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+              <Clock className="h-4 w-4" />
+            </span>
+            <p className="text-xs font-bold text-[var(--color-brand-ink)]">
+              Betalning i portalen är igång snart. Under tiden hör vi av oss direkt till er om hur ni kan betala.
+            </p>
+          </div>
+        )}
+
         <div className="mt-5 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
           {!alreadyPaidForTier && (
             <Button
               onClick={handleInvoice}
-              disabled={processing || invoicing || !termsAccepted}
+              disabled={!PAYMENTS_ENABLED || processing || invoicing || !termsAccepted}
               variant="secondary"
               size="lg"
               className="w-full sm:w-auto"
@@ -380,7 +396,12 @@ export default function PubliceraErbjudandePage() {
           )}
           <Button
             onClick={handlePublish}
-            disabled={processing || invoicing || (!alreadyPaidForTier && !termsAccepted)}
+            disabled={
+              (!PAYMENTS_ENABLED && !alreadyPaidForTier) ||
+              processing ||
+              invoicing ||
+              (!alreadyPaidForTier && !termsAccepted)
+            }
             size="lg"
             className="w-full sm:w-auto"
             icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
