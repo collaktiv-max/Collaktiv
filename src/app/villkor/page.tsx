@@ -67,6 +67,12 @@ export default function VillkorPage() {
               Om en ansökan eller ett redan betalt erbjudande nekas återbetalas betalningen
               automatiskt i sin helhet. Ni behöver inte kontakta oss för detta.
             </p>
+            <p>
+              Appen är under uppbyggnad och planeras lanseras för resenärer kring årsskiftet
+              2026/2027 (exakt lanseringsdatum meddelas separat). Ett godkänt och betalt
+              erbjudande publiceras för resenärer först i samband med lanseringen – inte innan,
+              oavsett när ansökan godkändes eller betalningen genomfördes.
+            </p>
           </Section>
 
           <Section title="3. Paket och priser">
@@ -84,6 +90,11 @@ export default function VillkorPage() {
               Ett paket köps för en vald period – {BILLING_LABELS.sixMonths.toLowerCase()} eller{" "}
               {BILLING_LABELS.year.toLowerCase()}. De {EARLY_BIRD_SLOTS} första partnerföretagen
               får {Math.round(EARLY_BIRD_DISCOUNT * 100)}% rabatt på hela paketpriset.
+            </p>
+            <p>
+              Betalar ni innan appen har lanserats (se punkt 2) börjar den valda perioden räknas
+              från lanseringsdatumet, inte från betalningsdatumet. Väntetiden fram till
+              lanseringen förkortar alltså inte er period.
             </p>
           </Section>
 
