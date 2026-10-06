@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Loader2, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
@@ -364,37 +364,38 @@ export default function PubliceraErbjudandePage() {
           </label>
         )}
 
-        <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
-          <div className="flex flex-col items-center gap-2 sm:items-end">
+        <div className="mt-5 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+          {!alreadyPaidForTier && (
             <Button
-              onClick={handlePublish}
-              disabled={processing || invoicing || (!alreadyPaidForTier && !termsAccepted)}
+              onClick={handleInvoice}
+              disabled={processing || invoicing || !termsAccepted}
+              variant="secondary"
               size="lg"
               className="w-full sm:w-auto"
-              icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+              icon={invoicing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
+              iconPosition="left"
             >
-              {processing
-                ? "Skickar in..."
-                : alreadyPaidForTier
-                  ? "Skicka in för granskning – redan betalt"
-                  : `Skicka in för ${formatKr(
-                      getDiscountedTotal(
-                        PLANS.find((p) => p.id === selectedTier)!,
-                        period
-                      )
-                    )} / ${BILLING_LABELS[period].toLowerCase()}`}
+              {invoicing ? "Skickar faktura..." : "Betala mot faktura (30 dagar)"}
             </Button>
-            {!alreadyPaidForTier && (
-              <button
-                type="button"
-                onClick={handleInvoice}
-                disabled={processing || invoicing || !termsAccepted}
-                className="text-xs font-bold text-[var(--color-brand-muted)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-brand-primary)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {invoicing ? "Skickar faktura..." : "Betala mot faktura istället (30 dagars betalningsvillkor)"}
-              </button>
-            )}
-          </div>
+          )}
+          <Button
+            onClick={handlePublish}
+            disabled={processing || invoicing || (!alreadyPaidForTier && !termsAccepted)}
+            size="lg"
+            className="w-full sm:w-auto"
+            icon={processing ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          >
+            {processing
+              ? "Skickar in..."
+              : alreadyPaidForTier
+                ? "Skicka in för granskning – redan betalt"
+                : `Betala med kort – ${formatKr(
+                    getDiscountedTotal(
+                      PLANS.find((p) => p.id === selectedTier)!,
+                      period
+                    )
+                  )} / ${BILLING_LABELS[period].toLowerCase()}`}
+          </Button>
         </div>
       </div>
     </div>
