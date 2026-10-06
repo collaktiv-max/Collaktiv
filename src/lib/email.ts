@@ -4,7 +4,11 @@ import { REGION } from "./config";
 import type { CompanyProfile } from "./types";
 
 const FROM = "Collaktiv <partner@collaktiv.se>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://collaktiv.se";
+// Appen är deployad på partner.collaktiv.se, inte collaktiv.se (den
+// redirectar till www.collaktiv.se, som är obokad/404) – se till att
+// knapparna i mejlen alltid pekar på rätt ställe även utan
+// NEXT_PUBLIC_SITE_URL satt i miljön.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://partner.collaktiv.se";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
