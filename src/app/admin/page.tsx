@@ -47,34 +47,51 @@ export default function AdminPage() {
       company: CompanyProfile;
       refundedAmount?: number;
       refundErrors?: string[];
+      manualRefundAmount?: number;
+      manualRefundNotes?: string[];
     }>(`/api/admin/companies/${id}`, { method: "PATCH", body: JSON.stringify(partial) });
     setCompanies((cs) => cs.map((c) => (c.id === id ? data.company : c)));
     return data;
   }
 
-  // Att avvisa ett betalt företag återbetalar automatiskt – be om en
-  // extra bekräftelse och visa vad som faktiskt hände.
+  // Att avvisa ett betalt företag återbetalar automatiskt via Stripe –
+  // men bara om betalningen faktiskt gick via Stripe (kort, eller en
+  // faktura betald på Stripes sida). En faktura betald via
+  // banköverjöring har Stripe aldrig haft pengarna för och kan inte
+  // återbetala automatiskt – det måste göras manuellt. Be om en extra
+  // bekräftelse och visa vad som faktiskt kommer/kan hända.
   async function handleReject(company: CompanyProfile) {
     let confirmText = `Avvisa ${company.name}?`;
     if (company.paymentConfirmed) {
-      const { payments } = await fetchJson<{ payments: { amount: number; status: string }[] }>(
-        `/api/admin/payments/${company.id}`
-      );
-      const unpaidTotal = payments
-        .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + p.amount, 0);
-      confirmText =
-        unpaidTotal > 0
-          ? `${company.name} har betalat ${unpaidTotal} kr. Om ni avvisar återbetalas beloppet automatiskt via Stripe. Fortsätta?`
-          : `${company.name} har betalat, men beloppet är redan återbetalat. Avvisa ändå?`;
+      const { payments } = await fetchJson<{
+        payments: { amount: number; status: string; stripePaymentIntentId: string | null }[];
+      }>(`/api/admin/payments/${company.id}`);
+      const paid = payments.filter((p) => p.status === "paid");
+      const autoRefundable = paid.filter((p) => p.stripePaymentIntentId).reduce((s, p) => s + p.amount, 0);
+      const manualOnly = paid.filter((p) => !p.stripePaymentIntentId).reduce((s, p) => s + p.amount, 0);
+      if (autoRefundable > 0 && manualOnly > 0) {
+        confirmText = `${company.name} har betalat ${autoRefundable + manualOnly} kr. ${autoRefundable} kr återbetalas automatiskt via Stripe, men ${manualOnly} kr betalades via banköverföring och måste återbetalas manuellt av er. Fortsätta?`;
+      } else if (autoRefundable > 0) {
+        confirmText = `${company.name} har betalat ${autoRefundable} kr. Om ni avvisar återbetalas beloppet automatiskt via Stripe. Fortsätta?`;
+      } else if (manualOnly > 0) {
+        confirmText = `${company.name} har betalat ${manualOnly} kr via banköverföring (faktura). Stripe kan inte återbetala det automatiskt – ni måste återbetala manuellt. Fortsätta ändå med avvisningen?`;
+      } else {
+        confirmText = `${company.name} har betalat, men beloppet är redan återbetalat. Avvisa ändå?`;
+      }
     }
     if (!confirm(confirmText)) return;
 
-    const { refundedAmount, refundErrors } = await updateCompany(company.id, {
-      applicationStatus: "avvisad",
-    });
+    const { refundedAmount, refundErrors, manualRefundAmount, manualRefundNotes } = await updateCompany(
+      company.id,
+      { applicationStatus: "avvisad" }
+    );
     if (refundedAmount && refundedAmount > 0) {
-      alert(`${company.name} avvisades. ${refundedAmount} kr återbetalades automatiskt.`);
+      alert(`${company.name} avvisades. ${refundedAmount} kr återbetalades automatiskt via Stripe.`);
+    }
+    if (manualRefundAmount && manualRefundAmount > 0) {
+      alert(
+        `Obs! ${manualRefundAmount} kr måste återbetalas MANUELLT (betalades via banköverföring, inte kort):\n${(manualRefundNotes ?? []).join("\n")}`
+      );
     }
     if (refundErrors && refundErrors.length > 0) {
       alert(`Obs! Återbetalning misslyckades:\n${refundErrors.join("\n")}`);

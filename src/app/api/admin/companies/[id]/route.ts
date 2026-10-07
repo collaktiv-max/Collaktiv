@@ -25,7 +25,9 @@ export async function PATCH(
     partial.applicationStatus === "godkand" && existing?.applicationStatus !== "godkand";
 
   let refundedAmount = 0;
+  let manualRefundAmount = 0;
   const refundErrors: string[] = [];
+  const manualRefundNotes: string[] = [];
 
   // En avvisad ansökan innebär att företaget inte får något för en
   // eventuell betalning – återbetala automatiskt via Stripe innan
@@ -36,10 +38,24 @@ export async function PATCH(
     for (const payment of payments) {
       try {
         if (payment.stripePaymentIntentId) {
+          // Betalat med kort, eller en faktura betald direkt hos
+          // Stripe – ett riktigt kort-/betalningsobjekt finns att
+          // återbetala via Stripe API.
           await stripe.refunds.create({ payment_intent: payment.stripePaymentIntentId });
+          await markPaymentRefunded(payment.id);
+          refundedAmount += payment.amount;
+        } else {
+          // Fakturan betalades "utanför Stripe" (t.ex. banköverföring
+          // – det vanliga sättet att betala en skickad faktura i
+          // Sverige). Stripe har då aldrig haft pengarna och kan inte
+          // återbetala dem automatiskt – det måste göras manuellt.
+          // Markeras INTE som "refunded" här för att inte ge sken av
+          // att det redan är klart.
+          manualRefundAmount += payment.amount;
+          manualRefundNotes.push(
+            `${payment.amount} kr (faktura ${payment.stripeSessionId}) betalades via banköverföring, inte kort – måste återbetalas manuellt, Stripe kan inte göra det automatiskt.`
+          );
         }
-        await markPaymentRefunded(payment.id);
-        refundedAmount += payment.amount;
       } catch (err) {
         refundErrors.push(
           `Kunde inte återbetala ${payment.amount} kr (${payment.stripeSessionId}): ${
@@ -48,7 +64,7 @@ export async function PATCH(
         );
       }
     }
-    if (refundedAmount > 0) {
+    if (refundedAmount > 0 || manualRefundAmount > 0) {
       partial.paymentConfirmed = false;
     }
 
@@ -78,5 +94,11 @@ export async function PATCH(
     await sendApprovalEmail(company);
   }
 
-  return NextResponse.json({ company, refundedAmount, refundErrors });
+  return NextResponse.json({
+    company,
+    refundedAmount,
+    refundErrors,
+    manualRefundAmount,
+    manualRefundNotes,
+  });
 }

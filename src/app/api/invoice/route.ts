@@ -84,14 +84,12 @@ export async function POST(req: NextRequest) {
 
   const momsTaxRateId = await getSwedishMomsTaxRateId();
 
-  await stripe.invoiceItems.create({
-    customer: customer.id,
-    amount: amount * 100,
-    currency: "sek",
-    tax_rates: [momsTaxRateId],
-    description: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]} · ${company.name} · early bird-rabatt 20% inräknad, 25% moms inkluderad`,
-  });
-
+  // Skapas i draft-läge FÖRST, och fakturaraden läggs sedan på med ett
+  // uttryckligt invoice-id. Att skapa fakturaraden innan fakturan och
+  // lita på att Stripe plockar upp den automatiskt visade sig
+  // opålitligt – resultatet blev en faktura utan rader (0 kr) som
+  // Stripe direkt markerade som "betald" eftersom inget fanns att
+  // betala. Uttrycklig koppling tar bort den gissningen helt.
   const invoice = await stripe.invoices.create({
     customer: customer.id,
     collection_method: "send_invoice",
@@ -99,7 +97,26 @@ export async function POST(req: NextRequest) {
     metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
   });
 
+  await stripe.invoiceItems.create({
+    customer: customer.id,
+    invoice: invoice.id,
+    amount: amount * 100,
+    currency: "sek",
+    tax_rates: [momsTaxRateId],
+    description: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]} · ${company.name} · early bird-rabatt 20% inräknad, 25% moms inkluderad`,
+  });
+
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
+  if (finalized.amount_due !== amount * 100) {
+    // Säkerhetsspärr: om fakturaraden av någon anledning ändå inte
+    // hamnade på fakturan ska vi hellre krascha synligt än skicka ut
+    // en 0-kronorsfaktura som Stripe markerar betald utan att någon
+    // betalat något.
+    await stripe.invoices.voidInvoice(finalized.id as string);
+    throw new Error(
+      `Fakturabeloppet stämmer inte (förväntade ${amount * 100}, fick ${finalized.amount_due}) – fakturan makulerad.`
+    );
+  }
   // En faktura som redan är fullt betald vid finalisering (t.ex. via
   // ett tillgodohavande hos kunden) kan inte skickas – Stripe avvisar
   // det.
