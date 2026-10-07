@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getCompanyById,
+  getPendingPaymentsByCompany,
   getUnrefundedPaymentsByCompany,
   markPaymentRefunded,
   updateCompany,
@@ -49,6 +50,22 @@ export async function PATCH(
     }
     if (refundedAmount > 0) {
       partial.paymentConfirmed = false;
+    }
+
+    // Obetalda, skickade fakturor ska aldrig kunna betalas för en
+    // nekad ansökan – makulera dem hos Stripe. Inga pengar har flutit
+    // här, så det räknas inte som en återbetalning.
+    const pendingInvoices = await getPendingPaymentsByCompany(id);
+    for (const payment of pendingInvoices) {
+      try {
+        await stripe.invoices.voidInvoice(payment.stripeSessionId);
+      } catch (err) {
+        refundErrors.push(
+          `Kunde inte makulera fakturan ${payment.stripeSessionId}: ${
+            err instanceof Error ? err.message : "okänt fel"
+          }`
+        );
+      }
     }
   }
 

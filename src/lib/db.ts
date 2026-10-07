@@ -551,6 +551,16 @@ export async function getUnrefundedPaymentsByCompany(companyId: string): Promise
   return rows.map(toPayment);
 }
 
+// En skickad men obetald faktura – inget pengar har bytt ägare, så den
+// ska aldrig "återbetalas", bara makuleras hos Stripe om ansökan nekas
+// innan den hinner betalas. Se /api/admin/companies/[id].
+export async function getPendingPaymentsByCompany(companyId: string): Promise<Payment[]> {
+  const rows = (await sql`
+    select * from payments where company_id = ${companyId} and status = 'pending' order by created_at desc
+  `) as PaymentRow[];
+  return rows.map(toPayment);
+}
+
 export async function markPaymentRefunded(id: string): Promise<void> {
   await sql`update payments set status = 'refunded' where id = ${id}`;
 }

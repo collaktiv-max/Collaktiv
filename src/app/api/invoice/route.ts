@@ -102,15 +102,18 @@ export async function POST(req: NextRequest) {
   const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
   // En faktura som redan är fullt betald vid finalisering (t.ex. via
   // ett tillgodohavande hos kunden) kan inte skickas – Stripe avvisar
-  // det. Webhooken (invoice.paid) tar hand om att slutföra erbjudandet
-  // i det fallet, precis som vid en vanlig fakturabetalning.
+  // det.
   if (finalized.status === "open") {
     await stripe.invoices.sendInvoice(finalized.id as string);
   }
 
-  // Sparas direkt som "pending" så den syns i Profil → Paket &
-  // fakturering innan den är betald. Webhooken upsertar samma rad
-  // (samma stripe_session_id = fakturans id) till "paid".
+  // Sparas ALLTID som "pending" här, oavsett vad det synkrona svaret
+  // från Stripe säger – det visade sig opålitligt (en nyskapad faktura
+  // kunde komma tillbaka som "paid" direkt, utan att företaget gjort
+  // något). Enda källan som får markera en faktura som faktiskt betald
+  // är webhooken (invoice.paid), som bara triggas av en riktig
+  // betalningshändelse hos Stripe. Annars riskerar vi att visa en
+  // obetald faktura som "betald och återbetalad" om ansökan nekas.
   await createPayment({
     companyId,
     offerId,
@@ -119,7 +122,7 @@ export async function POST(req: NextRequest) {
     currency: "sek",
     planId,
     period,
-    status: finalized.status === "paid" ? "paid" : "pending",
+    status: "pending",
     termsVersion: TERMS_VERSION,
     termsAcceptedAt,
   });
