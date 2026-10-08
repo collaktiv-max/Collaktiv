@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
+import { APP_LAUNCHED } from "@/lib/config";
 import type { OfferStatus } from "@/lib/types";
 
 const STATUS_CONFIG: Record<OfferStatus, { label: string; variant: "light" | "accent" | "dark" | "outline" }> = {
@@ -103,6 +104,11 @@ export default function ErbjudandenPage() {
                 {offer.status === "pausad" && (
                   <p className="mt-3 text-[11px] font-bold text-[var(--color-brand-muted)]">
                     Dold i appen – ni har fortfarande kvar er betalda period.
+                  </p>
+                )}
+                {offer.status === "publicerad" && !APP_LAUNCHED && (
+                  <p className="mt-3 text-[11px] font-bold text-[var(--color-brand-muted)]">
+                    Godkänt och redo – går live för resenärer så fort appen lanseras.
                   </p>
                 )}
 

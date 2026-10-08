@@ -82,11 +82,18 @@ create table if not exists offers (
                      check (status in ('utkast','granskas','publicerad','pausad','arkiverad')),
   views            integer not null default 0,
   redemptions      integer not null default 0,
+  -- Sätts automatiskt första gången admin publicerar erbjudandet.
+  -- Ändras inte av senare paus/återuppta – det är alltså en stabil
+  -- "redo sen X"-tidsstämpel, inte en live-/synlighetsflagga. Tänkt
+  -- som sorteringsnyckel för den framtida reseappen, se
+  -- /api/public/offers.
+  published_at     timestamptz,
   created_at       timestamptz not null default now()
 );
 
 create index if not exists offers_company_id_idx on offers (company_id);
 create index if not exists offers_status_idx on offers (status);
+alter table offers add column if not exists published_at timestamptz;
 
 -- Fanns inte i ursprungsschemat – säkerställer att kolumnen finns även
 -- på databaser som skapades innan den lades till ovan.

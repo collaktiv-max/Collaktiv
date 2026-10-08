@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { APP_LAUNCHED } from "@/lib/config";
 import {
   CATEGORY_LABELS,
   type ApplicationStatus,
@@ -371,6 +372,7 @@ export function OffersSection({
   onUpdate: (id: string, partial: Partial<Offer>) => void;
 }) {
   const pending = offers.filter((o) => o.status === "granskas");
+  const published = offers.filter((o) => o.status === "publicerad");
 
   return (
     <div>
@@ -378,6 +380,24 @@ export function OffersSection({
         title="Erbjudanden att granska"
         description="Publicera erbjudanden som skickats in, eller skicka tillbaka dem för redigering."
       />
+      {!APP_LAUNCHED && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+            <Clock className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-extrabold text-[var(--color-brand-ink)]">
+              Appen är inte lanserad för resenärer än
+            </p>
+            <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
+              {published.length} publicerade erbjudanden ligger redo i databasen (hämtbara via{" "}
+              <code className="rounded bg-white px-1 py-0.5 text-[11px]">/api/public/offers</code>)
+              och går live automatiskt för resenärer så fort appen lanseras – ni behöver inte
+              göra något mer med dem.
+            </p>
+          </div>
+        </div>
+      )}
       {pending.length === 0 ? (
         <EmptyRow text="Inga erbjudanden väntar just nu." />
       ) : (

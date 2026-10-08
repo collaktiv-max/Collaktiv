@@ -92,6 +92,10 @@ export interface Offer {
   imageDataUrl?: string;
   imageOptimized?: boolean;
   status: OfferStatus;
+  /** Sätts automatiskt första gången admin publicerar erbjudandet –
+   * ändras inte av senare paus/återuppta. Används som sorteringsnyckel
+   * av /api/public/offers, den framtida reseappens datakälla. */
+  publishedAt?: string;
   createdAt: string;
   stats: {
     views: number;

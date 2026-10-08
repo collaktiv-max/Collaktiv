@@ -73,6 +73,7 @@ interface OfferRow {
   status: OfferStatus;
   views: number;
   redemptions: number;
+  published_at: string | null;
   created_at: string;
 }
 
@@ -143,6 +144,7 @@ function toOffer(row: OfferRow): Offer {
     imageDataUrl: row.image_data_url ?? undefined,
     imageOptimized: row.image_optimized,
     status: row.status,
+    publishedAt: row.published_at ?? undefined,
     createdAt: row.created_at,
     stats: { views: row.views, redemptions: row.redemptions },
   };
@@ -322,6 +324,106 @@ export async function getOffers(): Promise<Offer[]> {
   return rows.map(toOffer);
 }
 
+export interface PublicOffer {
+  id: string;
+  title: string;
+  description: string;
+  discountType: DiscountType;
+  discountValue: string;
+  discountValueKr: number;
+  pointsCost: number;
+  validTo: string | null;
+  terms: string | null;
+  imageEmoji: string;
+  imageDataUrl: string | null;
+  publishedAt: string | null;
+  company: {
+    id: string;
+    name: string;
+    logoDataUrl: string | null;
+    website: string;
+    category: Category;
+    region: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    packageTier: PackageTier;
+  };
+}
+
+// Den ENDA datakällan den framtida reseappen ska behöva – motsvarar
+// /api/public/offers. Returnerar bara godkända, publicerade (och inte
+// pausade) erbjudanden, och bara de fält en resenär faktiskt ska se:
+// inga interna fält (betalstatus, kontaktuppgifter, ansökningsstatus
+// m.m.) läcker ut härifrån.
+export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
+  const rows = (await sql`
+    select
+      o.id, o.title, o.description, o.discount_type, o.discount_value,
+      o.discount_value_kr, o.points_cost, o.valid_to, o.terms,
+      o.image_emoji, o.image_data_url, o.published_at,
+      c.id as company_id, c.name as company_name, c.logo_data_url as company_logo_data_url,
+      c.website as company_website, c.category as company_category,
+      c.region as company_region, c.address as company_address,
+      c.latitude as company_latitude, c.longitude as company_longitude,
+      c.package_tier as company_package_tier
+    from offers o
+    join companies c on c.id = o.company_id
+    where o.status = 'publicerad'
+    order by o.published_at desc nulls last
+  `) as Array<{
+    id: string;
+    title: string;
+    description: string;
+    discount_type: DiscountType;
+    discount_value: string;
+    discount_value_kr: number;
+    points_cost: number;
+    valid_to: string | null;
+    terms: string | null;
+    image_emoji: string;
+    image_data_url: string | null;
+    published_at: string | null;
+    company_id: string;
+    company_name: string;
+    company_logo_data_url: string | null;
+    company_website: string;
+    company_category: Category;
+    company_region: string;
+    company_address: string;
+    company_latitude: number | null;
+    company_longitude: number | null;
+    company_package_tier: PackageTier;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    discountType: row.discount_type,
+    discountValue: row.discount_value,
+    discountValueKr: row.discount_value_kr,
+    pointsCost: row.points_cost,
+    validTo: row.valid_to,
+    terms: row.terms,
+    imageEmoji: row.image_emoji,
+    imageDataUrl: row.image_data_url,
+    publishedAt: row.published_at,
+    company: {
+      id: row.company_id,
+      name: row.company_name,
+      logoDataUrl: row.company_logo_data_url,
+      website: row.company_website,
+      category: row.company_category,
+      region: row.company_region,
+      address: row.company_address,
+      latitude: row.company_latitude,
+      longitude: row.company_longitude,
+      packageTier: row.company_package_tier,
+    },
+  }));
+}
+
 export async function getOffersByCompany(companyId: string): Promise<Offer[]> {
   const rows = (await sql`
     select * from offers where company_id = ${companyId} order by created_at desc
@@ -358,6 +460,14 @@ export async function updateOffer(id: string, partial: Partial<Offer>): Promise<
   const next = { ...current, ...partial };
   const stats = { ...current.stats, ...partial.stats };
 
+  // Sätts en gång, första gången erbjudandet publiceras – en senare
+  // paus/återuppta (publicerad -> pausad -> publicerad) ändrar den
+  // inte, så den alltid speglar när det ursprungligen godkändes.
+  const publishedAt =
+    current.status !== "publicerad" && next.status === "publicerad" && !current.publishedAt
+      ? new Date().toISOString()
+      : next.publishedAt;
+
   const rows = (await sql`
     update offers set
       title = ${next.title},
@@ -373,7 +483,8 @@ export async function updateOffer(id: string, partial: Partial<Offer>): Promise<
       image_optimized = ${!!next.imageOptimized},
       status = ${next.status},
       views = ${stats.views},
-      redemptions = ${stats.redemptions}
+      redemptions = ${stats.redemptions},
+      published_at = ${publishedAt ?? null}
     where id = ${id}
     returning *
   `) as OfferRow[];
