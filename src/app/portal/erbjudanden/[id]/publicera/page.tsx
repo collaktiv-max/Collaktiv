@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
 import { useAppState } from "@/lib/store";
-import { REGION } from "@/lib/config";
+import { REGION, PAYMENTS_ENABLED } from "@/lib/config";
 import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
 import {
   PLANS,
@@ -20,11 +20,6 @@ import {
   formatKr,
   type BillingPeriod,
 } from "@/lib/pricing";
-
-// TILLFÄLLIGT: Stripe tar inte emot riktiga betalningar än (bankkonto
-// saknas). Sätt till true (eller ta bort hela blocket där den
-// används nedan) så fort betalningarna är igång skarpt.
-const PAYMENTS_ENABLED = false;
 
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();

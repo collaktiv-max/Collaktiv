@@ -6,6 +6,7 @@ import {
   markPaymentReminderSent,
 } from "./db";
 import { sendOfferReminderEmail, sendPaymentReminderEmail } from "./email";
+import { PAYMENTS_ENABLED } from "./config";
 
 // Körs av /api/cron/reminders (dagligt schema, se vercel.json).
 // Tröskelvärden (2/3 dagar innan första påminnelsen, 5 dagar mellan
@@ -16,12 +17,19 @@ export async function runReminderSweep() {
     getCompaniesNeedingOfferReminder(),
   ]);
 
+  // Så länge betalning inte är igång skarpt (se PAYMENTS_ENABLED) ska
+  // vi inte påminna företag om att "välja paket" – mejlet länkar till
+  // en betalknapp de ändå inte kan använda än, vilket bara förvirrar
+  // dem. Räknas fortfarande i svaret så det syns i loggen att de
+  // väntar, men skickas inte och markeras inte som skickat.
   let paymentRemindersSent = 0;
-  for (const company of paymentDue) {
-    const { sent } = await sendPaymentReminderEmail(company);
-    if (sent) {
-      await markPaymentReminderSent(company.id);
-      paymentRemindersSent++;
+  if (PAYMENTS_ENABLED) {
+    for (const company of paymentDue) {
+      const { sent } = await sendPaymentReminderEmail(company);
+      if (sent) {
+        await markPaymentReminderSent(company.id);
+        paymentRemindersSent++;
+      }
     }
   }
 
