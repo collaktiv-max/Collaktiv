@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
 
-const UNLOCK_DESCRIPTION = "Lås upp genom att välja ett paket när ni publicerar ett erbjudande.";
+const UNLOCK_DESCRIPTION = "Lås upp genom att välja och betala för ett paket.";
 const UNLOCK_CTA = "Lås upp med ett paket";
 
 export default function OversiktPage() {
@@ -31,7 +31,7 @@ export default function OversiktPage() {
   const isPremium = currentCompany.packageTier === "premium";
   const premiumUnlocked = hasPaid && isPremium;
 
-  const goUnlock = () => router.push("/portal/erbjudanden");
+  const goUnlock = () => router.push("/portal/paket");
 
   const scrollToInvite = () => {
     document.getElementById("bjud-in-foretag")?.scrollIntoView({ behavior: "smooth", block: "start" });

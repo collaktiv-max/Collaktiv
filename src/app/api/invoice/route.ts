@@ -8,7 +8,7 @@ import { TERMS_VERSION } from "@/lib/legal";
 import { getSwedishMomsTaxRateId } from "@/lib/tax";
 
 interface InvoiceBody {
-  offerId: string;
+  offerId?: string;
   planId: PlanId;
   period: BillingPeriod;
   termsAccepted: boolean;
@@ -30,19 +30,25 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as Partial<InvoiceBody>;
   const { offerId, planId, period, termsAccepted } = body;
-  if (!offerId || !planId || !period) {
+  if (!planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
   if (!termsAccepted) {
-    return NextResponse.json({ error: "Ni måste godkänna villkoren för att publicera." }, { status: 400 });
+    return NextResponse.json({ error: "Ni måste godkänna villkoren för att betala." }, { status: 400 });
   }
   const termsAcceptedAt = new Date().toISOString();
 
-  const [company, offer] = await Promise.all([getCompanyById(companyId), getOfferById(offerId)]);
+  // offerId finns bara när betalningen görs för att publicera ett
+  // specifikt erbjudande (gamla flödet) – betalar man för paketet
+  // direkt från profilen/översikten finns inget erbjudande ännu.
+  const [company, offer] = await Promise.all([
+    getCompanyById(companyId),
+    offerId ? getOfferById(offerId) : Promise.resolve(null),
+  ]);
   if (!company) {
     return NextResponse.json({ error: "Företaget hittades inte." }, { status: 404 });
   }
-  if (!offer || offer.companyId !== companyId) {
+  if (offerId && (!offer || offer.companyId !== companyId)) {
     return NextResponse.json({ error: "Erbjudandet hittades inte." }, { status: 404 });
   }
 
@@ -74,7 +80,14 @@ export async function POST(req: NextRequest) {
       customer: customer.id,
       collection_method: "send_invoice",
       days_until_due: DAYS_UNTIL_DUE,
-      metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
+      metadata: {
+        companyId,
+        ...(offerId ? { offerId } : {}),
+        planId,
+        period,
+        termsVersion: TERMS_VERSION,
+        termsAcceptedAt,
+      },
     });
 
     await stripe.invoiceItems.create({

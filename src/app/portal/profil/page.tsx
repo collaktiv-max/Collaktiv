@@ -315,7 +315,7 @@ function BillingCard({ company }: { company: CompanyProfile }) {
     };
   }, []);
 
-  const goToPackages = () => router.push("/portal/erbjudanden");
+  const goToPackages = () => router.push("/portal/paket");
   const latestPaid = payments?.find((p) => p.status === "paid");
   const pendingInvoice = payments?.find((p) => p.status === "pending");
 

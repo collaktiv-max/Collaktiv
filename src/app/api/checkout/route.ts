@@ -8,7 +8,7 @@ import { TERMS_VERSION } from "@/lib/legal";
 import { getSwedishMomsTaxRateId } from "@/lib/tax";
 
 interface CheckoutBody {
-  offerId: string;
+  offerId?: string;
   planId: PlanId;
   period: BillingPeriod;
   termsAccepted: boolean;
@@ -22,25 +22,32 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as Partial<CheckoutBody>;
   const { offerId, planId, period, termsAccepted } = body;
-  if (!offerId || !planId || !period) {
+  if (!planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
   if (!termsAccepted) {
-    return NextResponse.json({ error: "Ni måste godkänna villkoren för att publicera." }, { status: 400 });
+    return NextResponse.json({ error: "Ni måste godkänna villkoren för att betala." }, { status: 400 });
   }
   const termsAcceptedAt = new Date().toISOString();
 
-  const [company, offer] = await Promise.all([getCompanyById(companyId), getOfferById(offerId)]);
+  // offerId finns bara när betalningen görs för att publicera ett
+  // specifikt erbjudande (gamla flödet) – betalar man för paketet
+  // direkt från profilen/översikten finns inget erbjudande ännu.
+  const [company, offer] = await Promise.all([
+    getCompanyById(companyId),
+    offerId ? getOfferById(offerId) : Promise.resolve(null),
+  ]);
   if (!company) {
     return NextResponse.json({ error: "Företaget hittades inte." }, { status: 404 });
   }
-  if (!offer || offer.companyId !== companyId) {
+  if (offerId && (!offer || offer.companyId !== companyId)) {
     return NextResponse.json({ error: "Erbjudandet hittades inte." }, { status: 404 });
   }
 
   const plan = getPlan(planId);
   const amount = getDiscountedTotal(plan, period);
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
+  const returnPath = offerId ? `/portal/erbjudanden/${offerId}/publicera` : "/portal/paket";
 
   try {
     const momsTaxRateId = await getSwedishMomsTaxRateId();
@@ -63,9 +70,16 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
-      metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
-      success_url: `${origin}/portal/erbjudanden/${offerId}/publicera?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/portal/erbjudanden/${offerId}/publicera?canceled=1`,
+      metadata: {
+        companyId,
+        ...(offerId ? { offerId } : {}),
+        planId,
+        period,
+        termsVersion: TERMS_VERSION,
+        termsAcceptedAt,
+      },
+      success_url: `${origin}${returnPath}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}${returnPath}?canceled=1`,
     });
 
     return NextResponse.json({ url: session.url });

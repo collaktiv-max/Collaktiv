@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createPayment } from "@/lib/db";
-import { completePaidOffer } from "@/lib/payment-completion";
+import { completePayment, completePaidOffer } from "@/lib/payment-completion";
 import type { PackageTier } from "@/lib/types";
 
 // Tar emot Stripe-webhooks. Behövs för fakturabetalningar (till
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const { companyId, offerId, planId, period, termsVersion, termsAcceptedAt } =
       invoice.metadata ?? {};
 
-    if (companyId && offerId && planId && period) {
+    if (companyId && planId && period) {
       // Nyare Stripe-API:er kopplar en betalning till fakturan via ett
       // separat InvoicePayment-objekt istället för invoice.payment_intent
       // direkt – behövs här så admin kan återbetala via stripePaymentIntentId.
@@ -59,7 +59,11 @@ export async function POST(req: NextRequest) {
         termsAcceptedAt,
       });
 
-      await completePaidOffer({ companyId, offerId, planId: planId as PackageTier });
+      if (offerId) {
+        await completePaidOffer({ companyId, offerId, planId: planId as PackageTier });
+      } else {
+        await completePayment({ companyId, planId: planId as PackageTier });
+      }
     }
   }
 

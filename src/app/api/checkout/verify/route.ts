@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
 import { stripe } from "@/lib/stripe";
 import { createPayment } from "@/lib/db";
-import { completePaidOffer } from "@/lib/payment-completion";
+import { completePayment, completePaidOffer } from "@/lib/payment-completion";
 import type { PackageTier } from "@/lib/types";
 import type { BillingPeriod } from "@/lib/pricing";
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const offerId = session.metadata?.offerId;
   const planId = session.metadata?.planId as PackageTier | undefined;
   const period = session.metadata?.period as BillingPeriod | undefined;
-  if (!offerId || !planId || !period) {
+  if (!planId || !period) {
     return NextResponse.json({ paid: false });
   }
 
@@ -45,6 +45,17 @@ export async function GET(req: NextRequest) {
     termsVersion: session.metadata?.termsVersion,
     termsAcceptedAt: session.metadata?.termsAcceptedAt,
   });
+
+  // Finns inget offerId betalades paketet direkt från profilen/
+  // översikten, utan ett erbjudande att skicka in – bara företaget
+  // uppdateras då.
+  if (!offerId) {
+    const company = await completePayment({ companyId, planId });
+    if (!company) {
+      return NextResponse.json({ paid: false });
+    }
+    return NextResponse.json({ paid: true, company });
+  }
 
   const result = await completePaidOffer({ companyId, offerId, planId });
   if (!result) {
