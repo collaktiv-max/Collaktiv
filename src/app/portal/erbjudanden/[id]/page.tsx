@@ -72,8 +72,8 @@ export default function RedigeraErbjudandePage() {
         title="Redigera erbjudande"
         subtitle="Ändringar sparas till erbjudandet."
         action={
-          <div className="flex flex-nowrap items-center justify-end gap-2.5 overflow-x-auto">
-            <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--color-brand-muted)]">
+          <div className="flex flex-nowrap items-center justify-end gap-2.5">
+            <span className="max-w-[120px] shrink-0 text-right text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
               Har du frågor om hur man skapar erbjudande?
             </span>
             <Button onClick={() => setHelpOpen(true)} icon={<LifeBuoy className="h-4 w-4" />}>
