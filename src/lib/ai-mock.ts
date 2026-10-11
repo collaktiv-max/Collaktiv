@@ -290,17 +290,6 @@ export async function improveOfferCopy(title: string, description: string) {
   };
 }
 
-export async function suggestPointsRange(discountValueKr: number) {
-  await wait(500);
-  // Grov tumregel: en poäng motsvarar ungefär 0,7 kr i rabattvärde,
-  // med ett golv så att även små erbjudanden kostar något.
-  const base = Math.max(10, Math.round(discountValueKr * 0.7));
-  const min = Math.max(10, Math.round((base - base * 0.2) / 5) * 5);
-  const max = Math.round((base + base * 0.2) / 5) * 5;
-  const recommended = Math.round(base / 5) * 5;
-  return { min, max, recommended };
-}
-
 export interface MarketingVariant {
   id: string;
   headline: string;

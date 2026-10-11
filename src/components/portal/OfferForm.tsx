@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Check,
   Crown,
@@ -9,17 +9,17 @@ import {
   Sparkles,
   Wand2,
 } from "lucide-react";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { OfferPreviewPhone } from "./OfferPreviewPhone";
 import {
   generateOfferSuggestions,
   improveOfferCopy,
-  suggestPointsRange,
   wait,
   type OfferSuggestion,
 } from "@/lib/ai-mock";
+import { calcPointsCost } from "@/lib/points";
 import type { Category, DiscountType, PackageTier } from "@/lib/types";
 
 export interface OfferFormValues {
@@ -41,6 +41,12 @@ const EMOJI_OPTIONS = ["🛍️", "☕", "🍔", "💪", "🎬", "✂️", "🌿
 const TIER_OPTIONS: { id: PackageTier; label: string; tagline: string }[] = [
   { id: "standard", label: "Standard", tagline: "Så ser erbjudandet ut idag" },
   { id: "premium", label: "Premium", tagline: "Grön kant, prioriterad placering + Veckans erbjudande" },
+];
+
+const DISCOUNT_TYPE_OPTIONS: { id: DiscountType; label: string }[] = [
+  { id: "procent", label: "Procent" },
+  { id: "belopp", label: "Kronor" },
+  { id: "erbjudande", label: "Fritt erbjudande" },
 ];
 
 export function OfferForm({
@@ -66,7 +72,6 @@ export function OfferForm({
   const [shownTitles, setShownTitles] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [improving, setImproving] = useState(false);
-  const [pointsRange, setPointsRange] = useState<{ min: number; max: number; recommended: number } | null>(null);
   const [optimizingImage, setOptimizingImage] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -74,15 +79,13 @@ export function OfferForm({
     setValues((v) => ({ ...v, [key]: value }));
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    suggestPointsRange(values.discountValueKr).then((r) => {
-      if (!cancelled) setPointsRange(r);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [values.discountValueKr]);
+  // Poängkostnaden sätts alltid automatiskt utifrån rabattvärdet i kronor
+  // – företaget väljer aldrig poäng själva, se src/lib/points.ts. Sätts
+  // direkt där discountValueKr skrivs (inte via en effekt), så fältet
+  // alltid är i synk utan en extra render.
+  function updateDiscountValueKr(discountValueKr: number) {
+    setValues((v) => ({ ...v, discountValueKr, pointsCost: calcPointsCost(discountValueKr) }));
+  }
 
   async function handleGenerateSuggestions() {
     setLoadingSuggestions(true);
@@ -100,6 +103,7 @@ export function OfferForm({
       discountType: s.discountType,
       discountValue: s.discountValue,
       discountValueKr: s.discountValueKr,
+      pointsCost: calcPointsCost(s.discountValueKr),
     }));
     setSuggestions(null);
   }
@@ -271,16 +275,27 @@ export function OfferForm({
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Field label="Typ av rabatt" required>
-            <Select
-              value={values.discountType}
-              onChange={(e) => update("discountType", e.target.value as DiscountType)}
-            >
-              <option value="procent">Procent</option>
-              <option value="belopp">Kronor</option>
-              <option value="erbjudande">Fritt erbjudande</option>
-            </Select>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Typ av rabatt" required hint="Klicka för att ändra vilken typ av rabatt det är">
+            <div className="flex flex-wrap gap-2">
+              {DISCOUNT_TYPE_OPTIONS.map((opt) => {
+                const active = values.discountType === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => update("discountType", opt.id)}
+                    className={`rounded-xl border-2 px-3.5 py-2.5 text-sm font-extrabold transition ${
+                      active
+                        ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-secondary)]/60 text-[var(--color-brand-primary)]"
+                        : "border-[var(--color-brand-border)] text-[var(--color-brand-ink)] hover:border-[var(--color-brand-primary)]/40"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Rabattvärde i appen" required>
             <Input
@@ -295,48 +310,21 @@ export function OfferForm({
               }
             />
           </Field>
-          <Field
-            label="Rabattvärde i kronor"
-            required
-            hint="Används bara för att räkna ut poängkostnaden – visas inte för resenären"
-          >
-            <Input
-              type="number"
-              min={0}
-              value={values.discountValueKr}
-              onChange={(e) => update("discountValueKr", Number(e.target.value))}
-              placeholder="T.ex. 35"
-            />
-          </Field>
         </div>
 
         <Field
-          label="Poängkostnad"
+          label="Rabattvärde i kronor"
           required
-          hint={
-            pointsRange
-              ? `Föreslaget intervall baserat på kronovärdet: ${pointsRange.min}–${pointsRange.max} poäng`
-              : undefined
-          }
+          hint="Avgör automatiskt hur många poäng resenären betalar för att lösa in erbjudandet – visas inte i appen."
         >
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              min={0}
-              value={values.pointsCost}
-              onChange={(e) => update("pointsCost", Number(e.target.value))}
-              className="max-w-[140px]"
-            />
-            {pointsRange && (
-              <button
-                type="button"
-                onClick={() => update("pointsCost", pointsRange.recommended)}
-                className="text-xs font-extrabold text-[var(--color-brand-primary)] hover:underline"
-              >
-                Använd rekommenderat ({pointsRange.recommended})
-              </button>
-            )}
-          </div>
+          <Input
+            type="number"
+            min={0}
+            value={values.discountValueKr}
+            onChange={(e) => updateDiscountValueKr(Number(e.target.value))}
+            placeholder="T.ex. 35"
+            className="max-w-[200px]"
+          />
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">

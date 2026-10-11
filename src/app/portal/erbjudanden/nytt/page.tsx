@@ -15,7 +15,7 @@ const emptyValues: OfferFormValues = {
   discountType: "procent",
   discountValue: "",
   discountValueKr: 0,
-  pointsCost: 20,
+  pointsCost: 0,
   validTo: "",
   terms: "",
   imageEmoji: "🛍️",
