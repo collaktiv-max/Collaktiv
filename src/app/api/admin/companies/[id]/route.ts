@@ -7,7 +7,7 @@ import {
   updateCompany,
 } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
-import { sendApprovalEmail } from "@/lib/email";
+import { sendApprovalEmail, sendRejectionEmail } from "@/lib/email";
 import type { CompanyProfile } from "@/lib/types";
 
 export async function PATCH(
@@ -23,6 +23,8 @@ export async function PATCH(
   const existing = await getCompanyById(id);
   const isNewApproval =
     partial.applicationStatus === "godkand" && existing?.applicationStatus !== "godkand";
+  const isNewRejection =
+    partial.applicationStatus === "avvisad" && existing?.applicationStatus !== "avvisad";
 
   let refundedAmount = 0;
   let manualRefundAmount = 0;
@@ -92,6 +94,9 @@ export async function PATCH(
 
   if (isNewApproval) {
     await sendApprovalEmail(company);
+  }
+  if (isNewRejection) {
+    await sendRejectionEmail(company);
   }
 
   return NextResponse.json({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createCompany, getCompanyById } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { createSession } from "@/lib/session";
+import { sendAdminNewCompanyEmail } from "@/lib/email";
 import type { Category } from "@/lib/types";
 
 interface RegisterBody {
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
       passwordHash,
     });
     await createSession(company.id);
+    await sendAdminNewCompanyEmail(company);
     return NextResponse.json({ company });
   } catch (err) {
     const message = err instanceof Error ? err.message : "";

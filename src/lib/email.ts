@@ -1,9 +1,11 @@
 import "server-only";
 import { Resend } from "resend";
 import { REGION } from "./config";
-import type { CompanyProfile } from "./types";
+import { CATEGORY_LABELS, type CompanyProfile } from "./types";
 
 const FROM = "Collaktiv <partner@collaktiv.se>";
+// Dit admin-notiser (nya registreringar m.m.) skickas.
+const ADMIN_EMAIL = "partner@collaktiv.se";
 // Appen är deployad på partner.collaktiv.se, inte collaktiv.se (den
 // redirectar till www.collaktiv.se, som är obokad/404) – se till att
 // knapparna i mejlen alltid pekar på rätt ställe även utan
@@ -105,6 +107,44 @@ export async function sendOfferReminderEmail(company: CompanyProfile) {
   return sendEmail({
     to: company.contactEmail,
     subject: "Påminnelse: skapa ert första erbjudande",
+    html,
+  });
+}
+
+export async function sendRejectionEmail(company: CompanyProfile) {
+  const html = layout(
+    "Beslut om er ansökan",
+    `<p>Hej ${company.name}!</p>
+     <p style="margin-top:12px;">Vi har granskat er ansökan till Collaktiv och kan tyvärr inte godkänna den den här gången. Om ni redan hunnit betala för ett paket återbetalas det beloppet enligt våra villkor.</p>
+     <p style="margin-top:12px;">Har ni frågor om beslutet är ni välkomna att höra av er till oss på <a href="mailto:partner@collaktiv.se" style="color:#166849;font-weight:700;">partner@collaktiv.se</a>.</p>`,
+    "Läs våra villkor",
+    `${SITE_URL}/villkor`
+  );
+  return sendEmail({
+    to: company.contactEmail,
+    subject: "Beslut om er ansökan till Collaktiv",
+    html,
+  });
+}
+
+// Till oss själva (ADMIN_EMAIL) – så vi inte behöver sitta och
+// uppdatera admin-panelen manuellt för att upptäcka nya registreringar.
+export async function sendAdminNewCompanyEmail(company: CompanyProfile) {
+  const html = layout(
+    "Nytt företag har registrerat sig",
+    `<p><strong>${company.name}</strong> har precis skapat ett konto i partnerportalen.</p>
+     <ul style="margin:12px 0 0;padding-left:18px;">
+       <li>Kategori: ${CATEGORY_LABELS[company.category]}</li>
+       <li>Kontakt: ${company.contactName || "–"} · ${company.contactEmail}${company.contactPhone ? ` · ${company.contactPhone}` : ""}</li>
+       <li>Region: ${company.region}</li>
+     </ul>
+     <p style="margin-top:12px;">Ansökan väntar på granskning i admin-panelen.</p>`,
+    "Öppna admin-panelen",
+    `${SITE_URL}/admin`
+  );
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Nytt företag: ${company.name}`,
     html,
   });
 }
