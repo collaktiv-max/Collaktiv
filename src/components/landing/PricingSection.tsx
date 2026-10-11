@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { Flame, Sparkles, ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -21,18 +22,6 @@ import {
 
 export function PricingSection() {
   const [period, setPeriod] = useState<BillingPeriod>("year");
-  const [companyCount, setCompanyCount] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/public/stats")
-      .then((r) => r.json())
-      .then((data: { companyCount?: number }) => {
-        if (typeof data.companyCount === "number") setCompanyCount(data.companyCount);
-      })
-      .catch(() => {});
-  }, []);
-
-  const spotsUsedPct = Math.min(100, Math.max(85, (companyCount / EARLY_BIRD_SLOTS) * 100));
 
   return (
     <section className="bg-[var(--color-brand-secondary)]/40 py-16 sm:py-24">
@@ -51,24 +40,30 @@ export function PricingSection() {
         </Reveal>
 
         {/* FOMO-banner */}
-        <Reveal delay={100} className="mx-auto mt-6 flex max-w-3xl flex-col gap-3 rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-5 sm:p-5">
-          <div className="flex items-center gap-2.5 sm:shrink-0">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]">
-              <Flame className="h-4 w-4" />
-            </span>
+        <Reveal delay={100} className="mt-6 flex justify-center">
+          <motion.div
+            animate={{
+              boxShadow: [
+                "0 0 0 0 rgba(224,67,44,0.28)",
+                "0 0 0 9px rgba(224,67,44,0)",
+                "0 0 0 0 rgba(224,67,44,0)",
+              ],
+            }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
+            className="inline-flex items-center gap-2.5 rounded-full border border-[#e0432c]/25 bg-gradient-to-r from-[#fff1ec] to-white px-5 py-2.5 shadow-sm"
+          >
+            <motion.span
+              animate={{ scale: [1, 1.18, 1] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]"
+            >
+              <Flame className="h-3.5 w-3.5" />
+            </motion.span>
             <p className="text-[13.5px] font-extrabold text-[var(--color-brand-ink)]">
-              De 50 första företagen får 20% rabatt på hela paketet.
+              De {EARLY_BIRD_SLOTS} första företagen får{" "}
+              <span className="text-[#e0432c]">20% rabatt</span> på hela paketet.
             </p>
-          </div>
-          <div className="flex flex-1 items-center gap-3">
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#e0432c] to-[#f2894f] transition-all duration-500"
-                style={{ width: `${spotsUsedPct}%` }}
-              />
-            </div>
-            <p className="shrink-0 text-xs font-bold text-[#e0432c]">Några platser kvar</p>
-          </div>
+          </motion.div>
         </Reveal>
 
         {/* Billing toggle */}

@@ -167,11 +167,6 @@ export async function getCompanies(): Promise<CompanyProfile[]> {
   return rows.map((r) => stripPassword(toCompany(r)));
 }
 
-export async function getCompaniesCount(): Promise<number> {
-  const rows = (await sql`select count(*)::int as count from companies`) as { count: number }[];
-  return rows[0]?.count ?? 0;
-}
-
 export async function getCompanyById(id: string): Promise<CompanyProfile | null> {
   const rows = (await sql`select * from companies where id = ${id}`) as CompanyRow[];
   if (!rows[0]) return null;
