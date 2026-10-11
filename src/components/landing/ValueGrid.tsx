@@ -7,6 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { Reveal } from "./Reveal";
 import { REGION } from "@/lib/config";
 
 const cards = [
@@ -58,7 +59,7 @@ export function ValueGrid() {
   return (
     <section id="varfor" className="pt-10 pb-16 sm:pt-14 sm:pb-24">
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
             Varför Collaktiv
           </span>
@@ -69,9 +70,9 @@ export function ValueGrid() {
             Med Collaktiv betalar ni för att synas med exakt statistik på vem
             som faktiskt kommer in genom dörren!
           </p>
-        </div>
+        </Reveal>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Reveal delay={100} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(({ icon: Icon, title, text, iconBg }) => (
             <div
               key={title}
@@ -88,9 +89,9 @@ export function ValueGrid() {
               </p>
             </div>
           ))}
-        </div>
+        </Reveal>
 
-        <div className="mt-6 grid gap-6 rounded-2xl bg-[var(--color-brand-secondary)]/60 p-6 sm:grid-cols-3 sm:p-8">
+        <Reveal delay={150} className="mt-6 grid gap-6 rounded-2xl bg-[var(--color-brand-secondary)]/60 p-6 sm:grid-cols-3 sm:p-8">
           {banner.map(({ icon: Icon, title, text }) => (
             <div key={title} className="flex items-start gap-3.5">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--color-brand-primary)] shadow-sm">
@@ -106,7 +107,7 @@ export function ValueGrid() {
               </div>
             </div>
           ))}
-        </div>
+        </Reveal>
       </Container>
     </section>
   );

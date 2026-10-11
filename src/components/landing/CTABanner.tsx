@@ -1,13 +1,14 @@
 import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { Reveal } from "./Reveal";
 import { REGION } from "@/lib/config";
 
 export function CTABanner() {
   return (
     <section className="py-16 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-[2rem] bg-[var(--color-brand-primary)] px-6 py-14 text-center sm:px-12">
+        <Reveal className="relative overflow-hidden rounded-[2rem] bg-[var(--color-brand-primary)] px-6 py-14 text-center sm:px-12">
           <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[var(--color-brand-accent)]/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -right-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <h2 className="relative text-3xl font-extrabold text-white sm:text-4xl">
@@ -27,7 +28,7 @@ export function CTABanner() {
               Registrera ert företag
             </Button>
           </div>
-        </div>
+        </Reveal>
       </Container>
     </section>
   );

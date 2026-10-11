@@ -1,6 +1,7 @@
 import { ArrowRight, Bus, Users, MapPin } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { Reveal } from "./Reveal";
 
 const steps = [
   {
@@ -43,7 +44,7 @@ export function ComparisonSection() {
   return (
     <section className="bg-[var(--color-brand-secondary)]/50 py-16 sm:py-24">
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-[var(--color-brand-ink)] sm:text-4xl">
             Varför just Collaktiv?
           </h2>
@@ -54,9 +55,9 @@ export function ComparisonSection() {
             medverkan är en del av att göra kollektivtrafiken till det enkla
             valet.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="relative mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-7 sm:grid-cols-3">
+        <Reveal delay={100} className="relative mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-7 sm:grid-cols-3">
           <div className="pointer-events-none absolute left-[8%] right-[8%] top-[23px] hidden h-px bg-[var(--color-brand-border)] sm:block" />
           {steps.map((s) => (
             <div
@@ -80,9 +81,9 @@ export function ComparisonSection() {
               </p>
             </div>
           ))}
-        </div>
+        </Reveal>
 
-        <div className="mx-auto mt-10 max-w-3xl rounded-[22px] bg-[#0f1f18] p-7 sm:p-8">
+        <Reveal delay={150} className="mx-auto mt-10 max-w-3xl rounded-[22px] bg-[#0f1f18] p-7 sm:p-8">
           <p className="text-center text-[11px] font-extrabold uppercase tracking-widest text-[var(--color-brand-accent)]">
             En växande rörelse i Gävleborg
           </p>
@@ -107,7 +108,7 @@ export function ComparisonSection() {
             Ju fler företag som är med, desto starkare blir den gemensamma
             satsningen – det är själva poängen med Collaktiv.
           </p>
-        </div>
+        </Reveal>
 
         <p className="mx-auto mt-6 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
           En resa i taget – tillsammans gör vi skillnad. Statistik om

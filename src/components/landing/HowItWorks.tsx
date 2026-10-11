@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Store, Tags, CreditCard, ShieldCheck, Rocket } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { Reveal } from "./Reveal";
 
 const steps = [
   {
@@ -40,7 +41,7 @@ export function HowItWorks() {
   return (
     <section id="sa-funkar-det" className="py-16 sm:py-24">
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
             Så funkar det
           </span>
@@ -50,9 +51,9 @@ export function HowItWorks() {
           <p className="mt-4 text-[16px] font-medium text-[var(--color-brand-muted)]">
             Från registrering till att ni syns för tusentals pendlare – utan krångel.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="relative mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-2 lg:grid-cols-5">
+        <Reveal delay={100} className="relative mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-2 lg:grid-cols-5">
           <div className="pointer-events-none absolute left-[10%] right-[10%] top-[23px] hidden h-px bg-[var(--color-brand-border)] lg:block" />
 
           {steps.map((s, i) => {
@@ -100,7 +101,7 @@ export function HowItWorks() {
               </div>
             );
           })}
-        </div>
+        </Reveal>
       </Container>
     </section>
   );

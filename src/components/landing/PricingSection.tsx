@@ -5,6 +5,7 @@ import { Flame, Sparkles, ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
+import { Reveal } from "./Reveal";
 import {
   PLANS,
   BILLING_LABELS,
@@ -36,7 +37,7 @@ export function PricingSection() {
   return (
     <section className="bg-[var(--color-brand-secondary)]/40 py-16 sm:py-24">
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
             Priser
           </span>
@@ -47,10 +48,10 @@ export function PricingSection() {
             Gratis att skapa erbjudanden och se hur det ser ut i appen.
             Ni betalar först när ni väljer att publicera.
           </p>
-        </div>
+        </Reveal>
 
         {/* FOMO-banner */}
-        <div className="mx-auto mt-6 flex max-w-3xl flex-col gap-3 rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+        <Reveal delay={100} className="mx-auto mt-6 flex max-w-3xl flex-col gap-3 rounded-2xl border border-[#e0432c]/25 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-5 sm:p-5">
           <div className="flex items-center gap-2.5 sm:shrink-0">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]">
               <Flame className="h-4 w-4" />
@@ -68,7 +69,7 @@ export function PricingSection() {
             </div>
             <p className="shrink-0 text-xs font-bold text-[#e0432c]">Några platser kvar</p>
           </div>
-        </div>
+        </Reveal>
 
         {/* Billing toggle */}
         <div className="mt-10 flex justify-center">
@@ -101,7 +102,7 @@ export function PricingSection() {
         </div>
 
         {/* Plan cards */}
-        <div className="mx-auto mt-8 grid max-w-3xl gap-6 sm:grid-cols-2">
+        <Reveal delay={150} className="mx-auto mt-8 grid max-w-3xl gap-6 sm:grid-cols-2">
           {PLANS.map((plan) => {
             const isPremium = plan.id === "premium";
             const regularMonthly = getMonthly(plan, period);
@@ -174,7 +175,7 @@ export function PricingSection() {
               </div>
             );
           })}
-        </div>
+        </Reveal>
 
         <p className="mx-auto mt-8 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
           Traditionella annonser kostar 5 000–10 000 kr för en enda publicering. Med Standard

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Mail } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { Reveal } from "./Reveal";
 
 const faqs = [
   {
@@ -30,7 +31,7 @@ export function FAQ() {
   return (
     <section id="faq" className="bg-[var(--color-brand-secondary)]/50 py-16 sm:py-24">
       <Container>
-        <div className="flex flex-col gap-10 lg:flex-row lg:gap-16">
+        <Reveal className="flex flex-col gap-10 lg:flex-row lg:gap-16">
           <div className="lg:w-[36%] lg:shrink-0">
             <span className="text-xs font-extrabold uppercase tracking-widest text-[var(--color-brand-primary)]">
               FAQ
@@ -83,7 +84,7 @@ export function FAQ() {
               );
             })}
           </div>
-        </div>
+        </Reveal>
       </Container>
     </section>
   );
