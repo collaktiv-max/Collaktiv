@@ -72,13 +72,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[checkout] Kunde inte skapa Stripe-session:", err);
     return NextResponse.json(
-      {
-        error: "Kunde inte starta betalningen. Försök igen om en stund.",
-        // TILLFÄLLIGT för felsökning av live-läget – tas bort igen så
-        // snart orsaken är hittad, ska aldrig läcka Stripe-felmeddelanden
-        // till klienten i skarp drift.
-        debugDetail: err instanceof Error ? err.message : String(err),
-      },
+      { error: "Kunde inte starta betalningen. Försök igen om en stund." },
       { status: 500 }
     );
   }
