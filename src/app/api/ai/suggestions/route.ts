@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
 import { generateOfferSuggestions } from "@/lib/offer-ai";
+import { describeClaudeError } from "@/lib/claude";
 import { CATEGORY_LABELS, type Category } from "@/lib/types";
 
 interface SuggestionsBody {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ suggestions });
   } catch (err) {
-    console.error("[ai/suggestions]", err);
+    console.error("[ai/suggestions]", describeClaudeError(err));
     return NextResponse.json(
       { error: "Kunde inte generera förslag just nu. Försök igen om en stund." },
       { status: 500 }

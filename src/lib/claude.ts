@@ -8,3 +8,14 @@ export function getClaudeClient(): Anthropic | null {
   if (!apiKey) return null;
   return new Anthropic({ apiKey });
 }
+
+// Node trunkerar nästlade objekt i console.error (visas som "{…}") – det
+// gömmer precis den del av Anthropic-felet (err.error) som faktiskt
+// förklarar varför. Används bara i server-loggar, aldrig i svar till
+// klienten.
+export function describeClaudeError(err: unknown): string {
+  if (err instanceof Anthropic.APIError) {
+    return `status=${err.status} ${JSON.stringify(err.error)}`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}

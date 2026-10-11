@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
 import { improveOfferCopy } from "@/lib/offer-ai";
+import { describeClaudeError } from "@/lib/claude";
 import { CATEGORY_LABELS, type Category } from "@/lib/types";
 
 interface ImproveBody {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     const result = await improveOfferCopy({ title, description, category: body.category });
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[ai/improve]", err);
+    console.error("[ai/improve]", describeClaudeError(err));
     return NextResponse.json(
       { error: "Kunde inte förbättra texten just nu. Försök igen om en stund." },
       { status: 500 }
