@@ -12,10 +12,9 @@ export const RESENARER_COUNT = "12 000+";
 // saknas. Sätt till true den dag appen går live.
 export const APP_LAUNCHED = false;
 
-// TILLFÄLLIGT: Stripe tar inte emot riktiga betalningar än (bankkonto
-// saknas). Styr dels kort-/fakturaknapparna vid publicering (se
-// /portal/erbjudanden/[id]/publicera), dels att påminnelsemejlet "välj
-// paket" inte skickas (se src/lib/reminders.ts) – annars tror företag
-// som väntar att de faktiskt kan betala. Sätt till true när
-// betalningarna är igång skarpt.
-export const PAYMENTS_ENABLED = false;
+// Stripe-kontot är nu bytt till live-läge (sk_live_... + en egen
+// webhook för live-läge satta i Vercel 2026-10-11). Styr kort-/
+// fakturaknapparna vid publicering (se
+// /portal/erbjudanden/[id]/publicera) och att påminnelsemejlet "välj
+// paket" skickas (se src/lib/reminders.ts).
+export const PAYMENTS_ENABLED = true;
