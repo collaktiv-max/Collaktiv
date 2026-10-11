@@ -71,3 +71,23 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Innehåll som tonar in när man skrollar (se Reveal.tsx). Bara opacity och
+   transform animeras, så skrollningen förblir mjuk. */
+.reveal {
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(28px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal[data-reveal="hidden"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
