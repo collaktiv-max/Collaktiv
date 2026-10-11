@@ -41,7 +41,7 @@ export async function generateOfferSuggestions(params: {
   const { category, companyName, exclude = [], count = 2 } = params;
 
   const response = await client.messages.parse({
-    model: "claude-opus-5-5",
+    model: "claude-haiku-5-5",
     max_tokens: 3000,
     output_config: { format: zodOutputFormat(SuggestionsResponseSchema) },
     messages: [
@@ -86,7 +86,7 @@ export async function improveOfferCopy(params: {
   const { title, description, category } = params;
 
   const response = await client.messages.parse({
-    model: "claude-opus-5-5",
+    model: "claude-haiku-5-5",
     max_tokens: 1500,
     output_config: { format: zodOutputFormat(ImproveResponseSchema) },
     messages: [
