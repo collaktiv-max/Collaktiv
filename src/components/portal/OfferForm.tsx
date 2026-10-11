@@ -13,12 +13,8 @@ import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { OfferPreviewPhone } from "./OfferPreviewPhone";
-import {
-  generateOfferSuggestions,
-  improveOfferCopy,
-  wait,
-  type OfferSuggestion,
-} from "@/lib/ai-mock";
+import { wait } from "@/lib/ai-mock";
+import type { OfferSuggestion } from "@/lib/offer-ai";
 import { calcPointsCost } from "@/lib/points";
 import type { Category, DiscountType, PackageTier } from "@/lib/types";
 
@@ -71,7 +67,9 @@ export function OfferForm({
   const [suggestions, setSuggestions] = useState<OfferSuggestion[] | null>(null);
   const [shownTitles, setShownTitles] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [improving, setImproving] = useState(false);
+  const [improveError, setImproveError] = useState<string | null>(null);
   const [optimizingImage, setOptimizingImage] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -89,10 +87,25 @@ export function OfferForm({
 
   async function handleGenerateSuggestions() {
     setLoadingSuggestions(true);
-    const result = await generateOfferSuggestions(category, shownTitles);
-    setSuggestions(result);
-    setShownTitles((prev) => [...prev, ...result.map((s) => s.title)]);
-    setLoadingSuggestions(false);
+    setSuggestionsError(null);
+    try {
+      const res = await fetch("/api/ai/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, companyName, exclude: shownTitles }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Kunde inte generera förslag.");
+      const result = data.suggestions as OfferSuggestion[];
+      setSuggestions(result);
+      setShownTitles((prev) => [...prev, ...result.map((s) => s.title)]);
+    } catch (err) {
+      setSuggestionsError(
+        err instanceof Error ? err.message : "Kunde inte generera förslag. Försök igen."
+      );
+    } finally {
+      setLoadingSuggestions(false);
+    }
   }
 
   function applySuggestion(s: OfferSuggestion) {
@@ -110,9 +123,23 @@ export function OfferForm({
 
   async function handleImprove() {
     setImproving(true);
-    const result = await improveOfferCopy(values.title, values.description);
-    setValues((v) => ({ ...v, title: result.title, description: result.description }));
-    setImproving(false);
+    setImproveError(null);
+    try {
+      const res = await fetch("/api/ai/improve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: values.title, description: values.description, category }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Kunde inte förbättra texten.");
+      setValues((v) => ({ ...v, title: data.title, description: data.description }));
+    } catch (err) {
+      setImproveError(
+        err instanceof Error ? err.message : "Kunde inte förbättra texten. Försök igen."
+      );
+    } finally {
+      setImproving(false);
+    }
   }
 
   async function handleImageUpload(file: File | undefined) {
@@ -216,6 +243,10 @@ export function OfferForm({
             </Button>
           </div>
 
+          {suggestionsError && (
+            <p className="mt-3 text-xs font-bold text-[#c0392b]">{suggestionsError}</p>
+          )}
+
           {suggestions && (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {suggestions.map((s) => (
@@ -265,6 +296,9 @@ export function OfferForm({
               <span className="hidden sm:inline">AI</span>
             </button>
           </div>
+          {improveError && (
+            <span className="mt-1.5 block text-xs font-bold text-[#c0392b]">{improveError}</span>
+          )}
         </Field>
 
         <Field label="Beskrivning" required>
