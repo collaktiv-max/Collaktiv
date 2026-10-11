@@ -49,8 +49,8 @@ export function Impact() {
               Collaktiv UF · Piloten i Gävle
             </span>
             <h2 className="mt-3 text-[1.9rem] font-extrabold leading-[1.08] tracking-[-0.02em] text-balance sm:text-[2.6rem]">
-              Tillsammans gör vi{" "}
-              <span className="text-[var(--color-brand-primary)]">skillnad!</span>
+              Collaktiv: En{" "}
+              <span className="text-[var(--color-brand-primary)]">redan bevisad plattform</span>
             </h2>
             <p className="mt-4 max-w-[52ch] text-base font-medium leading-relaxed text-[var(--color-brand-muted)] sm:text-[17px]">
               Våren 2026 lanserade Collaktiv UF en 3 månaders lång pilot av tjänsten i Gävle stad.
