@@ -14,6 +14,16 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://partner.collaktiv.
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// Fritext från företag (t.ex. hjälpförfrågningar) skrivs rätt in i
+// HTML-mejlet – escapas så en gliring med "<" eller "&" inte stör
+// layouten eller tolkas som markup.
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 async function sendEmail({
   to,
   subject,
@@ -145,6 +155,39 @@ export async function sendAdminNewCompanyEmail(company: CompanyProfile) {
   return sendEmail({
     to: ADMIN_EMAIL,
     subject: `Nytt företag: ${company.name}`,
+    html,
+  });
+}
+
+// Skickas när ett företag klickar "Kontakta oss" på redigera-erbjudande-
+// sidan – till oss själva (ADMIN_EMAIL), inte till företaget.
+export async function sendHelpRequestEmail(params: {
+  company: CompanyProfile;
+  topics: string[];
+  message: string;
+}) {
+  const { company, topics, message } = params;
+  const topicsHtml = topics.length
+    ? `<ul style="margin:12px 0 0;padding-left:18px;">${topics
+        .map((t) => `<li>${escapeHtml(t)}</li>`)
+        .join("")}</ul>`
+    : "";
+  const messageHtml = message.trim()
+    ? `<p style="margin-top:12px;white-space:pre-wrap;">${escapeHtml(message.trim())}</p>`
+    : "";
+  const html = layout(
+    "Hjälpförfrågan om erbjudande",
+    `<p><strong>${company.name}</strong> (${company.contactEmail}${
+      company.contactPhone ? ` · ${company.contactPhone}` : ""
+    }) behöver hjälp med att skapa ett erbjudande.</p>
+     ${topicsHtml}
+     ${messageHtml}`,
+    "Öppna admin-panelen",
+    `${SITE_URL}/admin`
+  );
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Hjälpförfrågan: ${company.name}`,
     html,
   });
 }

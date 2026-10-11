@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Rocket } from "lucide-react";
+import { LifeBuoy, Rocket } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { OfferForm, type OfferFormValues } from "@/components/portal/OfferForm";
+import { ContactHelpModal } from "@/components/portal/ContactHelpModal";
 import { Button } from "@/components/ui/Button";
 import { useAppState } from "@/lib/store";
 
@@ -13,6 +14,7 @@ export default function RedigeraErbjudandePage() {
   const router = useRouter();
   const { companyOffers, currentCompany, updateOffer } = useAppState();
   const [saving, setSaving] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const offer = companyOffers.find((o) => o.id === id);
 
@@ -70,15 +72,23 @@ export default function RedigeraErbjudandePage() {
         title="Redigera erbjudande"
         subtitle="Ändringar sparas till erbjudandet."
         action={
-          offer.status === "utkast" && (
-            <Button
-              href={`/portal/erbjudanden/${offer.id}/publicera`}
-              variant="outline"
-              icon={<Rocket className="h-4 w-4" />}
-            >
-              Gå till publicering
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {offer.status === "utkast" && (
+              <Button
+                href={`/portal/erbjudanden/${offer.id}/publicera`}
+                variant="outline"
+                icon={<Rocket className="h-4 w-4" />}
+              >
+                Gå till publicering
+              </Button>
+            )}
+            <span className="text-xs font-semibold text-[var(--color-brand-muted)]">
+              Har du frågor om hur man skapar erbjudande?
+            </span>
+            <Button onClick={() => setHelpOpen(true)} icon={<LifeBuoy className="h-4 w-4" />}>
+              Kontakta oss
             </Button>
-          )
+          </div>
         }
       />
       <OfferForm
@@ -90,6 +100,7 @@ export default function RedigeraErbjudandePage() {
         saveLabel="Spara ändringar"
         saving={saving}
       />
+      <ContactHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
