@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LifeBuoy } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { OfferForm, type OfferFormValues } from "@/components/portal/OfferForm";
+import { ContactHelpModal } from "@/components/portal/ContactHelpModal";
+import { Button } from "@/components/ui/Button";
 import { useAppState } from "@/lib/store";
 
 const emptyValues: OfferFormValues = {
@@ -22,6 +25,7 @@ export default function NyttErbjudandePage() {
   const { currentCompany, addOffer } = useAppState();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (!currentCompany) return null;
 
@@ -50,6 +54,16 @@ export default function NyttErbjudandePage() {
       <PageHeader
         title="Nytt erbjudande"
         subtitle="Fyll i informationen nedan – ni ser direkt hur det kommer se ut i appen."
+        action={
+          <div className="flex flex-nowrap items-center justify-end gap-2.5 overflow-x-auto">
+            <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--color-brand-muted)]">
+              Har du frågor om hur man skapar erbjudande?
+            </span>
+            <Button onClick={() => setHelpOpen(true)} icon={<LifeBuoy className="h-4 w-4" />}>
+              Kontakta oss
+            </Button>
+          </div>
+        }
       />
       <OfferForm
         initial={emptyValues}
@@ -60,6 +74,7 @@ export default function NyttErbjudandePage() {
         saveLabel="Spara och fortsätt"
         saving={saving}
       />
+      <ContactHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
