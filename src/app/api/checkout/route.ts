@@ -5,6 +5,7 @@ import { stripe } from "@/lib/stripe";
 import { getPlan, getDiscountedTotal, BILLING_LABELS, type BillingPeriod } from "@/lib/pricing";
 import type { PlanId } from "@/lib/pricing";
 import { TERMS_VERSION } from "@/lib/legal";
+import { getSwedishMomsTaxRateId } from "@/lib/tax";
 
 interface CheckoutBody {
   offerId: string;
@@ -41,28 +42,38 @@ export async function POST(req: NextRequest) {
   const amount = getDiscountedTotal(plan, period);
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    customer_email: company.contactEmail,
-    automatic_tax: { enabled: true },
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "sek",
-          unit_amount: amount * 100,
-          product_data: {
-            name: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]}`,
-            description: `${company.name} · early bird-rabatt 20% inräknad`,
+  try {
+    const momsTaxRateId = await getSwedishMomsTaxRateId();
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: company.contactEmail,
+      line_items: [
+        {
+          quantity: 1,
+          tax_rates: [momsTaxRateId],
+          price_data: {
+            currency: "sek",
+            unit_amount: amount * 100,
+            product_data: {
+              name: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]}`,
+              description: `${company.name} · early bird-rabatt 20% inräknad, 25% moms inkluderad`,
+            },
           },
         },
-      },
-    ],
-    metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
-    success_url: `${origin}/portal/erbjudanden/${offerId}/publicera?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/portal/erbjudanden/${offerId}/publicera?canceled=1`,
-  });
+      ],
+      metadata: { companyId, offerId, planId, period, termsVersion: TERMS_VERSION, termsAcceptedAt },
+      success_url: `${origin}/portal/erbjudanden/${offerId}/publicera?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/portal/erbjudanden/${offerId}/publicera?canceled=1`,
+    });
 
-  return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error("[checkout] Kunde inte skapa Stripe-session:", err);
+    return NextResponse.json(
+      { error: "Kunde inte starta betalningen. Försök igen om en stund." },
+      { status: 500 }
+    );
+  }
 }
