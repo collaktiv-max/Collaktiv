@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Crown, Heart, MapPin, Sparkles, Star } from "lucide-react";
+import { Check, Crown, Heart, Sparkles, Star } from "lucide-react";
 import { CATEGORY_LABELS, type Category, type PackageTier } from "@/lib/types";
 
 export function OfferPreviewPhone({
@@ -91,7 +91,7 @@ export function OfferPreviewPhone({
                   {description || "Beskrivning av erbjudandet visas här."}
                 </p>
                 <p className="mt-1.5 flex items-center gap-2 text-[9.5px] font-semibold text-[var(--color-brand-muted)]">
-                  {isPremium ? (
+                  {isPremium && (
                     <>
                       <span className="flex items-center gap-1">
                         <Check className="h-2.5 w-2.5 text-[var(--color-brand-primary)]" /> Hemsida
@@ -99,10 +99,6 @@ export function OfferPreviewPhone({
                       <span className="flex items-center gap-1">
                         <Check className="h-3 w-3 text-[var(--color-brand-primary)]" /> Adress
                       </span>
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="h-3 w-3" /> Gävle centrum · 1,2 km bort
                     </>
                   )}
                 </p>
