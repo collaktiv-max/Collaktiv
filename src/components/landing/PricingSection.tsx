@@ -50,16 +50,16 @@ export function PricingSection() {
               ],
             }}
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
-            className="inline-flex items-center gap-2.5 rounded-full border border-[#e0432c]/25 bg-gradient-to-r from-[#fff1ec] to-white px-5 py-2.5 shadow-sm"
+            className="inline-flex max-w-[94vw] items-center gap-3 rounded-full border border-[#e0432c]/25 bg-gradient-to-r from-[#fff1ec] to-white px-5 py-3 shadow-sm sm:gap-3.5 sm:px-7 sm:py-4"
           >
             <motion.span
               animate={{ scale: [1, 1.18, 1] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e0432c]/10 text-[#e0432c] sm:h-10 sm:w-10"
             >
-              <Flame className="h-3.5 w-3.5" />
+              <Flame className="h-4 w-4 sm:h-5 sm:w-5" />
             </motion.span>
-            <p className="text-[13.5px] font-extrabold text-[var(--color-brand-ink)]">
+            <p className="text-sm font-extrabold text-[var(--color-brand-ink)] sm:text-base md:text-[17px]">
               De {EARLY_BIRD_SLOTS} första företagen får{" "}
               <span className="text-[#e0432c]">20% rabatt</span> på hela paketet.
             </p>
