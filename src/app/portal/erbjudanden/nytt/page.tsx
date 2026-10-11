@@ -56,7 +56,7 @@ export default function NyttErbjudandePage() {
         subtitle="Fyll i informationen nedan – ni ser direkt hur det kommer se ut i appen."
         action={
           <div className="flex flex-nowrap items-center justify-end gap-2.5">
-            <span className="shrink-0 text-right text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
+            <span className="shrink-0 text-left text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
               Har du frågor
               <br />
               om hur man

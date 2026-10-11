@@ -73,7 +73,7 @@ export default function RedigeraErbjudandePage() {
         subtitle="Ändringar sparas till erbjudandet."
         action={
           <div className="flex flex-nowrap items-center justify-end gap-2.5">
-            <span className="shrink-0 text-right text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
+            <span className="shrink-0 text-left text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
               Har du frågor
               <br />
               om hur man
