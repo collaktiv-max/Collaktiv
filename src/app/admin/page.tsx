@@ -99,11 +99,15 @@ export default function AdminPage() {
   }
 
   async function updateOffer(id: string, partial: Partial<Offer>) {
-    const { offer } = await fetchJson<{ offer: Offer }>(`/api/admin/offers/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(partial),
-    });
-    setOffers((os) => os.map((o) => (o.id === id ? offer : o)));
+    try {
+      const { offer } = await fetchJson<{ offer: Offer }>(`/api/admin/offers/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(partial),
+      });
+      setOffers((os) => os.map((o) => (o.id === id ? offer : o)));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Kunde inte uppdatera erbjudandet.");
+    }
   }
 
   async function updateCampaignStatus(id: string, status: CampaignStatus) {

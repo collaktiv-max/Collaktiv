@@ -416,6 +416,7 @@ export function OffersSection({
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {pending.map((o) => {
               const company = companies.find((c) => c.id === o.companyId);
+              const companyApproved = company?.applicationStatus === "godkand";
               return (
                 <tr key={o.id}>
                   <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">{o.title}</td>
@@ -429,19 +430,32 @@ export function OffersSection({
                     {formatDate(o.createdAt)}
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => onUpdate(o.id, { status: "publicerad" })}
-                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
-                      >
-                        <Check className="h-3.5 w-3.5" /> Publicera
-                      </button>
-                      <button
-                        onClick={() => onUpdate(o.id, { status: "utkast" })}
-                        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
-                      >
-                        <X className="h-3.5 w-3.5" /> Skicka tillbaka
-                      </button>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => onUpdate(o.id, { status: "publicerad" })}
+                          disabled={!companyApproved}
+                          title={
+                            companyApproved
+                              ? undefined
+                              : "Godkänn företagets ansökan innan erbjudandet kan publiceras."
+                          }
+                          className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)] disabled:cursor-not-allowed disabled:bg-[var(--color-brand-border)] disabled:text-[var(--color-brand-muted)] disabled:hover:bg-[var(--color-brand-border)]"
+                        >
+                          <Check className="h-3.5 w-3.5" /> Publicera
+                        </button>
+                        <button
+                          onClick={() => onUpdate(o.id, { status: "utkast" })}
+                          className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
+                        >
+                          <X className="h-3.5 w-3.5" /> Skicka tillbaka
+                        </button>
+                      </div>
+                      {!companyApproved && (
+                        <span className="text-[11px] font-semibold text-[#c0392b]">
+                          Godkänn ansökan först
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>

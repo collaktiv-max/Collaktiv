@@ -1,7 +1,7 @@
 import "server-only";
 import { Resend } from "resend";
 import { REGION } from "./config";
-import { CATEGORY_LABELS, type CompanyProfile } from "./types";
+import { CATEGORY_LABELS, type CompanyProfile, type Offer } from "./types";
 
 const FROM = "Collaktiv <partner@collaktiv.se>";
 // Dit admin-notiser (nya registreringar m.m.) skickas.
@@ -188,6 +188,39 @@ export async function sendHelpRequestEmail(params: {
   return sendEmail({
     to: ADMIN_EMAIL,
     subject: `Hjälpförfrågan: ${company.name}`,
+    html,
+  });
+}
+
+// Skickas när admin publicerar ett inskickat erbjudande.
+export async function sendOfferPublishedEmail(company: CompanyProfile, offer: Offer) {
+  const html = layout(
+    "Erbjudandet är publicerat! 🎉",
+    `<p>Hej ${company.name}!</p>
+     <p style="margin-top:12px;">Vi har granskat och publicerat erbjudandet "<strong>${offer.title}</strong>". Det går live för resenärer i ${REGION} så fort appen lanseras.</p>`,
+    "Gå till portalen",
+    `${SITE_URL}/portal/erbjudanden`
+  );
+  return sendEmail({
+    to: company.contactEmail,
+    subject: `Erbjudandet "${offer.title}" är publicerat`,
+    html,
+  });
+}
+
+// Skickas när admin skickar tillbaka ett inskickat erbjudande för
+// redigering istället för att publicera det.
+export async function sendOfferReturnedEmail(company: CompanyProfile, offer: Offer) {
+  const html = layout(
+    "Erbjudandet skickades tillbaka",
+    `<p>Hej ${company.name}!</p>
+     <p style="margin-top:12px;">Vi har granskat erbjudandet "<strong>${offer.title}</strong>" och skickat tillbaka det till er för justering innan det kan publiceras. Logga in, redigera det och skicka in igen.</p>`,
+    "Redigera erbjudandet",
+    `${SITE_URL}/portal/erbjudanden`
+  );
+  return sendEmail({
+    to: company.contactEmail,
+    subject: `Erbjudandet "${offer.title}" behöver justeras`,
     html,
   });
 }
