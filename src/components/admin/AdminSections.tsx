@@ -323,8 +323,12 @@ export function ApplicationsSection({
                 <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                   {CATEGORY_LABELS[c.category]}
                 </td>
-                <td className="px-5 py-3.5 font-medium capitalize text-[var(--color-brand-muted)]">
-                  {c.packageTier}
+                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+                  {c.paymentConfirmed ? (
+                    <span className="capitalize">{c.packageTier}</span>
+                  ) : (
+                    <span className="italic">Inget paket</span>
+                  )}
                 </td>
                 <td className="px-5 py-3.5">
                   <PaymentToggle
@@ -601,14 +605,20 @@ export function CompaniesSection({
                   {CATEGORY_LABELS[c.category]}
                 </td>
                 <td className="px-5 py-3.5">
-                  <select
-                    value={c.packageTier}
-                    onChange={(e) => onUpdate(c.id, { packageTier: e.target.value as PackageTier })}
-                    className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
-                  >
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                  </select>
+                  {c.paymentConfirmed ? (
+                    <select
+                      value={c.packageTier}
+                      onChange={(e) => onUpdate(c.id, { packageTier: e.target.value as PackageTier })}
+                      className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="premium">Premium</option>
+                    </select>
+                  ) : (
+                    <span className="text-xs font-medium italic text-[var(--color-brand-muted)]">
+                      Inget paket
+                    </span>
+                  )}
                 </td>
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-2">
