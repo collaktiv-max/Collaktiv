@@ -7,14 +7,14 @@ import { navItems } from "@/components/portal/nav-items";
 const rows = [
   { icon: Tag, label: "Skapa och publicera erbjudanden" },
   { icon: BarChart3, label: "Se statistik och exponering" },
-  { icon: Megaphone, label: "Ladda ner marknadsföringsmaterial" },
+  { icon: Megaphone, label: "Ladda ner marknadsmaterial" },
   { icon: UserRound, label: "Hantera er företagsprofil" },
 ];
 
 export function PartnerPortalPreview({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`w-[260px] sm:w-[330px] lg:w-[400px] overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white shadow-2xl ${className}`}
+      className={`w-[300px] sm:w-[330px] lg:w-[400px] overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-white shadow-2xl ${className}`}
     >
       <div className="flex">
         {/* Sidebar */}
@@ -40,7 +40,7 @@ export function PartnerPortalPreview({ className = "" }: { className?: string })
                     }`}
                   />
                   <span
-                    className={`truncate text-[8px] sm:text-[9px] font-bold ${
+                    className={`min-w-0 truncate text-[8px] sm:text-[9px] font-bold ${
                       active ? "text-white" : "text-white/40"
                     }`}
                   >
@@ -53,7 +53,7 @@ export function PartnerPortalPreview({ className = "" }: { className?: string })
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-3.5 sm:p-4">
+        <div className="min-w-0 flex-1 p-3.5 sm:p-4">
           <p className="text-[10px] sm:text-[11px] font-medium text-[var(--color-brand-muted)]">
             Välkommen till
           </p>
@@ -70,7 +70,7 @@ export function PartnerPortalPreview({ className = "" }: { className?: string })
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
                   <Icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="flex-1 text-[9.5px] sm:text-[10.5px] font-bold leading-tight text-[var(--color-brand-ink)]">
+                <span className="min-w-0 flex-1 break-words text-[9.5px] sm:text-[10.5px] font-bold leading-tight text-[var(--color-brand-ink)]">
                   {label}
                 </span>
                 <ChevronDown className="h-3 w-3 shrink-0 text-[var(--color-brand-muted)]" />
@@ -78,16 +78,14 @@ export function PartnerPortalPreview({ className = "" }: { className?: string })
             ))}
           </div>
 
-          <div className="mt-2.5 flex items-center gap-2.5 rounded-lg bg-[var(--color-brand-mint)]/40 p-2.5">
+          <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-[var(--color-brand-mint)]/40 p-2.5">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[var(--color-brand-primary)]">
               <Gift className="h-3.5 w-3.5" />
             </span>
-            <div className="flex-1">
-              <p className="text-[9px] sm:text-[10px] font-bold leading-tight text-[var(--color-brand-ink)]">
-                Bjud in ett företag, få en bonusmånad
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full bg-[var(--color-brand-primary)] px-2.5 py-1 text-[8.5px] font-extrabold text-white">
+            <p className="min-w-0 flex-1 text-[9px] sm:text-[10px] font-bold leading-tight text-[var(--color-brand-ink)]">
+              Bjud in, få en bonusmånad
+            </p>
+            <span className="hidden shrink-0 rounded-full bg-[var(--color-brand-primary)] px-2.5 py-1 text-[8.5px] font-extrabold text-white sm:inline-block">
               Läs mer
             </span>
           </div>
