@@ -11,8 +11,13 @@ import {
   Gift,
   Loader2,
   Mail,
+  Pencil,
+  Plus,
   RefreshCcw,
   ShieldCheck,
+  Store,
+  Trash2,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
@@ -23,7 +28,13 @@ import { useAppState } from "@/lib/store";
 import { fetchJson } from "@/lib/apiClient";
 import { generateStatsPdf } from "@/lib/pdf";
 import { getPlan, BILLING_LABELS, formatKr, type BillingPeriod } from "@/lib/pricing";
-import { CATEGORY_LABELS, type Category, type CompanyProfile, type Payment } from "@/lib/types";
+import {
+  CATEGORY_LABELS,
+  type Category,
+  type CompanyLocation,
+  type CompanyProfile,
+  type Payment,
+} from "@/lib/types";
 
 function SavedPill({ show }: { show: boolean }) {
   if (!show) return null;
@@ -35,7 +46,14 @@ function SavedPill({ show }: { show: boolean }) {
 }
 
 export default function ProfilPage() {
-  const { currentCompany, updateCompany } = useAppState();
+  const {
+    currentCompany,
+    updateCompany,
+    companyLocations,
+    addLocation,
+    updateLocation,
+    deleteLocation,
+  } = useAppState();
   if (!currentCompany) return null;
 
   return (
@@ -47,6 +65,13 @@ export default function ProfilPage() {
           initial={currentCompany}
           checklist={currentCompany.onboardingChecklist}
           updateCompany={updateCompany}
+        />
+        <LocationsCard
+          mainAddress={currentCompany.address}
+          locations={companyLocations}
+          addLocation={addLocation}
+          updateLocation={updateLocation}
+          deleteLocation={deleteLocation}
         />
         <ContactCard companyId={currentCompany.id} initial={currentCompany} updateCompany={updateCompany} />
         <AccountCard email={currentCompany.contactEmail} />
@@ -151,6 +176,195 @@ function CompanyInfoCard({
           Spara
         </Button>
       </div>
+    </div>
+  );
+}
+
+function LocationRow({
+  name,
+  address,
+  isMain,
+  onEdit,
+  onDelete,
+}: {
+  name: string;
+  address: string;
+  isMain: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand-border)] px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]">
+        <Store className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
+          {name}
+          {isMain && (
+            <span className="ml-2 align-middle text-[10px] font-bold uppercase tracking-wide text-[var(--color-brand-muted)]">
+              Huvudbutik
+            </span>
+          )}
+        </p>
+        <p className="truncate text-xs font-medium text-[var(--color-brand-muted)]">
+          {address || "Ingen adress angiven"}
+        </p>
+      </div>
+      {!isMain && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-brand-muted)] transition hover:bg-[var(--color-brand-secondary)] hover:text-[var(--color-brand-ink)]"
+            aria-label="Redigera butik"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-brand-muted)] transition hover:bg-[#fdecea] hover:text-[#c0392b]"
+            aria-label="Ta bort butik"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LocationsCard({
+  mainAddress,
+  locations,
+  addLocation,
+  updateLocation,
+  deleteLocation,
+}: {
+  mainAddress?: string;
+  locations: CompanyLocation[];
+  addLocation: (input: { name?: string; address: string }) => Promise<void>;
+  updateLocation: (id: string, partial: { name?: string; address?: string }) => Promise<void>;
+  deleteLocation: (id: string) => Promise<void>;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function startAdd() {
+    setEditingId(null);
+    setName("");
+    setAddress("");
+    setError(null);
+    setAdding(true);
+  }
+
+  function startEdit(location: CompanyLocation) {
+    setAdding(false);
+    setEditingId(location.id);
+    setName(location.name ?? "");
+    setAddress(location.address);
+    setError(null);
+  }
+
+  function cancel() {
+    setAdding(false);
+    setEditingId(null);
+    setError(null);
+  }
+
+  async function handleSave() {
+    if (!address.trim()) {
+      setError("Adress krävs.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingId) {
+        await updateLocation(editingId, { name, address });
+      } else {
+        await addLocation({ name, address });
+      }
+      setAdding(false);
+      setEditingId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte spara butiken.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const formOpen = adding || editingId !== null;
+
+  return (
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Butiker</h2>
+          <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+            Har ni fler än en fysisk plats? Lägg till dem här så kan resenärer lösa in erbjudandet på valfri butik.
+          </p>
+        </div>
+        {!formOpen && (
+          <Button size="sm" variant="outline" onClick={startAdd} icon={<Plus className="h-4 w-4" />}>
+            Lägg till butik
+          </Button>
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2.5">
+        <LocationRow name="Huvudbutik" address={mainAddress ?? ""} isMain />
+        {locations.map((location) => (
+          <LocationRow
+            key={location.id}
+            name={location.name?.trim() || "Butik"}
+            address={location.address}
+            isMain={false}
+            onEdit={() => startEdit(location)}
+            onDelete={() => deleteLocation(location.id)}
+          />
+        ))}
+      </div>
+
+      {formOpen && (
+        <div className="mt-5 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Namn" hint="T.ex. 'Butik Centrum' – valfritt">
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Butik" />
+            </Field>
+            <Field label="Adress" required>
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Gatuadress, ort"
+              />
+            </Field>
+          </div>
+          {error && (
+            <p className="mt-3 rounded-lg bg-[#fdecea] px-3 py-2 text-xs font-bold text-[#c0392b]">
+              {error}
+            </p>
+          )}
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={cancel} icon={<X className="h-4 w-4" />}>
+              Avbryt
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              icon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            >
+              {editingId ? "Spara ändringar" : "Lägg till"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

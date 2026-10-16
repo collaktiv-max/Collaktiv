@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CompanyProfile, Offer, Campaign, Category } from "./types";
+import type { CompanyProfile, CompanyLocation, Offer, Campaign, Category } from "./types";
 import { fetchJson } from "./apiClient";
 
 interface RegisterInput {
@@ -30,6 +30,7 @@ interface Ctx {
   currentCompany: CompanyProfile | null;
   companyOffers: Offer[];
   companyCampaigns: Campaign[];
+  companyLocations: CompanyLocation[];
   referralCount: number;
   registerCompany: (input: RegisterInput) => Promise<{ ok: boolean; reason?: string }>;
   login: (email: string, password: string) => Promise<{ ok: boolean; reason?: string }>;
@@ -40,6 +41,9 @@ interface Ctx {
   deleteOffer: (id: string) => Promise<void>;
   submitOfferForReview: (id: string) => Promise<void>;
   createCampaign: (input: { message?: string }) => Promise<void>;
+  addLocation: (input: { name?: string; address: string }) => Promise<void>;
+  updateLocation: (id: string, partial: { name?: string; address?: string }) => Promise<void>;
+  deleteLocation: (id: string) => Promise<void>;
   /** Speglar lokalt state efter en serverbekräftad förändring (t.ex.
    * Stripe-verifiering) utan att göra ett eget nätverksanrop. */
   syncCompany: (company: CompanyProfile) => void;
@@ -53,6 +57,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [currentCompany, setCurrentCompany] = useState<CompanyProfile | null>(null);
   const [companyOffers, setCompanyOffers] = useState<Offer[]>([]);
   const [companyCampaigns, setCompanyCampaigns] = useState<Campaign[]>([]);
+  const [companyLocations, setCompanyLocations] = useState<CompanyLocation[]>([]);
   const [referralCount, setReferralCount] = useState(0);
 
   useEffect(() => {
@@ -63,15 +68,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setCurrentCompany(company);
         if (company) {
-          const [{ offers }, { count }, { campaigns }] = await Promise.all([
+          const [{ offers }, { count }, { campaigns }, { locations }] = await Promise.all([
             fetchJson<{ offers: Offer[] }>("/api/offers"),
             fetchJson<{ count: number }>("/api/referrals"),
             fetchJson<{ campaigns: Campaign[] }>("/api/campaigns"),
+            fetchJson<{ locations: CompanyLocation[] }>("/api/company/locations"),
           ]);
           if (cancelled) return;
           setCompanyOffers(offers);
           setReferralCount(count);
           setCompanyCampaigns(campaigns);
+          setCompanyLocations(locations);
         }
       } catch {
         // ingen giltig session – fortsätt utloggad
@@ -105,14 +112,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
       setCurrentCompany(company);
-      const [{ offers }, { count }, { campaigns }] = await Promise.all([
+      const [{ offers }, { count }, { campaigns }, { locations }] = await Promise.all([
         fetchJson<{ offers: Offer[] }>("/api/offers"),
         fetchJson<{ count: number }>("/api/referrals"),
         fetchJson<{ campaigns: Campaign[] }>("/api/campaigns"),
+        fetchJson<{ locations: CompanyLocation[] }>("/api/company/locations"),
       ]);
       setCompanyOffers(offers);
       setReferralCount(count);
       setCompanyCampaigns(campaigns);
+      setCompanyLocations(locations);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -124,6 +133,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCurrentCompany(null);
     setCompanyOffers([]);
     setCompanyCampaigns([]);
+    setCompanyLocations([]);
     setReferralCount(0);
   }, []);
 
@@ -187,11 +197,36 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCompanyCampaigns((campaigns) => [campaign, ...campaigns]);
   }, []);
 
+  const addLocation = useCallback(async (input: { name?: string; address: string }) => {
+    const { location } = await fetchJson<{ location: CompanyLocation }>("/api/company/locations", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setCompanyLocations((locations) => [...locations, location]);
+  }, []);
+
+  const updateLocation = useCallback(
+    async (id: string, partial: { name?: string; address?: string }) => {
+      const { location } = await fetchJson<{ location: CompanyLocation }>(
+        `/api/company/locations/${id}`,
+        { method: "PATCH", body: JSON.stringify(partial) }
+      );
+      setCompanyLocations((locations) => locations.map((l) => (l.id === id ? location : l)));
+    },
+    []
+  );
+
+  const deleteLocation = useCallback(async (id: string) => {
+    await fetchJson(`/api/company/locations/${id}`, { method: "DELETE" });
+    setCompanyLocations((locations) => locations.filter((l) => l.id !== id));
+  }, []);
+
   const value: Ctx = {
     ready,
     currentCompany,
     companyOffers,
     companyCampaigns,
+    companyLocations,
     referralCount,
     registerCompany,
     login,
@@ -202,6 +237,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     deleteOffer,
     submitOfferForReview,
     createCampaign,
+    addLocation,
+    updateLocation,
+    deleteLocation,
     syncCompany,
     syncOffer,
   };

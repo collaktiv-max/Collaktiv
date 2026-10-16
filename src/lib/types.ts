@@ -117,6 +117,19 @@ export interface Campaign {
   createdAt: string;
 }
 
+// Extra butiker utöver företagets huvudadress (CompanyProfile.address).
+// De flesta företag har noll rader här – bara kedjor med flera
+// fysiska platser lägger till egna.
+export interface CompanyLocation {
+  id: string;
+  companyId: string;
+  name?: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  createdAt: string;
+}
+
 export type PaymentStatus = "paid" | "pending" | "refunded";
 
 export interface Payment {

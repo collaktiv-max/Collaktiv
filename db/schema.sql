@@ -106,6 +106,21 @@ alter table offers drop constraint if exists offers_status_check;
 alter table offers add constraint offers_status_check
   check (status in ('utkast','granskas','publicerad','pausad','arkiverad'));
 
+-- Extra butiker utöver företagets huvudadress (companies.address). De
+-- flesta företag har noll rader här – bara kedjor med flera fysiska
+-- platser lägger till egna, se src/app/api/company/locations.
+create table if not exists company_locations (
+  id          uuid primary key default gen_random_uuid(),
+  company_id  uuid not null references companies (id) on delete cascade,
+  name        text default '',
+  address     text not null,
+  latitude    double precision,
+  longitude   double precision,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists company_locations_company_id_idx on company_locations (company_id);
+
 create table if not exists referrals (
   id         uuid primary key default gen_random_uuid(),
   email      text not null,

@@ -2,6 +2,7 @@ import "server-only";
 import { neon } from "@neondatabase/serverless";
 import type {
   CompanyProfile,
+  CompanyLocation,
   Offer,
   Campaign,
   CampaignStatus,
@@ -85,6 +86,16 @@ interface CampaignRow {
   created_at: string;
 }
 
+interface CompanyLocationRow {
+  id: string;
+  company_id: string;
+  name: string | null;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
+}
+
 function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
   return {
     id: row.id,
@@ -156,6 +167,18 @@ function toCampaign(row: CampaignRow): Campaign {
     companyId: row.company_id,
     message: row.message ?? undefined,
     status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+function toLocation(row: CompanyLocationRow): CompanyLocation {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    name: row.name ?? undefined,
+    address: row.address,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -343,6 +366,15 @@ export interface PublicOffer {
     latitude: number | null;
     longitude: number | null;
     packageTier: PackageTier;
+    /** Extra butiker utöver `address` – tomt för de flesta företag.
+     * Appen bör räkna avstånd mot närmaste av dessa plus `address`. */
+    additionalLocations: {
+      id: string;
+      name: string | null;
+      address: string;
+      latitude: number | null;
+      longitude: number | null;
+    }[];
   };
 }
 
@@ -361,9 +393,18 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
       c.website as company_website, c.category as company_category,
       c.region as company_region, c.address as company_address,
       c.latitude as company_latitude, c.longitude as company_longitude,
-      c.package_tier as company_package_tier
+      c.package_tier as company_package_tier,
+      coalesce(loc.locations, '[]'::json) as company_additional_locations
     from offers o
     join companies c on c.id = o.company_id
+    left join lateral (
+      select json_agg(json_build_object(
+        'id', l.id, 'name', l.name, 'address', l.address,
+        'latitude', l.latitude, 'longitude', l.longitude
+      )) as locations
+      from company_locations l
+      where l.company_id = c.id
+    ) loc on true
     where o.status = 'publicerad'
     order by o.published_at desc nulls last
   `) as Array<{
@@ -389,6 +430,13 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
     company_latitude: number | null;
     company_longitude: number | null;
     company_package_tier: PackageTier;
+    company_additional_locations: {
+      id: string;
+      name: string | null;
+      address: string;
+      latitude: number | null;
+      longitude: number | null;
+    }[];
   }>;
 
   return rows.map((row) => ({
@@ -415,6 +463,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
       latitude: row.company_latitude,
       longitude: row.company_longitude,
       packageTier: row.company_package_tier,
+      additionalLocations: row.company_additional_locations,
     },
   }));
 }
@@ -710,4 +759,52 @@ export async function updateCampaignStatus(
     update campaigns set status = ${status} where id = ${id} returning *
   `) as CampaignRow[];
   return rows[0] ? toCampaign(rows[0]) : null;
+}
+
+// ---------- Butiker (extra platser utöver companies.address) ----------
+
+export async function getLocationsByCompany(companyId: string): Promise<CompanyLocation[]> {
+  const rows = (await sql`
+    select * from company_locations where company_id = ${companyId} order by created_at asc
+  `) as CompanyLocationRow[];
+  return rows.map(toLocation);
+}
+
+export async function getLocationById(id: string): Promise<CompanyLocation | null> {
+  const rows = (await sql`select * from company_locations where id = ${id}`) as CompanyLocationRow[];
+  return rows[0] ? toLocation(rows[0]) : null;
+}
+
+export async function createLocation(input: {
+  companyId: string;
+  name?: string;
+  address: string;
+}): Promise<CompanyLocation> {
+  const rows = (await sql`
+    insert into company_locations (company_id, name, address)
+    values (${input.companyId}, ${input.name ?? ""}, ${input.address})
+    returning *
+  `) as CompanyLocationRow[];
+  return toLocation(rows[0]);
+}
+
+export async function updateLocation(
+  id: string,
+  partial: { name?: string; address?: string }
+): Promise<CompanyLocation | null> {
+  const current = await getLocationById(id);
+  if (!current) return null;
+  const next = { ...current, ...partial };
+  const rows = (await sql`
+    update company_locations set
+      name = ${next.name ?? ""},
+      address = ${next.address}
+    where id = ${id}
+    returning *
+  `) as CompanyLocationRow[];
+  return rows[0] ? toLocation(rows[0]) : null;
+}
+
+export async function deleteLocation(id: string): Promise<void> {
+  await sql`delete from company_locations where id = ${id}`;
 }
