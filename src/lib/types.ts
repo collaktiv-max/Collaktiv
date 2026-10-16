@@ -43,6 +43,10 @@ export interface CompanyProfile {
   packageTier: PackageTier;
   applicationStatus: ApplicationStatus;
   paymentConfirmed: boolean;
+  /** Satt av admin via "Ge kostnadsfri åtkomst" – paymentConfirmed är
+   * true men ingen riktig Stripe-betalning ligger bakom. Håller isär
+   * betalande och gratis partners i statistik/fakturering. */
+  complimentary: boolean;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */

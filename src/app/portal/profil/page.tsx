@@ -595,12 +595,14 @@ function BillingCard({ company }: { company: CompanyProfile }) {
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">{plan.name}</p>
-              <Badge variant="accent">Betalt</Badge>
+              <Badge variant="accent">{company.complimentary ? "Kostnadsfritt" : "Betalt"}</Badge>
             </div>
             <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-              {latestPaid
-                ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
-                : plan.tagline}
+              {company.complimentary
+                ? "Ni har fått kostnadsfri åtkomst till det här paketet."
+                : latestPaid
+                  ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
+                  : plan.tagline}
             </p>
           </div>
         </div>

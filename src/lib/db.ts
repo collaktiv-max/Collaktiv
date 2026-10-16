@@ -41,6 +41,7 @@ interface CompanyRow {
   package_tier: PackageTier;
   application_status: ApplicationStatus;
   payment_confirmed: boolean;
+  complimentary: boolean;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
   referred_by_company_id: string | null;
@@ -114,6 +115,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     packageTier: row.package_tier,
     applicationStatus: row.application_status,
     paymentConfirmed: row.payment_confirmed,
+    complimentary: row.complimentary,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
@@ -275,6 +277,7 @@ export async function updateCompany(
       package_tier = ${next.packageTier},
       application_status = ${next.applicationStatus},
       payment_confirmed = ${next.paymentConfirmed},
+      complimentary = ${next.complimentary ?? false},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       bonus_access_until = ${next.bonusAccessUntil ?? null},

@@ -128,6 +128,76 @@ export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onT
   );
 }
 
+// Betalningscell som även hanterar kostnadsfri åtkomst (partners vi
+// medvetet vill ha med utan att de betalar, t.ex. för
+// marknadsföringsbyte) – skiljs från en riktig Stripe-betalning via
+// company.complimentary, så den aldrig syns som en riktig betalning i
+// fakturahistorik/statistik.
+export function PaymentCell({
+  company,
+  onUpdate,
+}: {
+  company: CompanyProfile;
+  onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
+}) {
+  if (company.paymentConfirmed && company.complimentary) {
+    return (
+      <div className="flex items-center gap-2">
+        <Badge variant="accent">
+          <Gift className="h-3.5 w-3.5" /> Kostnadsfritt
+        </Badge>
+        <button
+          onClick={() => {
+            if (
+              confirm(
+                `Ta bort kostnadsfri åtkomst för ${company.name}? Företaget markeras då som obetalt igen.`
+              )
+            ) {
+              onUpdate(company.id, { paymentConfirmed: false, complimentary: false });
+            }
+          }}
+          className="text-[11px] font-bold text-[var(--color-brand-muted)] underline decoration-dotted hover:text-[#c0392b]"
+        >
+          Ta bort
+        </button>
+      </div>
+    );
+  }
+
+  if (company.paymentConfirmed) {
+    return (
+      <PaymentToggle confirmed onToggle={() => onUpdate(company.id, { paymentConfirmed: false })} />
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <PaymentToggle
+        confirmed={false}
+        onToggle={() => onUpdate(company.id, { paymentConfirmed: true })}
+      />
+      <button
+        onClick={() => {
+          if (
+            confirm(
+              `Ge ${company.name} kostnadsfri åtkomst (Standard-paket) utan betalning?`
+            )
+          ) {
+            onUpdate(company.id, {
+              paymentConfirmed: true,
+              complimentary: true,
+              packageTier: "standard",
+            });
+          }
+        }}
+        className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
+      >
+        <Gift className="h-3 w-3" /> Ge kostnadsfritt
+      </button>
+    </div>
+  );
+}
+
 export function EmptyRow({ text }: { text: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-[var(--color-brand-border)] bg-white p-6 text-center text-sm font-medium text-[var(--color-brand-muted)]">
@@ -331,10 +401,7 @@ export function ApplicationsSection({
                   )}
                 </td>
                 <td className="px-5 py-3.5">
-                  <PaymentToggle
-                    confirmed={c.paymentConfirmed}
-                    onToggle={() => onUpdate(c.id, { paymentConfirmed: !c.paymentConfirmed })}
-                  />
+                  <PaymentCell company={c} onUpdate={onUpdate} />
                 </td>
                 <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                   {formatDate(c.createdAt)}
@@ -660,10 +727,7 @@ export function CompaniesSection({
                   </div>
                 </td>
                 <td className="px-5 py-3.5">
-                  <PaymentToggle
-                    confirmed={c.paymentConfirmed}
-                    onToggle={() => onUpdate(c.id, { paymentConfirmed: !c.paymentConfirmed })}
-                  />
+                  <PaymentCell company={c} onUpdate={onUpdate} />
                 </td>
                 <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                   {formatDate(c.createdAt)}

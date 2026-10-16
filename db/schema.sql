@@ -29,6 +29,9 @@ create table if not exists companies (
   application_status text not null default 'inskickad'
                       check (application_status in ('utkast','inskickad','under_granskning','godkand','avvisad')),
   payment_confirmed boolean not null default false,
+  -- Satt av admin via "Ge kostnadsfri åtkomst" i admin-panelen – skiljer
+  -- gratis partners från riktiga Stripe-betalningar, se payment_confirmed.
+  complimentary     boolean not null default false,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
   -- Sätts automatiskt när ansökan godkänns/första betalningen
@@ -59,6 +62,7 @@ alter table companies add column if not exists approved_at timestamptz;
 alter table companies add column if not exists payment_confirmed_at timestamptz;
 alter table companies add column if not exists payment_reminder_sent_at timestamptz;
 alter table companies add column if not exists offer_reminder_sent_at timestamptz;
+alter table companies add column if not exists complimentary boolean not null default false;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),
