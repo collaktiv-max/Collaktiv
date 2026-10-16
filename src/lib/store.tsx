@@ -98,7 +98,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(input),
       });
       setCurrentCompany(company);
+      // Nollställ allt från en ev. tidigare session i samma flik (t.ex.
+      // registrering direkt efter utloggning utan en full omladdning) –
+      // annars kan en gammal sessions siffror (referralCount m.m.)
+      // felaktigt visas för det nyregistrerade företaget.
       setCompanyOffers([]);
+      setCompanyCampaigns([]);
+      setCompanyLocations([]);
+      setReferralCount(0);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
