@@ -96,6 +96,11 @@ export default function VillkorPage() {
               från lanseringsdatumet, inte från betalningsdatumet. Väntetiden fram till
               lanseringen förkortar alltså inte er period.
             </p>
+            <p>
+              Collaktiv kan, efter eget val, ge ett enskilt företag kostnadsfri åtkomst till ett
+              paket, t.ex. som del av ett marknadsförings- eller samarbetsavtal. Det sker alltid
+              på Collaktivs initiativ och ger inte andra företag rätt till motsvarande villkor.
+            </p>
           </Section>
 
           <Section title="4. Betalning">
@@ -145,9 +150,44 @@ export default function VillkorPage() {
               erbjudandet. Collaktiv kan när som helst pausa eller ta bort ett erbjudande som
               bryter mot detta, utan att det ger rätt till återbetalning.
             </p>
+            <p>
+              Genom att ladda upp logotyp, bilder, erbjudandetexter och övrig information till
+              portalen ger ni Collaktiv en icke-exklusiv, kostnadsfri rätt att visa och använda
+              materialet i appen, i portalen och i marknadsföring av tjänsten, så länge ert
+              partnerskap pågår. Rätten upphör när ni avslutar ert partnerskap eller begär det,
+              förutom i marknadsföringsmaterial som redan publicerats.
+            </p>
+            <p>
+              Vid upprepade eller allvarliga brott mot dessa villkor kan Collaktiv avsluta hela
+              ert partnerskap, inte bara ett enskilt erbjudande, utan rätt till återbetalning för
+              innevarande period.
+            </p>
           </Section>
 
-          <Section title="7. Ansvarsbegränsning">
+          <Section title="7. Personuppgifter">
+            <p>
+              Collaktiv AB är personuppgiftsansvarig för de personuppgifter ni lämnar om
+              kontaktperson (namn, e-post, telefonnummer) och företag (namn, adress, logotyp
+              m.m.) vid registrering och användning av portalen.
+            </p>
+            <p>
+              Uppgifterna används för att administrera ert partnerskap, kommunicera med er,
+              hantera betalningar och skicka relevanta uppdateringar om er ansökan, era
+              erbjudanden och ert konto. Betalningsuppgifter hanteras av vår
+              betalningsleverantör Stripe och lagras aldrig av Collaktiv själva.
+            </p>
+            <p>
+              Uppgifterna sparas så länge ert partnerskap pågår, och därefter så länge vi är
+              skyldiga enligt bokföringslagen eller annan tillämplig lagstiftning. Ni har rätt
+              att begära utdrag, rättelse eller radering av era uppgifter genom att kontakta{" "}
+              <a href="mailto:partner@collaktiv.se" className="font-bold text-[var(--color-brand-primary)] underline">
+                partner@collaktiv.se
+              </a>
+              .
+            </p>
+          </Section>
+
+          <Section title="8. Ansvarsbegränsning">
             <p>
               Collaktiv ansvarar inte för uteblivna besök, intäkter eller annan indirekt skada
               som uppstår till följd av hur ett erbjudande presterar i appen. Vårt ansvar är i
@@ -155,7 +195,7 @@ export default function VillkorPage() {
             </p>
           </Section>
 
-          <Section title="8. Ändringar av villkoren">
+          <Section title="9. Ändringar av villkoren">
             <p>
               Vi kan uppdatera dessa villkor löpande. Väsentliga ändringar som påverkar redan
               betalda, pågående perioder meddelas via e-post till den kontaktadress ni angett.
@@ -164,7 +204,14 @@ export default function VillkorPage() {
             </p>
           </Section>
 
-          <Section title="9. Kontakt">
+          <Section title="10. Tillämplig lag och tvist">
+            <p>
+              Svensk lag gäller för dessa villkor. Tvister som inte kan lösas genom
+              överenskommelse avgörs av allmän domstol med Gävle tingsrätt som första instans.
+            </p>
+          </Section>
+
+          <Section title="11. Kontakt">
             <p>
               Frågor om dessa villkor eller en betalning? Mejla{" "}
               <a href="mailto:partner@collaktiv.se" className="font-bold text-[var(--color-brand-primary)] underline">
