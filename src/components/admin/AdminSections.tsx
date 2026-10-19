@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowRight,
   Building2,
@@ -656,14 +656,34 @@ export function CompaniesSection({
   onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
   onReject: (company: CompanyProfile) => void;
 }) {
+  const [showRejected, setShowRejected] = useState(false);
+  const rejectedCount = companies.filter((c) => c.applicationStatus === "avvisad").length;
+  // Avvisade företag döljs som standard så de inte skräpar ner den
+  // dagliga översikten – de finns kvar i databasen (betalnings-/
+  // återbetalningshistorik rörs inte) och går att visa igen via
+  // knappen nedan.
+  const visibleCompanies = showRejected
+    ? companies
+    : companies.filter((c) => c.applicationStatus !== "avvisad");
+
   return (
     <div>
       <SectionHeader
         title="Alla företag"
         description="Full översikt – ändra paket, status och betalning direkt."
       />
-      {companies.length === 0 ? (
-        <EmptyRow text="Inga företag registrerade ännu." />
+      {rejectedCount > 0 && (
+        <div className="mb-5 flex justify-end">
+          <button
+            onClick={() => setShowRejected((v) => !v)}
+            className="rounded-full border border-[var(--color-brand-border)] px-3.5 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] transition hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-ink)]"
+          >
+            {showRejected ? "Dölj avvisade" : `Visa avvisade (${rejectedCount})`}
+          </button>
+        </div>
+      )}
+      {visibleCompanies.length === 0 ? (
+        <EmptyRow text={showRejected ? "Inga företag registrerade ännu." : "Inga aktiva företag just nu."} />
       ) : (
         <TableCard>
           <THead>
@@ -676,7 +696,7 @@ export function CompaniesSection({
             <Th>Registrerad</Th>
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
-            {companies.map((c) => (
+            {visibleCompanies.map((c) => (
               <tr key={c.id}>
                 <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">{c.name}</td>
                 <td className="px-5 py-3.5">
