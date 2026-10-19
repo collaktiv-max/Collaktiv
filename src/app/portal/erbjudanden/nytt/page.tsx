@@ -19,6 +19,7 @@ const emptyValues: OfferFormValues = {
   validTo: "",
   terms: "",
   imageEmoji: "🛍️",
+  redemptionMethod: "app",
 };
 
 export default function NyttErbjudandePage() {
@@ -43,6 +44,10 @@ export default function NyttErbjudandePage() {
       imageEmoji: values.imageEmoji,
       imageDataUrl: values.imageDataUrl,
       imageOptimized: values.imageOptimized,
+      redemptionMethod: values.redemptionMethod,
+      barcodeDataUrl: values.barcodeDataUrl,
+      discountCode: values.discountCode,
+      redirectUrl: values.redirectUrl,
       status: "utkast",
     });
     setSaving(false);

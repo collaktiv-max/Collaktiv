@@ -2,12 +2,17 @@
 
 import { useRef, useState } from "react";
 import {
+  Barcode,
   Check,
   Crown,
   ImagePlus,
   Loader2,
+  RefreshCw,
+  Smartphone,
   Sparkles,
+  Ticket,
   Wand2,
+  X,
 } from "lucide-react";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +21,18 @@ import { OfferPreviewPhone } from "./OfferPreviewPhone";
 import { wait } from "@/lib/ai-mock";
 import type { OfferSuggestion } from "@/lib/offer-ai";
 import { calcPointsCost } from "@/lib/points";
-import type { Category, DiscountType, PackageTier } from "@/lib/types";
+import type { Category, DiscountType, PackageTier, RedemptionMethod } from "@/lib/types";
+
+// Tecken som inte lätt förväxlas med varandra (inget 0/O eller 1/I).
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateDiscountCode(): string {
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  }
+  return code;
+}
 
 export interface OfferFormValues {
   title: string;
@@ -30,6 +46,10 @@ export interface OfferFormValues {
   imageEmoji: string;
   imageDataUrl?: string;
   imageOptimized?: boolean;
+  redemptionMethod: RedemptionMethod;
+  barcodeDataUrl?: string;
+  discountCode?: string;
+  redirectUrl?: string;
 }
 
 const EMOJI_OPTIONS = ["🛍️", "☕", "🍔", "💪", "🎬", "✂️", "🌿", "🎁", "✨", "🥗"];
@@ -43,6 +63,32 @@ const DISCOUNT_TYPE_OPTIONS: { id: DiscountType; label: string }[] = [
   { id: "procent", label: "Procent" },
   { id: "belopp", label: "Kronor" },
   { id: "erbjudande", label: "Fritt erbjudande" },
+];
+
+const REDEMPTION_METHOD_OPTIONS: {
+  id: RedemptionMethod;
+  label: string;
+  tagline: string;
+  icon: typeof Smartphone;
+}[] = [
+  {
+    id: "app",
+    label: "I appen",
+    tagline: "Resenären visar en sida i appen som personalen bekräftar i kassan",
+    icon: Smartphone,
+  },
+  {
+    id: "streckkod",
+    label: "Streckkod",
+    tagline: "Ladda upp en streckkod som skannas i ert kassasystem",
+    icon: Barcode,
+  },
+  {
+    id: "rabattkod",
+    label: "Rabattkod",
+    tagline: "Resenären får en kod och skickas till er egen webbplats",
+    icon: Ticket,
+  },
 ];
 
 export function OfferForm({
@@ -72,6 +118,7 @@ export function OfferForm({
   const [improveError, setImproveError] = useState<string | null>(null);
   const [optimizingImage, setOptimizingImage] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const barcodeFileRef = useRef<HTMLInputElement>(null);
 
   function update<K extends keyof OfferFormValues>(key: K, value: OfferFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -152,6 +199,15 @@ export function OfferForm({
       await wait(1100);
       setOptimizingImage(false);
       update("imageOptimized", true);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleBarcodeUpload(file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      update("barcodeDataUrl", reader.result as string);
     };
     reader.readAsDataURL(file);
   }
@@ -449,6 +505,137 @@ export function OfferForm({
             />
           </div>
         </Field>
+
+        <div>
+          <span className="mb-1.5 flex items-baseline gap-1 text-sm font-bold text-[var(--color-brand-ink)]">
+            Hur löses erbjudandet in?
+            <span className="text-[var(--color-brand-primary)]">*</span>
+          </span>
+          <span className="mb-3 block text-xs font-medium text-[var(--color-brand-muted)]">
+            Avgör hur resenären visar upp erbjudandet för er i kassan
+          </span>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            {REDEMPTION_METHOD_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const active = values.redemptionMethod === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => update("redemptionMethod", opt.id)}
+                  className={`flex flex-col items-start gap-1.5 rounded-xl border-2 p-3.5 text-left transition ${
+                    active
+                      ? "border-[var(--color-brand-primary)] bg-[var(--color-brand-secondary)]/60"
+                      : "border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)]/40"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      active
+                        ? "bg-white text-[var(--color-brand-primary)]"
+                        : "bg-[var(--color-brand-secondary)] text-[var(--color-brand-muted)]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-[13px] font-extrabold text-[var(--color-brand-ink)]">
+                    {opt.label}
+                  </span>
+                  <span className="text-[11px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+                    {opt.tagline}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {values.redemptionMethod === "streckkod" && (
+            <div className="mt-4 flex items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4">
+              <button
+                type="button"
+                onClick={() => barcodeFileRef.current?.click()}
+                className="relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-[var(--color-brand-border)] bg-white"
+              >
+                {values.barcodeDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={values.barcodeDataUrl}
+                    alt=""
+                    className="h-full w-full object-contain p-1"
+                  />
+                ) : (
+                  <Barcode className="h-6 w-6 text-[var(--color-brand-muted)]" />
+                )}
+              </button>
+              <div className="flex flex-col items-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => barcodeFileRef.current?.click()}
+                  className="text-left text-sm font-extrabold text-[var(--color-brand-primary)]"
+                >
+                  {values.barcodeDataUrl ? "Byt streckkod" : "Ladda upp streckkod"}
+                </button>
+                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                  En bild av streckkoden ni redan använder i kassasystemet.
+                </p>
+                {values.barcodeDataUrl && (
+                  <button
+                    type="button"
+                    onClick={() => update("barcodeDataUrl", undefined)}
+                    className="flex items-center gap-1 text-xs font-bold text-[#c0392b]"
+                  >
+                    <X className="h-3 w-3" /> Ta bort
+                  </button>
+                )}
+              </div>
+              <input
+                ref={barcodeFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleBarcodeUpload(e.target.files?.[0])}
+              />
+            </div>
+          )}
+
+          {values.redemptionMethod === "rabattkod" && (
+            <div className="mt-4 grid gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4 sm:grid-cols-2">
+              <Field
+                label="Webbadress"
+                required
+                hint="Dit resenären skickas för att lösa in koden"
+              >
+                <Input
+                  value={values.redirectUrl ?? ""}
+                  onChange={(e) => update("redirectUrl", e.target.value)}
+                  placeholder="https://er-webbplats.se/rabatt"
+                />
+              </Field>
+              <Field
+                label="Rabattkod"
+                required
+                hint="Ange er egen kod, eller låt oss skapa en åt er"
+              >
+                <div className="flex gap-2">
+                  <Input
+                    value={values.discountCode ?? ""}
+                    onChange={(e) => update("discountCode", e.target.value.toUpperCase())}
+                    placeholder="T.ex. COLLAKTIV20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => update("discountCode", generateDiscountCode())}
+                    title="Generera en kod åt oss"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 text-xs font-extrabold text-[var(--color-brand-primary)] transition hover:bg-[var(--color-brand-secondary)]"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Generera</span>
+                  </button>
+                </div>
+              </Field>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center justify-between border-t border-[var(--color-brand-border)] pt-6">
           <Badge variant="outline">Sparas automatiskt som utkast</Badge>

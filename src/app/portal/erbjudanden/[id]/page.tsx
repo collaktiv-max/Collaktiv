@@ -45,6 +45,10 @@ export default function RedigeraErbjudandePage() {
     imageEmoji: offer.imageEmoji,
     imageDataUrl: offer.imageDataUrl,
     imageOptimized: offer.imageOptimized,
+    redemptionMethod: offer.redemptionMethod,
+    barcodeDataUrl: offer.barcodeDataUrl,
+    discountCode: offer.discountCode,
+    redirectUrl: offer.redirectUrl,
   };
 
   async function handleSave(values: OfferFormValues) {
@@ -61,6 +65,10 @@ export default function RedigeraErbjudandePage() {
       imageEmoji: values.imageEmoji,
       imageDataUrl: values.imageDataUrl,
       imageOptimized: values.imageOptimized,
+      redemptionMethod: values.redemptionMethod,
+      barcodeDataUrl: values.barcodeDataUrl,
+      discountCode: values.discountCode,
+      redirectUrl: values.redirectUrl,
     });
     setSaving(false);
     router.push("/portal/erbjudanden");

@@ -79,6 +79,15 @@ export type OfferStatus =
 
 export type DiscountType = "procent" | "belopp" | "erbjudande";
 
+// Hur resenären löser in erbjudandet i kassan:
+//   app        – dagens swish-liknande sida som personalen bekräftar
+//                manuellt i kassan (standard, inget extra att ange).
+//   streckkod  – en streckkodsbild företaget laddar upp, skannas i
+//                kassasystemet.
+//   rabattkod  – en kod som visas för resenären efter köp, som löses
+//                in på en webbplats företaget anger.
+export type RedemptionMethod = "app" | "streckkod" | "rabattkod";
+
 export interface Offer {
   id: string;
   companyId: string;
@@ -95,6 +104,15 @@ export interface Offer {
   imageEmoji: string;
   imageDataUrl?: string;
   imageOptimized?: boolean;
+  redemptionMethod: RedemptionMethod;
+  /** Uppladdad streckkodsbild – bara satt när redemptionMethod är "streckkod". */
+  barcodeDataUrl?: string;
+  /** Angiven av företaget eller genererad av oss – bara satt när
+   * redemptionMethod är "rabattkod". */
+  discountCode?: string;
+  /** Webbplatsen resenären skickas till för att lösa in rabattkoden –
+   * bara satt när redemptionMethod är "rabattkod". */
+  redirectUrl?: string;
   status: OfferStatus;
   /** Sätts automatiskt första gången admin publicerar erbjudandet –
    * ändras inte av senare paus/återuppta. Används som sorteringsnyckel

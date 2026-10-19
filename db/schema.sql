@@ -84,6 +84,13 @@ create table if not exists offers (
   image_optimized  boolean not null default false,
   status           text not null default 'utkast'
                      check (status in ('utkast','granskas','publicerad','pausad','arkiverad')),
+  -- Hur resenären löser in erbjudandet i kassan, se RedemptionMethod i
+  -- src/lib/types.ts. "app" (dagens swish-liknande sida) är standard.
+  redemption_method text not null default 'app'
+                     check (redemption_method in ('app','streckkod','rabattkod')),
+  barcode_data_url text,
+  discount_code    text,
+  redirect_url     text,
   views            integer not null default 0,
   redemptions      integer not null default 0,
   -- Sätts automatiskt första gången admin publicerar erbjudandet.
@@ -109,6 +116,16 @@ alter table offers add column if not exists discount_value_kr integer not null d
 alter table offers drop constraint if exists offers_status_check;
 alter table offers add constraint offers_status_check
   check (status in ('utkast','granskas','publicerad','pausad','arkiverad'));
+
+-- Inlösenmetod (streckkod/rabattkod som alternativ till den
+-- swish-liknande sidan) – fanns inte i ursprungsschemat.
+alter table offers add column if not exists redemption_method text not null default 'app';
+alter table offers drop constraint if exists offers_redemption_method_check;
+alter table offers add constraint offers_redemption_method_check
+  check (redemption_method in ('app','streckkod','rabattkod'));
+alter table offers add column if not exists barcode_data_url text;
+alter table offers add column if not exists discount_code text;
+alter table offers add column if not exists redirect_url text;
 
 -- Extra butiker utöver företagets huvudadress (companies.address). De
 -- flesta företag har noll rader här – bara kedjor med flera fysiska
