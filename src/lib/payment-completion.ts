@@ -13,7 +13,15 @@ export async function completePayment(params: { companyId: string; planId: Packa
   const existingCompany = await getCompanyById(companyId);
   const isFirstPayment = !existingCompany?.paymentConfirmed;
 
-  const company = await updateCompany(companyId, { packageTier: planId, paymentConfirmed: true });
+  // En riktig betalning gör företaget till en genuin betalande kund –
+  // nollställ en eventuell kostnadsfri åtkomst (annars skulle badgen
+  // fortsätta visa "Kostnadsfritt" trots en skarp betalning).
+  const company = await updateCompany(companyId, {
+    packageTier: planId,
+    paymentConfirmed: true,
+    complimentary: false,
+    complimentaryUntil: undefined,
+  });
 
   if (isFirstPayment && existingCompany?.referredByCompanyId) {
     await grantReferralBonus(existingCompany.referredByCompanyId);

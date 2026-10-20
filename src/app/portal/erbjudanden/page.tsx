@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Pause, Pencil, Play, Plus, Rocket, Ticket, Trash2 } from "lucide-react";
+import { Eye, Loader2, Pause, Pencil, Play, Plus, Rocket, Ticket, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -19,8 +19,10 @@ const STATUS_CONFIG: Record<OfferStatus, { label: string; variant: "light" | "ac
 };
 
 export default function ErbjudandenPage() {
-  const { companyOffers, deleteOffer, updateOffer } = useAppState();
+  const { companyOffers, currentCompany, deleteOffer, updateOffer, submitOfferForReview } =
+    useAppState();
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   async function handleToggle(offerId: string, nextStatus: "publicerad" | "pausad") {
     setTogglingId(offerId);
@@ -28,6 +30,22 @@ export default function ErbjudandenPage() {
       await updateOffer(offerId, { status: nextStatus });
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  // Ett företag som redan betalat behöver inte välja paket på nytt för
+  // varje erbjudande – skicka in direkt härifrån istället för att gå
+  // via publiceringssidan. Kostnadsfria partners ska däremot alltid dit
+  // (se publiceringssidan – den dubblar som "uppdatera paket"-sida för
+  // dem), så de undantas trots att de också är "paymentConfirmed".
+  const canQuickPublish = currentCompany?.paymentConfirmed && !currentCompany.complimentary;
+
+  async function handleQuickPublish(offerId: string) {
+    setSubmittingId(offerId);
+    try {
+      await submitOfferForReview(offerId);
+    } finally {
+      setSubmittingId(null);
     }
   }
 
@@ -119,14 +137,28 @@ export default function ErbjudandenPage() {
                   >
                     <Pencil className="h-3.5 w-3.5" /> Redigera
                   </Link>
-                  {offer.status === "utkast" && (
-                    <Link
-                      href={`/portal/erbjudanden/${offer.id}/publicera`}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] py-2 text-xs font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)]"
-                    >
-                      <Rocket className="h-3.5 w-3.5" /> Publicera
-                    </Link>
-                  )}
+                  {offer.status === "utkast" &&
+                    (canQuickPublish ? (
+                      <button
+                        onClick={() => handleQuickPublish(offer.id)}
+                        disabled={submittingId === offer.id}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] py-2 text-xs font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-60"
+                      >
+                        {submittingId === offer.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Rocket className="h-3.5 w-3.5" />
+                        )}
+                        {submittingId === offer.id ? "Skickar in..." : "Publicera"}
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/portal/erbjudanden/${offer.id}/publicera`}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] py-2 text-xs font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)]"
+                      >
+                        <Rocket className="h-3.5 w-3.5" /> Publicera
+                      </Link>
+                    ))}
                   {(offer.status === "publicerad" || offer.status === "pausad") && (
                     <button
                       onClick={() =>

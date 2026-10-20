@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowLeft, Check, Clock, Loader2, Receipt } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Clock, Gift, Loader2, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
@@ -20,6 +20,10 @@ import {
   formatKr,
   type BillingPeriod,
 } from "@/lib/pricing";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function PubliceraErbjudandePage() {
   const { id } = useParams<{ id: string }>();
@@ -231,7 +235,11 @@ export default function PubliceraErbjudandePage() {
     <div>
       <PageHeader
         title="Publicera erbjudande"
-        subtitle={`"${offer.title}" är sparat som utkast – välj paket för att publicera det.`}
+        subtitle={
+          currentCompany.complimentary
+            ? `"${offer.title}" är sparat som utkast. Ni har kostnadsfri åtkomst – uppdatera ert paket här, eller publicera direkt på det ni redan har.`
+            : `"${offer.title}" är sparat som utkast – välj paket för att publicera det.`
+        }
         action={
           <Button href={`/portal/erbjudanden/${offer.id}`} variant="ghost" icon={<ArrowLeft className="h-4 w-4" />} iconPosition="left">
             Tillbaka till redigering
@@ -248,9 +256,25 @@ export default function PubliceraErbjudandePage() {
         </div>
       )}
 
+      {currentCompany.complimentary && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+            <Gift className="h-4.5 w-4.5" />
+          </span>
+          <p className="text-xs font-bold text-[var(--color-brand-ink)]">
+            Ni har kostnadsfri åtkomst till Standard-paketet
+            {currentCompany.complimentaryUntil
+              ? ` till och med ${formatDate(currentCompany.complimentaryUntil)}`
+              : " tillsvidare"}
+            . Vill ni ha fler platser, mer synlighet och full statistik kan ni uppgradera till
+            Premium nedan.
+          </p>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-          Välj paket för att publicera
+          {currentCompany.complimentary ? "Uppdatera ert paket" : "Välj paket för att publicera"}
         </h3>
         <div className="inline-flex items-center rounded-full border border-[var(--color-brand-border)] bg-white p-1">
           {(["sixMonths", "year"] as BillingPeriod[]).map((p) => (
@@ -343,7 +367,9 @@ export default function PubliceraErbjudandePage() {
 
       <div className="mt-8 rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
         <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-          Ingen prenumeration – betalningen gäller hela perioden, men ni kan pausa erbjudandet när ni vill från portalen utan extra kostnad.
+          {alreadyPaidForTier
+            ? "Ni kan pausa erbjudandet när ni vill från portalen utan extra kostnad."
+            : "Ingen prenumeration – betalningen gäller hela perioden, men ni kan pausa erbjudandet när ni vill från portalen utan extra kostnad."}
           {companyApproved
             ? " Vi granskar erbjudandet innan det går live."
             : " Vi granskar er ansökan och erbjudandet tillsammans innan det går live."}
