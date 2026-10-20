@@ -51,6 +51,12 @@ export interface CompanyProfile {
    * "Tillsvidare" valdes. En daglig cron (src/lib/reminders.ts)
    * återkallar automatiskt åtkomsten när datumet passerat. */
   complimentaryUntil?: string;
+  /** Satt när en kostnadsfri partner godkänner villkoren – första
+   * gången de publicerar ett erbjudande, se handlePublish i
+   * /portal/erbjudanden/[id]/publicera. Betalande företags
+   * godkännande loggas istället per betalning (se Payment). */
+  termsVersion?: string;
+  termsAcceptedAt?: string;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */

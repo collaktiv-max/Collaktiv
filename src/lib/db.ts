@@ -15,6 +15,7 @@ import type {
   DiscountType,
   RedemptionMethod,
 } from "./types";
+import { TERMS_VERSION } from "./legal";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -44,6 +45,8 @@ interface CompanyRow {
   payment_confirmed: boolean;
   complimentary: boolean;
   complimentary_until: string | null;
+  terms_version: string | null;
+  terms_accepted_at: string | null;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
   referred_by_company_id: string | null;
@@ -123,6 +126,8 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     paymentConfirmed: row.payment_confirmed,
     complimentary: row.complimentary,
     complimentaryUntil: row.complimentary_until ?? undefined,
+    termsVersion: row.terms_version ?? undefined,
+    termsAcceptedAt: row.terms_accepted_at ?? undefined,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
@@ -290,6 +295,8 @@ export async function updateCompany(
       payment_confirmed = ${next.paymentConfirmed},
       complimentary = ${next.complimentary ?? false},
       complimentary_until = ${next.complimentaryUntil ?? null},
+      terms_version = ${next.termsVersion ?? null},
+      terms_accepted_at = ${next.termsAcceptedAt ?? null},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
@@ -590,7 +597,8 @@ export async function deleteOffer(id: string): Promise<void> {
 // i granskning istället för att publiceras direkt.
 export async function submitOfferForReview(
   offerId: string,
-  companyId: string
+  companyId: string,
+  termsAccepted?: boolean
 ): Promise<{ offer: Offer; company: CompanyProfile } | null> {
   const offer = await updateOffer(offerId, { status: "granskas" });
   if (!offer) return null;
@@ -598,10 +606,21 @@ export async function submitOfferForReview(
   const current = await getCompanyById(companyId);
   if (!current) return null;
 
+  // Kostnadsfria partners går aldrig via betalflödets egen
+  // villkors-kryssruta (de betalar ju inget) – de godkänner istället
+  // här, första gången de publicerar ett erbjudande. Skrivs bara en
+  // gång, så en senare publicering av ett nytt erbjudande inte skriver
+  // över det ursprungliga godkännandet.
+  const termsUpdate =
+    current.complimentary && termsAccepted && !current.termsAcceptedAt
+      ? { termsVersion: TERMS_VERSION, termsAcceptedAt: new Date().toISOString() }
+      : {};
+
   const company = await updateCompany(companyId, {
     applicationStatus:
       current.applicationStatus === "inskickad" ? "under_granskning" : current.applicationStatus,
     onboardingChecklist: { ...current.onboardingChecklist, firstPublish: true },
+    ...termsUpdate,
   });
 
   return company ? { offer, company } : null;

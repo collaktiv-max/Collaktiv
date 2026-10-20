@@ -36,6 +36,12 @@ create table if not exists companies (
   -- "Tillsvidare". Den dagliga cron-sopningen (src/lib/reminders.ts)
   -- återkallar åtkomsten automatiskt när datumet passerat.
   complimentary_until timestamptz,
+  -- Sätts när en kostnadsfri partner godkänner villkoren första gången
+  -- de publicerar ett erbjudande – de går aldrig via betalflödets egen
+  -- kryssruta (betalande företags godkännande loggas istället per
+  -- betalning, se terms_version/terms_accepted_at på payments).
+  terms_version        text,
+  terms_accepted_at    timestamptz,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
   -- Sätts automatiskt när ansökan godkänns/första betalningen
@@ -68,6 +74,8 @@ alter table companies add column if not exists payment_reminder_sent_at timestam
 alter table companies add column if not exists offer_reminder_sent_at timestamptz;
 alter table companies add column if not exists complimentary boolean not null default false;
 alter table companies add column if not exists complimentary_until timestamptz;
+alter table companies add column if not exists terms_version text;
+alter table companies add column if not exists terms_accepted_at timestamptz;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

@@ -39,7 +39,7 @@ interface Ctx {
   addOffer: (offer: Omit<Offer, "id" | "companyId" | "createdAt" | "stats">) => Promise<string>;
   updateOffer: (id: string, partial: Partial<Offer>) => Promise<void>;
   deleteOffer: (id: string) => Promise<void>;
-  submitOfferForReview: (id: string) => Promise<void>;
+  submitOfferForReview: (id: string, termsAccepted?: boolean) => Promise<void>;
   createCampaign: (input: { message?: string }) => Promise<void>;
   addLocation: (input: { name?: string; address: string }) => Promise<void>;
   updateLocation: (id: string, partial: { name?: string; address?: string }) => Promise<void>;
@@ -180,10 +180,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCompanyOffers((offers) => offers.filter((o) => o.id !== id));
   }, []);
 
-  const submitOfferForReview = useCallback(async (id: string) => {
+  const submitOfferForReview = useCallback(async (id: string, termsAccepted?: boolean) => {
     const { offer, company } = await fetchJson<{ offer: Offer; company: CompanyProfile }>(
       `/api/offers/${id}/submit`,
-      { method: "POST" }
+      { method: "POST", body: JSON.stringify({ termsAccepted }) }
     );
     setCompanyOffers((offers) => offers.map((o) => (o.id === id ? offer : o)));
     setCurrentCompany(company);

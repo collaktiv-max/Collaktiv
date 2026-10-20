@@ -100,6 +100,10 @@ export default function VillkorPage() {
               Collaktiv kan, efter eget val, ge ett enskilt företag kostnadsfri åtkomst till ett
               paket, t.ex. som del av ett marknadsförings- eller samarbetsavtal. Det sker alltid
               på Collaktivs initiativ och ger inte andra företag rätt till motsvarande villkor.
+              Kostnadsfri åtkomst kan ges för en begränsad period – när den löper ut avslutas
+              åtkomsten automatiskt om inget annat avtalats. Dessa villkor gäller fullt ut även
+              vid kostnadsfri åtkomst; ni bekräftar att ni godkänner dem i samband med att ni
+              publicerar ert första erbjudande.
             </p>
           </Section>
 

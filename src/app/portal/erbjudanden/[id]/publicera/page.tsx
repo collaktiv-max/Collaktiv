@@ -94,9 +94,18 @@ export default function PubliceraErbjudandePage() {
 
   // Redan betalat för det valda paketet (t.ex. ett erbjudande som
   // skickades tillbaka för redigering) – skicka bara in på nytt utan
-  // att dra en ny betalning.
+  // att dra en ny betalning. Gäller även kostnadsfria partners (de är
+  // "betalconfirmed" utan att ha betalat, se company.complimentary).
   const alreadyPaidForTier =
     currentCompany.paymentConfirmed && currentCompany.packageTier === selectedTier;
+
+  // Kostnadsfria partners går aldrig via betalflödet och har därför
+  // aldrig sett villkors-kryssrutan – kräv och visa den här istället,
+  // men bara första gången (ett redan godkänt företag slipper se den
+  // igen när de publicerar fler erbjudanden).
+  const needsComplimentaryTerms =
+    currentCompany.complimentary && !currentCompany.termsAcceptedAt;
+  const showTermsCheckbox = !alreadyPaidForTier || needsComplimentaryTerms;
 
   async function handlePublish() {
     setProcessing(true);
@@ -104,7 +113,7 @@ export default function PubliceraErbjudandePage() {
 
     if (alreadyPaidForTier) {
       try {
-        await submitOfferForReview(offer!.id);
+        await submitOfferForReview(offer!.id, needsComplimentaryTerms ? termsAccepted : undefined);
         setDone(true);
       } catch {
         setError("Kunde inte skicka in erbjudandet. Försök igen om en stund.");
@@ -342,7 +351,7 @@ export default function PubliceraErbjudandePage() {
             " Om er ansökan eller erbjudandet nekas återbetalas beloppet automatiskt."}
         </p>
 
-        {!alreadyPaidForTier && (
+        {showTermsCheckbox && (
           <label className="mt-4 flex items-start gap-2.5 text-xs font-semibold text-[var(--color-brand-ink)]">
             <input
               type="checkbox"
@@ -359,7 +368,7 @@ export default function PubliceraErbjudandePage() {
               >
                 villkor
               </Link>
-              , inklusive betalningsvillkoren.
+              {needsComplimentaryTerms ? "." : ", inklusive betalningsvillkoren."}
             </span>
           </label>
         )}
@@ -395,7 +404,7 @@ export default function PubliceraErbjudandePage() {
               (!PAYMENTS_ENABLED && !alreadyPaidForTier) ||
               processing ||
               invoicing ||
-              (!alreadyPaidForTier && !termsAccepted)
+              (showTermsCheckbox && !termsAccepted)
             }
             size="lg"
             className="w-full sm:w-auto"
@@ -404,7 +413,9 @@ export default function PubliceraErbjudandePage() {
             {processing
               ? "Skickar in..."
               : alreadyPaidForTier
-                ? "Skicka in för granskning – redan betalt"
+                ? currentCompany.complimentary
+                  ? "Skicka in för granskning"
+                  : "Skicka in för granskning – redan betalt"
                 : `Betala med kort – ${formatKr(
                     getDiscountedTotal(
                       PLANS.find((p) => p.id === selectedTier)!,
