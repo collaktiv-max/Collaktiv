@@ -28,10 +28,14 @@ async function sendEmail({
   to,
   subject,
   html,
+  attachments,
 }: {
   to: string;
   subject: string;
   html: string;
+  /** `path` låter Resend hämta filen från en URL själva – vi behöver
+   * aldrig ladda ner t.ex. fakturans PDF här. */
+  attachments?: { filename: string; path: string }[];
 }) {
   if (!resend) {
     console.warn(
@@ -40,7 +44,7 @@ async function sendEmail({
     return { sent: false };
   }
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
+    await resend.emails.send({ from: FROM, to, subject, html, attachments });
     return { sent: true };
   } catch (err) {
     console.error(`[email] Kunde inte skicka till ${to}:`, err);
@@ -237,14 +241,15 @@ export async function sendAdminInvoiceEmail(params: {
   planName: string;
   amount: number;
   invoiceUrl: string;
+  invoicePdfUrl: string | null;
   dueInDays: number;
 }) {
-  const { company, planName, amount, invoiceUrl, dueInDays } = params;
+  const { company, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays } = params;
   const html = layout(
     "Ni har blivit inbjudna som partner i Collaktiv",
     `<p>Hej ${company.name}!</p>
      <p style="margin-top:12px;">Vi har skickat en faktura för ${planName}-paketet (${amount} kr) med ${dueInDays}
-     dagars betalningsvillkor. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
+     dagars betalningsvillkor${invoicePdfUrl ? " – bifogad som PDF" : ""}. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
      <p style="margin-top:12px;">Genom att betala fakturan godkänner ni Collaktivs
      <a href="${SITE_URL}/villkor" style="color:#166849;font-weight:700;">villkor</a>, inklusive betalningsvillkoren.</p>`,
     "Betala fakturan",
@@ -254,6 +259,9 @@ export async function sendAdminInvoiceEmail(params: {
     to: company.contactEmail,
     subject: `Faktura från Collaktiv – ${planName}-paketet`,
     html,
+    attachments: invoicePdfUrl
+      ? [{ filename: `Collaktiv-faktura-${planName}.pdf`, path: invoicePdfUrl }]
+      : undefined,
   });
 }
 

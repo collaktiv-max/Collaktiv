@@ -32,13 +32,13 @@ export async function POST(
   }
 
   try {
-    const { invoiceUrl, dueInDays, amount, planName } = await createAndSendInvoice({
+    const { invoiceUrl, invoicePdfUrl, dueInDays, amount, planName } = await createAndSendInvoice({
       companyId,
       planId,
       period,
     });
     if (invoiceUrl) {
-      await sendAdminInvoiceEmail({ company, planName, amount, invoiceUrl, dueInDays });
+      await sendAdminInvoiceEmail({ company, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays });
     }
     return NextResponse.json({ sent: true, invoiceUrl, dueInDays });
   } catch (err) {

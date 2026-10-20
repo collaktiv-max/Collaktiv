@@ -36,7 +36,13 @@ export async function createAndSendInvoice(params: {
    * godkännandet först när fakturan faktiskt betalas (betalning =
    * godkännande), se /api/webhooks/stripe. */
   termsAcceptedAt?: string;
-}): Promise<{ invoiceUrl: string | null; dueInDays: number; amount: number; planName: string }> {
+}): Promise<{
+  invoiceUrl: string | null;
+  invoicePdfUrl: string | null;
+  dueInDays: number;
+  amount: number;
+  planName: string;
+}> {
   const { companyId, offerId, planId, period, termsAcceptedAt } = params;
 
   const [company, offer] = await Promise.all([
@@ -134,6 +140,7 @@ export async function createAndSendInvoice(params: {
 
   return {
     invoiceUrl: finalized.hosted_invoice_url ?? null,
+    invoicePdfUrl: finalized.invoice_pdf ?? null,
     dueInDays: DAYS_UNTIL_DUE,
     amount,
     planName: plan.name,
