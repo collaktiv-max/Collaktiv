@@ -21,6 +21,7 @@ export async function completePayment(params: { companyId: string; planId: Packa
     paymentConfirmed: true,
     complimentary: false,
     complimentaryUntil: undefined,
+    complimentaryDuration: undefined,
   });
 
   if (isFirstPayment && existingCompany?.referredByCompanyId) {

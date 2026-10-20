@@ -8,8 +8,10 @@ import {
   CircleDollarSign,
   Clock,
   Gift,
+  Loader2,
   Mail,
   Phone,
+  Receipt,
   Rocket,
   ShieldCheck,
   Ticket,
@@ -18,6 +20,14 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { APP_LAUNCHED } from "@/lib/config";
+import {
+  COMPLIMENTARY_DURATION_OPTIONS,
+  complimentaryDurationLabel,
+  computeComplimentaryUntil,
+  type ComplimentaryDuration,
+} from "@/lib/complimentary";
+import { fetchJson } from "@/lib/apiClient";
+import { BILLING_LABELS, getDiscountedTotal, getPlan, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import {
   CATEGORY_LABELS,
   type ApplicationStatus,
@@ -128,31 +138,15 @@ export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onT
   );
 }
 
-type ComplimentaryDuration = "1m" | "3m" | "6m" | "1y" | "indefinite";
-
-const COMPLIMENTARY_DURATION_OPTIONS: { id: ComplimentaryDuration; label: string }[] = [
-  { id: "1m", label: "1 månad" },
-  { id: "3m", label: "3 månader" },
-  { id: "6m", label: "6 månader" },
-  { id: "1y", label: "1 år" },
-  { id: "indefinite", label: "Tillsvidare" },
-];
-
-function computeComplimentaryUntil(duration: ComplimentaryDuration): string | undefined {
-  if (duration === "indefinite") return undefined;
-  const months = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 }[duration];
-  const until = new Date();
-  until.setMonth(until.getMonth() + months);
-  return until.toISOString();
-}
-
 // Betalningscell som även hanterar kostnadsfri åtkomst (partners vi
 // medvetet vill ha med utan att de betalar, t.ex. för
 // marknadsföringsbyte) – skiljs från en riktig Stripe-betalning via
 // company.complimentary, så den aldrig syns som en riktig betalning i
 // fakturahistorik/statistik. Admin väljer löptid (eller tillsvidare);
-// en bestämd löptid återkallas automatiskt av den dagliga cron-
-// sopningen i src/lib/reminders.ts.
+// en bestämd löptid räknas från lanseringen för resenärer, inte från
+// dagen den beviljas (se src/lib/complimentary.ts), och återkallas
+// automatiskt av den dagliga cron-sopningen i src/lib/reminders.ts
+// när den har löpt ut.
 export function PaymentCell({
   company,
   onUpdate,
@@ -162,6 +156,10 @@ export function PaymentCell({
 }) {
   const [pickingDuration, setPickingDuration] = useState(false);
   const [duration, setDuration] = useState<ComplimentaryDuration>("3m");
+  const [pickingInvoice, setPickingInvoice] = useState(false);
+  const [invoicePlan, setInvoicePlan] = useState<PlanId>("standard");
+  const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod>("year");
+  const [sendingInvoice, setSendingInvoice] = useState(false);
 
   if (company.paymentConfirmed && company.complimentary) {
     return (
@@ -170,7 +168,9 @@ export function PaymentCell({
           <Gift className="h-3.5 w-3.5" />
           {company.complimentaryUntil
             ? `Kostnadsfritt till ${formatDate(company.complimentaryUntil)}`
-            : "Kostnadsfritt"}
+            : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
+              ? `Kostnadsfritt (${complimentaryDurationLabel(company.complimentaryDuration)} efter lansering)`
+              : "Kostnadsfritt"}
         </Badge>
         <button
           onClick={() => {
@@ -183,6 +183,7 @@ export function PaymentCell({
                 paymentConfirmed: false,
                 complimentary: false,
                 complimentaryUntil: undefined,
+                complimentaryDuration: undefined,
               });
             }
           }}
@@ -220,6 +221,7 @@ export function PaymentCell({
               paymentConfirmed: true,
               complimentary: true,
               packageTier: "standard",
+              complimentaryDuration: duration,
               complimentaryUntil: computeComplimentaryUntil(duration),
             });
             setPickingDuration(false);
@@ -240,8 +242,78 @@ export function PaymentCell({
     );
   }
 
+  if (pickingInvoice) {
+    const amount = getDiscountedTotal(getPlan(invoicePlan), invoicePeriod);
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <select
+          value={invoicePlan}
+          onChange={(e) => setInvoicePlan(e.target.value as PlanId)}
+          disabled={sendingInvoice}
+          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+        >
+          <option value="standard">Standard</option>
+          <option value="premium">Premium</option>
+        </select>
+        <select
+          value={invoicePeriod}
+          onChange={(e) => setInvoicePeriod(e.target.value as BillingPeriod)}
+          disabled={sendingInvoice}
+          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+        >
+          {(Object.keys(BILLING_LABELS) as BillingPeriod[]).map((p) => (
+            <option key={p} value={p}>
+              {BILLING_LABELS[p]}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={async () => {
+            if (
+              !confirm(
+                `Skicka en faktura på ${amount} kr (${getPlan(invoicePlan).name}, ${BILLING_LABELS[invoicePeriod]}) till ${company.contactEmail}?`
+              )
+            ) {
+              return;
+            }
+            setSendingInvoice(true);
+            try {
+              await fetchJson(`/api/admin/companies/${company.id}/invoice`, {
+                method: "POST",
+                body: JSON.stringify({ planId: invoicePlan, period: invoicePeriod }),
+              });
+              alert(`Fakturan skickad till ${company.contactEmail}.`);
+              setPickingInvoice(false);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : "Kunde inte skicka fakturan.");
+            } finally {
+              setSendingInvoice(false);
+            }
+          }}
+          disabled={sendingInvoice}
+          title="Skicka faktura"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] text-white transition hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-60"
+        >
+          {sendingInvoice ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Check className="h-3.5 w-3.5" />
+          )}
+        </button>
+        <button
+          onClick={() => setPickingInvoice(false)}
+          disabled={sendingInvoice}
+          title="Avbryt"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-muted)] transition hover:border-[#c0392b] hover:text-[#c0392b] disabled:opacity-60"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <PaymentToggle
         confirmed={false}
         onToggle={() => onUpdate(company.id, { paymentConfirmed: true })}
@@ -251,6 +323,12 @@ export function PaymentCell({
         className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
       >
         <Gift className="h-3 w-3" /> Ge kostnadsfritt
+      </button>
+      <button
+        onClick={() => setPickingInvoice(true)}
+        className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
+      >
+        <Receipt className="h-3 w-3" /> Skicka faktura
       </button>
     </div>
   );

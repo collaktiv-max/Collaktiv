@@ -45,6 +45,7 @@ interface CompanyRow {
   payment_confirmed: boolean;
   complimentary: boolean;
   complimentary_until: string | null;
+  complimentary_duration: string | null;
   terms_version: string | null;
   terms_accepted_at: string | null;
   contest_host_interested: boolean;
@@ -126,6 +127,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     paymentConfirmed: row.payment_confirmed,
     complimentary: row.complimentary,
     complimentaryUntil: row.complimentary_until ?? undefined,
+    complimentaryDuration: (row.complimentary_duration ?? undefined) as CompanyProfile["complimentaryDuration"],
     termsVersion: row.terms_version ?? undefined,
     termsAcceptedAt: row.terms_accepted_at ?? undefined,
     contestHostInterested: row.contest_host_interested,
@@ -295,6 +297,7 @@ export async function updateCompany(
       payment_confirmed = ${next.paymentConfirmed},
       complimentary = ${next.complimentary ?? false},
       complimentary_until = ${next.complimentaryUntil ?? null},
+      complimentary_duration = ${next.complimentaryDuration ?? null},
       terms_version = ${next.termsVersion ?? null},
       terms_accepted_at = ${next.termsAcceptedAt ?? null},
       contest_host_interested = ${next.contestHostInterested},
@@ -366,6 +369,21 @@ export async function getCompaniesWithExpiredComplimentaryAccess(): Promise<Comp
     where complimentary = true
       and complimentary_until is not null
       and complimentary_until <= now()
+  `) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
+}
+
+// Företag som fick en bestämd löptid innan vi visste lanseringsdatumet
+// (APP_LAUNCH_DATE i config.ts) – complimentary_until är då fortfarande
+// null. Används av reminders.ts för att räkna ut och fylla i
+// slutdatumet automatiskt så fort lanseringsdatumet blir känt.
+export async function getComplimentaryCompaniesAwaitingLaunch(): Promise<CompanyProfile[]> {
+  const rows = (await sql`
+    select * from companies
+    where complimentary = true
+      and complimentary_until is null
+      and complimentary_duration is not null
+      and complimentary_duration <> 'indefinite'
   `) as CompanyRow[];
   return rows.map((r) => stripPassword(toCompany(r)));
 }

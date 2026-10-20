@@ -224,3 +224,60 @@ export async function sendOfferReturnedEmail(company: CompanyProfile, offer: Off
     html,
   });
 }
+
+// Skickas till FÖRETAGET när admin skickar en faktura direkt till dem
+// (se "Skicka faktura" i admin) – de behöver aldrig logga in i
+// portalen för att betala, Stripes egen fakturasida har en
+// betalningslänk. Komplement till Stripes eget fakturamejl, i
+// Collaktivs egen ton/design, och med villkorsgodkännandet tydligt
+// utskrivet – företaget har aldrig sett en kryssruta för det, de
+// godkänner genom att betala.
+export async function sendAdminInvoiceEmail(params: {
+  company: CompanyProfile;
+  planName: string;
+  amount: number;
+  invoiceUrl: string;
+  dueInDays: number;
+}) {
+  const { company, planName, amount, invoiceUrl, dueInDays } = params;
+  const html = layout(
+    "Ni har blivit inbjudna som partner i Collaktiv",
+    `<p>Hej ${company.name}!</p>
+     <p style="margin-top:12px;">Vi har skickat en faktura för ${planName}-paketet (${amount} kr) med ${dueInDays}
+     dagars betalningsvillkor. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
+     <p style="margin-top:12px;">Genom att betala fakturan godkänner ni Collaktivs
+     <a href="${SITE_URL}/villkor" style="color:#166849;font-weight:700;">villkor</a>, inklusive betalningsvillkoren.</p>`,
+    "Betala fakturan",
+    invoiceUrl
+  );
+  return sendEmail({
+    to: company.contactEmail,
+    subject: `Faktura från Collaktiv – ${planName}-paketet`,
+    html,
+  });
+}
+
+// Skickas till OSS SJÄLVA (ADMIN_EMAIL) när Stripe bekräftar att en
+// faktura är betald – annars märks en fakturabetalning (som kan ta
+// flera dagar, t.ex. via banköverföring) bara om någon råkar kolla
+// admin-panelen.
+export async function sendAdminInvoicePaidEmail(params: {
+  company: CompanyProfile;
+  planName: string;
+  amount: number;
+}) {
+  const { company, planName, amount } = params;
+  const html = layout(
+    "En faktura har betalats! 🎉",
+    `<p><strong>${company.name}</strong> har betalat sin faktura för ${planName}-paketet (${amount} kr).</p>
+     <p style="margin-top:12px;">Kontot är redan markerat som betalt i admin-panelen – inget mer att göra
+     här, om inte erbjudandet också väntar på granskning.</p>`,
+    "Öppna admin-panelen",
+    `${SITE_URL}/admin`
+  );
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Betalning mottagen: ${company.name}`,
+    html,
+  });
+}

@@ -3,12 +3,14 @@ import {
   getCompaniesNeedingOfferReminder,
   getCompaniesNeedingPaymentReminder,
   getCompaniesWithExpiredComplimentaryAccess,
+  getComplimentaryCompaniesAwaitingLaunch,
   markOfferReminderSent,
   markPaymentReminderSent,
   updateCompany,
 } from "./db";
 import { sendOfferReminderEmail, sendPaymentReminderEmail } from "./email";
-import { PAYMENTS_ENABLED } from "./config";
+import { PAYMENTS_ENABLED, APP_LAUNCH_DATE } from "./config";
+import { computeComplimentaryUntil } from "./complimentary";
 
 // Körs av /api/cron/reminders (dagligt schema, se vercel.json).
 // Tröskelvärden (2/3 dagar innan första påminnelsen, 5 dagar mellan
@@ -28,7 +30,24 @@ export async function runReminderSweep() {
       paymentConfirmed: false,
       complimentary: false,
       complimentaryUntil: undefined,
+      complimentaryDuration: undefined,
     });
+  }
+
+  // Löptider som beviljades innan lanseringsdatumet (APP_LAUNCH_DATE)
+  // var känt har ännu inget complimentary_until – så fort datumet sätts
+  // ska de räknas ut och fyllas i här, annars skulle de ligga kvar som
+  // kostnadsfria för evigt istället för att faktiskt löpa ut.
+  let complimentaryBackfilled = 0;
+  if (APP_LAUNCH_DATE) {
+    const awaitingLaunch = await getComplimentaryCompaniesAwaitingLaunch();
+    for (const company of awaitingLaunch) {
+      if (!company.complimentaryDuration) continue;
+      await updateCompany(company.id, {
+        complimentaryUntil: computeComplimentaryUntil(company.complimentaryDuration),
+      });
+      complimentaryBackfilled++;
+    }
   }
 
   // Så länge betalning inte är igång skarpt (se PAYMENTS_ENABLED) ska
@@ -62,5 +81,6 @@ export async function runReminderSweep() {
     offerRemindersChecked: offerDue.length,
     offerRemindersSent,
     complimentaryAccessExpired: complimentaryExpired.length,
+    complimentaryAccessBackfilled: complimentaryBackfilled,
   };
 }

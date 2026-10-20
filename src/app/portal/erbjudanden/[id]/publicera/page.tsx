@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { FeatureList } from "@/components/ui/FeatureList";
 import { useAppState } from "@/lib/store";
 import { REGION, PAYMENTS_ENABLED } from "@/lib/config";
+import { complimentaryDurationLabel } from "@/lib/complimentary";
 import type { CompanyProfile, Offer as OfferT, PackageTier } from "@/lib/types";
 import {
   PLANS,
@@ -265,7 +266,9 @@ export default function PubliceraErbjudandePage() {
             Ni har kostnadsfri åtkomst till Standard-paketet
             {currentCompany.complimentaryUntil
               ? ` till och med ${formatDate(currentCompany.complimentaryUntil)}`
-              : " tillsvidare"}
+              : currentCompany.complimentaryDuration && currentCompany.complimentaryDuration !== "indefinite"
+                ? ` i ${complimentaryDurationLabel(currentCompany.complimentaryDuration)} efter lansering`
+                : " tillsvidare"}
             . Vill ni ha fler platser, mer synlighet och full statistik kan ni uppgradera till
             Premium nedan.
           </p>

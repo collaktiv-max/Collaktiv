@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
-import { getCompanyById, getOfferById, createPayment } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
-import { getPlan, getDiscountedTotal, BILLING_LABELS, type BillingPeriod } from "@/lib/pricing";
-import type { PlanId } from "@/lib/pricing";
-import { TERMS_VERSION } from "@/lib/legal";
-import { getSwedishMomsTaxRateId } from "@/lib/tax";
+import { createAndSendInvoice } from "@/lib/invoice";
+import type { PlanId, BillingPeriod } from "@/lib/pricing";
 
 interface InvoiceBody {
   offerId?: string;
@@ -14,14 +10,10 @@ interface InvoiceBody {
   termsAccepted: boolean;
 }
 
-const DAYS_UNTIL_DUE = 30;
-
 // Alternativ till /api/checkout för företag som vill betala mot faktura
-// istället för kort. Stripe skickar fakturan (med betalningslänk och
-// PDF) direkt till kontaktmejlet – vi markerar bara betalningen som
-// "pending" här. Den blir "paid" och erbjudandet skickas in för
-// granskning i /api/webhooks/stripe när Stripe bekräftar att fakturan
-// är betald (kan ta dagar om företaget betalar via bank).
+// istället för kort, initierat av företaget självt (för en admin-
+// initierad faktura, se /api/admin/companies/[id]/invoice). Den
+// faktiska faktura-/Stripe-logiken ligger i src/lib/invoice.ts.
 export async function POST(req: NextRequest) {
   const companyId = await getSessionCompanyId();
   if (!companyId) {
@@ -38,115 +30,22 @@ export async function POST(req: NextRequest) {
   }
   const termsAcceptedAt = new Date().toISOString();
 
-  // offerId finns bara när betalningen görs för att publicera ett
-  // specifikt erbjudande (gamla flödet) – betalar man för paketet
-  // direkt från profilen/översikten finns inget erbjudande ännu.
-  const [company, offer] = await Promise.all([
-    getCompanyById(companyId),
-    offerId ? getOfferById(offerId) : Promise.resolve(null),
-  ]);
-  if (!company) {
-    return NextResponse.json({ error: "Företaget hittades inte." }, { status: 404 });
-  }
-  if (offerId && (!offer || offer.companyId !== companyId)) {
-    return NextResponse.json({ error: "Erbjudandet hittades inte." }, { status: 404 });
-  }
-
-  const plan = getPlan(planId);
-  const amount = getDiscountedTotal(plan, period);
-
   try {
-    const existingCustomers = await stripe.customers.list({
-      email: company.contactEmail,
-      limit: 1,
-    });
-    const customer =
-      existingCustomers.data[0] ??
-      (await stripe.customers.create({
-        email: company.contactEmail,
-        name: company.name,
-        metadata: { companyId },
-      }));
-
-    const momsTaxRateId = await getSwedishMomsTaxRateId();
-
-    // Skapas i draft-läge FÖRST, och fakturaraden läggs sedan på med ett
-    // uttryckligt invoice-id. Att skapa fakturaraden innan fakturan och
-    // lita på att Stripe plockar upp den automatiskt visade sig
-    // opålitligt – resultatet blev en faktura utan rader (0 kr) som
-    // Stripe direkt markerade som "betald" eftersom inget fanns att
-    // betala. Uttrycklig koppling tar bort den gissningen helt.
-    const invoice = await stripe.invoices.create({
-      customer: customer.id,
-      collection_method: "send_invoice",
-      days_until_due: DAYS_UNTIL_DUE,
-      metadata: {
-        companyId,
-        ...(offerId ? { offerId } : {}),
-        planId,
-        period,
-        termsVersion: TERMS_VERSION,
-        termsAcceptedAt,
-      },
-    });
-
-    await stripe.invoiceItems.create({
-      customer: customer.id,
-      invoice: invoice.id,
-      amount: amount * 100,
-      currency: "sek",
-      tax_rates: [momsTaxRateId],
-      description: `Collaktiv ${plan.name} – ${BILLING_LABELS[period]} · ${company.name} · early bird-rabatt 20% inräknad, 25% moms inkluderad`,
-    });
-
-    const finalized = await stripe.invoices.finalizeInvoice(invoice.id as string);
-    if (finalized.amount_due !== amount * 100) {
-      // Säkerhetsspärr: om fakturaraden av någon anledning ändå inte
-      // hamnade på fakturan ska vi hellre krascha synligt än skicka ut
-      // en 0-kronorsfaktura som Stripe markerar betald utan att någon
-      // betalat något.
-      await stripe.invoices.voidInvoice(finalized.id as string);
-      throw new Error(
-        `Fakturabeloppet stämmer inte (förväntade ${amount * 100}, fick ${finalized.amount_due}) – fakturan makulerad.`
-      );
-    }
-    // En faktura som redan är fullt betald vid finalisering (t.ex. via
-    // ett tillgodohavande hos kunden) kan inte skickas – Stripe avvisar
-    // det.
-    if (finalized.status === "open") {
-      await stripe.invoices.sendInvoice(finalized.id as string);
-    }
-
-    // Sparas ALLTID som "pending" här, oavsett vad det synkrona svaret
-    // från Stripe säger – det visade sig opålitligt (en nyskapad faktura
-    // kunde komma tillbaka som "paid" direkt, utan att företaget gjort
-    // något). Enda källan som får markera en faktura som faktiskt betald
-    // är webhooken (invoice.paid), som bara triggas av en riktig
-    // betalningshändelse hos Stripe. Annars riskerar vi att visa en
-    // obetald faktura som "betald och återbetalad" om ansökan nekas.
-    await createPayment({
+    const { invoiceUrl, dueInDays } = await createAndSendInvoice({
       companyId,
       offerId,
-      stripeSessionId: finalized.id as string,
-      amount,
-      currency: "sek",
       planId,
       period,
-      status: "pending",
-      termsVersion: TERMS_VERSION,
       termsAcceptedAt,
     });
-
-    return NextResponse.json({
-      sent: true,
-      invoiceUrl: finalized.hosted_invoice_url,
-      dueInDays: DAYS_UNTIL_DUE,
-    });
+    return NextResponse.json({ sent: true, invoiceUrl, dueInDays });
   } catch (err) {
     console.error("[invoice] Kunde inte skapa/skicka fakturan:", err);
+    const message = err instanceof Error ? err.message : "";
+    const notFound = message.includes("hittades inte");
     return NextResponse.json(
-      { error: "Kunde inte skicka fakturan. Försök igen om en stund." },
-      { status: 500 }
+      { error: notFound ? message : "Kunde inte skicka fakturan. Försök igen om en stund." },
+      { status: notFound ? 404 : 500 }
     );
   }
 }

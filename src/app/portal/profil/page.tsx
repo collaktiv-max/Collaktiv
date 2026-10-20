@@ -28,6 +28,7 @@ import { useAppState } from "@/lib/store";
 import { fetchJson } from "@/lib/apiClient";
 import { generateStatsPdf } from "@/lib/pdf";
 import { getPlan, BILLING_LABELS, formatKr, type BillingPeriod } from "@/lib/pricing";
+import { complimentaryDurationLabel } from "@/lib/complimentary";
 import {
   CATEGORY_LABELS,
   type Category,
@@ -601,7 +602,9 @@ function BillingCard({ company }: { company: CompanyProfile }) {
               {company.complimentary
                 ? company.complimentaryUntil
                   ? `Ni har fått kostnadsfri åtkomst till och med ${formatDate(company.complimentaryUntil)}.`
-                  : "Ni har fått kostnadsfri åtkomst till det här paketet."
+                  : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
+                    ? `Ni har fått kostnadsfri åtkomst i ${complimentaryDurationLabel(company.complimentaryDuration)}, som börjar räknas när appen lanseras för resenärer.`
+                    : "Ni har fått kostnadsfri åtkomst till det här paketet."
                 : latestPaid
                   ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
                   : plan.tagline}

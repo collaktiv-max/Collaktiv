@@ -32,10 +32,16 @@ create table if not exists companies (
   -- Satt av admin via "Ge kostnadsfri åtkomst" i admin-panelen – skiljer
   -- gratis partners från riktiga Stripe-betalningar, se payment_confirmed.
   complimentary     boolean not null default false,
-  -- Vald av admin när den kostnadsfria åtkomsten gavs – null betyder
-  -- "Tillsvidare". Den dagliga cron-sopningen (src/lib/reminders.ts)
-  -- återkallar åtkomsten automatiskt när datumet passerat.
+  -- Löptiden räknas från lanseringen för resenärer (APP_LAUNCH_DATE i
+  -- config.ts), inte från dagen admin beviljade den – complimentary_until
+  -- är alltså null tills lanseringsdatumet är känt, se complimentary_duration.
+  -- Den dagliga cron-sopningen (src/lib/reminders.ts) återkallar åtkomsten
+  -- automatiskt när datumet passerat.
   complimentary_until timestamptz,
+  -- Vald löptid ("1m"/"3m"/"6m"/"1y"/"indefinite") – sparas även innan
+  -- lanseringsdatumet är känt, så cron-sopningen vet vad den ska räkna ut
+  -- complimentary_until till den dagen (se src/lib/complimentary.ts).
+  complimentary_duration text,
   -- Sätts när en kostnadsfri partner godkänner villkoren första gången
   -- de publicerar ett erbjudande – de går aldrig via betalflödets egen
   -- kryssruta (betalande företags godkännande loggas istället per
@@ -74,6 +80,7 @@ alter table companies add column if not exists payment_reminder_sent_at timestam
 alter table companies add column if not exists offer_reminder_sent_at timestamptz;
 alter table companies add column if not exists complimentary boolean not null default false;
 alter table companies add column if not exists complimentary_until timestamptz;
+alter table companies add column if not exists complimentary_duration text;
 alter table companies add column if not exists terms_version text;
 alter table companies add column if not exists terms_accepted_at timestamptz;
 

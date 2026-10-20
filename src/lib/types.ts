@@ -1,3 +1,5 @@
+import type { ComplimentaryDuration } from "./complimentary";
+
 export type Category =
   | "mat-dryck"
   | "fika"
@@ -47,10 +49,16 @@ export interface CompanyProfile {
    * true men ingen riktig Stripe-betalning ligger bakom. Håller isär
    * betalande och gratis partners i statistik/fakturering. */
   complimentary: boolean;
-  /** Vald av admin när den kostnadsfria åtkomsten gavs – saknas om
-   * "Tillsvidare" valdes. En daglig cron (src/lib/reminders.ts)
-   * återkallar automatiskt åtkomsten när datumet passerat. */
+  /** Räknas från lanseringen (APP_LAUNCH_DATE), inte från dagen den
+   * beviljades – saknas både om "Tillsvidare" valdes OCH om
+   * lanseringsdatumet ännu inte är känt (se complimentaryDuration då).
+   * En daglig cron (src/lib/reminders.ts) återkallar automatiskt
+   * åtkomsten när datumet passerat. */
   complimentaryUntil?: string;
+  /** Vald löptid, sparas även innan lanseringsdatumet är känt så
+   * cron-sopningen vet vad den ska räkna ut complimentaryUntil till
+   * den dagen (se src/lib/complimentary.ts). */
+  complimentaryDuration?: ComplimentaryDuration;
   /** Satt när en kostnadsfri partner godkänner villkoren – första
    * gången de publicerar ett erbjudande, se handlePublish i
    * /portal/erbjudanden/[id]/publicera. Betalande företags

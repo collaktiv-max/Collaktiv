@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
-import { createPayment } from "@/lib/db";
+import { createPayment, getCompanyById } from "@/lib/db";
 import { completePayment, completePaidOffer } from "@/lib/payment-completion";
+import { sendAdminInvoicePaidEmail } from "@/lib/email";
+import { getPlan } from "@/lib/pricing";
 import type { PackageTier } from "@/lib/types";
 
 // Tar emot Stripe-webhooks. Behövs för fakturabetalningar (till
@@ -56,13 +58,29 @@ export async function POST(req: NextRequest) {
         period,
         status: "paid",
         termsVersion,
-        termsAcceptedAt,
+        // En admin-initierad faktura (se /api/admin/companies/[id]/invoice)
+        // har inget termsAcceptedAt i metadata – företaget har aldrig
+        // kryssat i en ruta, de godkänner genom att betala. Den här
+        // betalningsbekräftelsen ÄR alltså godkännandet.
+        termsAcceptedAt: termsAcceptedAt ?? new Date().toISOString(),
       });
 
       if (offerId) {
         await completePaidOffer({ companyId, offerId, planId: planId as PackageTier });
       } else {
         await completePayment({ companyId, planId: planId as PackageTier });
+      }
+
+      // Fakturabetalningar kan ta dagar (t.ex. banköverföring) och
+      // syns annars bara om någon råkar kolla admin-panelen – mejla
+      // oss så vi märker det direkt.
+      const company = await getCompanyById(companyId);
+      if (company) {
+        await sendAdminInvoicePaidEmail({
+          company,
+          planName: getPlan(planId as PackageTier).name,
+          amount: (invoice.amount_paid ?? 0) / 100,
+        });
       }
     }
   }
