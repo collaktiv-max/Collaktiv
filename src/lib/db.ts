@@ -43,6 +43,7 @@ interface CompanyRow {
   application_status: ApplicationStatus;
   payment_confirmed: boolean;
   complimentary: boolean;
+  complimentary_until: string | null;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
   referred_by_company_id: string | null;
@@ -121,6 +122,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     applicationStatus: row.application_status,
     paymentConfirmed: row.payment_confirmed,
     complimentary: row.complimentary,
+    complimentaryUntil: row.complimentary_until ?? undefined,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
@@ -287,6 +289,7 @@ export async function updateCompany(
       application_status = ${next.applicationStatus},
       payment_confirmed = ${next.paymentConfirmed},
       complimentary = ${next.complimentary ?? false},
+      complimentary_until = ${next.complimentaryUntil ?? null},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
@@ -345,6 +348,19 @@ export async function markPaymentReminderSent(id: string): Promise<void> {
 
 export async function markOfferReminderSent(id: string): Promise<void> {
   await sql`update companies set offer_reminder_sent_at = now() where id = ${id}`;
+}
+
+// Kostnadsfri åtkomst (se "Ge kostnadsfri åtkomst" i admin) som admin
+// gav en bestämd löptid – ska återkallas automatiskt när den gått ut.
+// "Tillsvidare" (complimentary_until null) fångas aldrig upp här.
+export async function getCompaniesWithExpiredComplimentaryAccess(): Promise<CompanyProfile[]> {
+  const rows = (await sql`
+    select * from companies
+    where complimentary = true
+      and complimentary_until is not null
+      and complimentary_until <= now()
+  `) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
 }
 
 // ---------- Erbjudanden ----------

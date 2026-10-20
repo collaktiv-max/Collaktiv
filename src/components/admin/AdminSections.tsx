@@ -128,11 +128,31 @@ export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onT
   );
 }
 
+type ComplimentaryDuration = "1m" | "3m" | "6m" | "1y" | "indefinite";
+
+const COMPLIMENTARY_DURATION_OPTIONS: { id: ComplimentaryDuration; label: string }[] = [
+  { id: "1m", label: "1 månad" },
+  { id: "3m", label: "3 månader" },
+  { id: "6m", label: "6 månader" },
+  { id: "1y", label: "1 år" },
+  { id: "indefinite", label: "Tillsvidare" },
+];
+
+function computeComplimentaryUntil(duration: ComplimentaryDuration): string | undefined {
+  if (duration === "indefinite") return undefined;
+  const months = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 }[duration];
+  const until = new Date();
+  until.setMonth(until.getMonth() + months);
+  return until.toISOString();
+}
+
 // Betalningscell som även hanterar kostnadsfri åtkomst (partners vi
 // medvetet vill ha med utan att de betalar, t.ex. för
 // marknadsföringsbyte) – skiljs från en riktig Stripe-betalning via
 // company.complimentary, så den aldrig syns som en riktig betalning i
-// fakturahistorik/statistik.
+// fakturahistorik/statistik. Admin väljer löptid (eller tillsvidare);
+// en bestämd löptid återkallas automatiskt av den dagliga cron-
+// sopningen i src/lib/reminders.ts.
 export function PaymentCell({
   company,
   onUpdate,
@@ -140,11 +160,17 @@ export function PaymentCell({
   company: CompanyProfile;
   onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
 }) {
+  const [pickingDuration, setPickingDuration] = useState(false);
+  const [duration, setDuration] = useState<ComplimentaryDuration>("3m");
+
   if (company.paymentConfirmed && company.complimentary) {
     return (
       <div className="flex items-center gap-2">
         <Badge variant="accent">
-          <Gift className="h-3.5 w-3.5" /> Kostnadsfritt
+          <Gift className="h-3.5 w-3.5" />
+          {company.complimentaryUntil
+            ? `Kostnadsfritt till ${formatDate(company.complimentaryUntil)}`
+            : "Kostnadsfritt"}
         </Badge>
         <button
           onClick={() => {
@@ -153,7 +179,11 @@ export function PaymentCell({
                 `Ta bort kostnadsfri åtkomst för ${company.name}? Företaget markeras då som obetalt igen.`
               )
             ) {
-              onUpdate(company.id, { paymentConfirmed: false, complimentary: false });
+              onUpdate(company.id, {
+                paymentConfirmed: false,
+                complimentary: false,
+                complimentaryUntil: undefined,
+              });
             }
           }}
           className="text-[11px] font-bold text-[var(--color-brand-muted)] underline decoration-dotted hover:text-[#c0392b]"
@@ -170,6 +200,46 @@ export function PaymentCell({
     );
   }
 
+  if (pickingDuration) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <select
+          value={duration}
+          onChange={(e) => setDuration(e.target.value as ComplimentaryDuration)}
+          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+        >
+          {COMPLIMENTARY_DURATION_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => {
+            onUpdate(company.id, {
+              paymentConfirmed: true,
+              complimentary: true,
+              packageTier: "standard",
+              complimentaryUntil: computeComplimentaryUntil(duration),
+            });
+            setPickingDuration(false);
+          }}
+          title="Bekräfta"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] text-white transition hover:bg-[var(--color-brand-primary-hover)]"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={() => setPickingDuration(false)}
+          title="Avbryt"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-muted)] transition hover:border-[#c0392b] hover:text-[#c0392b]"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
       <PaymentToggle
@@ -177,19 +247,7 @@ export function PaymentCell({
         onToggle={() => onUpdate(company.id, { paymentConfirmed: true })}
       />
       <button
-        onClick={() => {
-          if (
-            confirm(
-              `Ge ${company.name} kostnadsfri åtkomst (Standard-paket) utan betalning?`
-            )
-          ) {
-            onUpdate(company.id, {
-              paymentConfirmed: true,
-              complimentary: true,
-              packageTier: "standard",
-            });
-          }
-        }}
+        onClick={() => setPickingDuration(true)}
         className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
       >
         <Gift className="h-3 w-3" /> Ge kostnadsfritt

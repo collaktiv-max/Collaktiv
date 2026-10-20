@@ -32,6 +32,10 @@ create table if not exists companies (
   -- Satt av admin via "Ge kostnadsfri åtkomst" i admin-panelen – skiljer
   -- gratis partners från riktiga Stripe-betalningar, se payment_confirmed.
   complimentary     boolean not null default false,
+  -- Vald av admin när den kostnadsfria åtkomsten gavs – null betyder
+  -- "Tillsvidare". Den dagliga cron-sopningen (src/lib/reminders.ts)
+  -- återkallar åtkomsten automatiskt när datumet passerat.
+  complimentary_until timestamptz,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
   -- Sätts automatiskt när ansökan godkänns/första betalningen
@@ -63,6 +67,7 @@ alter table companies add column if not exists payment_confirmed_at timestamptz;
 alter table companies add column if not exists payment_reminder_sent_at timestamptz;
 alter table companies add column if not exists offer_reminder_sent_at timestamptz;
 alter table companies add column if not exists complimentary boolean not null default false;
+alter table companies add column if not exists complimentary_until timestamptz;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

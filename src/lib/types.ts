@@ -47,6 +47,10 @@ export interface CompanyProfile {
    * true men ingen riktig Stripe-betalning ligger bakom. Håller isär
    * betalande och gratis partners i statistik/fakturering. */
   complimentary: boolean;
+  /** Vald av admin när den kostnadsfria åtkomsten gavs – saknas om
+   * "Tillsvidare" valdes. En daglig cron (src/lib/reminders.ts)
+   * återkallar automatiskt åtkomsten när datumet passerat. */
+  complimentaryUntil?: string;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */

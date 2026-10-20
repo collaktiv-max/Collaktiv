@@ -599,7 +599,9 @@ function BillingCard({ company }: { company: CompanyProfile }) {
             </div>
             <p className="text-xs font-medium text-[var(--color-brand-muted)]">
               {company.complimentary
-                ? "Ni har fått kostnadsfri åtkomst till det här paketet."
+                ? company.complimentaryUntil
+                  ? `Ni har fått kostnadsfri åtkomst till och med ${formatDate(company.complimentaryUntil)}.`
+                  : "Ni har fått kostnadsfri åtkomst till det här paketet."
                 : latestPaid
                   ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
                   : plan.tagline}

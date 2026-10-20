@@ -2,8 +2,10 @@ import "server-only";
 import {
   getCompaniesNeedingOfferReminder,
   getCompaniesNeedingPaymentReminder,
+  getCompaniesWithExpiredComplimentaryAccess,
   markOfferReminderSent,
   markPaymentReminderSent,
+  updateCompany,
 } from "./db";
 import { sendOfferReminderEmail, sendPaymentReminderEmail } from "./email";
 import { PAYMENTS_ENABLED } from "./config";
@@ -12,10 +14,22 @@ import { PAYMENTS_ENABLED } from "./config";
 // Tröskelvärden (2/3 dagar innan första påminnelsen, 5 dagar mellan
 // uppföljare) ligger i respektive databasfråga i src/lib/db.ts.
 export async function runReminderSweep() {
-  const [paymentDue, offerDue] = await Promise.all([
+  const [paymentDue, offerDue, complimentaryExpired] = await Promise.all([
     getCompaniesNeedingPaymentReminder(),
     getCompaniesNeedingOfferReminder(),
+    getCompaniesWithExpiredComplimentaryAccess(),
   ]);
+
+  // Kostnadsfri åtkomst som admin gav en bestämd löptid för (se "Ge
+  // kostnadsfri åtkomst" i admin) återkallas automatiskt här – annars
+  // skulle löptiden bara vara kosmetisk text utan faktisk effekt.
+  for (const company of complimentaryExpired) {
+    await updateCompany(company.id, {
+      paymentConfirmed: false,
+      complimentary: false,
+      complimentaryUntil: undefined,
+    });
+  }
 
   // Så länge betalning inte är igång skarpt (se PAYMENTS_ENABLED) ska
   // vi inte påminna företag om att "välja paket" – mejlet länkar till
@@ -47,5 +61,6 @@ export async function runReminderSweep() {
     paymentRemindersSent,
     offerRemindersChecked: offerDue.length,
     offerRemindersSent,
+    complimentaryAccessExpired: complimentaryExpired.length,
   };
 }
