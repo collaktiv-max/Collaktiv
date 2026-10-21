@@ -84,7 +84,7 @@ export async function sendApprovalEmail(company: CompanyProfile) {
   const html = layout(
     "Ert konto är godkänt! 🎉",
     `<p>Hej ${company.name}!</p>
-     <p style="margin-top:12px;">Vi har granskat och godkänt er ansökan till Collaktiv. Ni kan nu välja paket och publicera erbjudanden som syns för resenärer i ${REGION}.</p>`,
+     <p style="margin-top:12px;">Vi har granskat och godkänt er ansökan till Collaktiv. Ni kan nu välja paket och publicera erbjudanden – de går live för resenärer i ${REGION} så fort appen lanseras.</p>`,
     "Gå till portalen",
     `${SITE_URL}/logga-in`
   );
@@ -99,7 +99,7 @@ export async function sendPaymentReminderEmail(company: CompanyProfile) {
   const html = layout(
     "Glöm inte välja paket",
     `<p>Hej ${company.name}!</p>
-     <p style="margin-top:12px;">Ert konto är godkänt, men ni har ännu inte valt ett paket. Så fort ni publicerar ett erbjudande börjar ni synas för resenärer i ${REGION} – det tar bara några minuter.</p>`,
+     <p style="margin-top:12px;">Ert konto är godkänt, men ni har ännu inte valt ett paket. Så fort ni publicerar ett erbjudande är ni redo att synas för resenärer i ${REGION} när appen lanseras – det tar bara några minuter.</p>`,
     "Välj paket",
     `${SITE_URL}/portal/erbjudanden`
   );
@@ -114,7 +114,7 @@ export async function sendOfferReminderEmail(company: CompanyProfile) {
   const html = layout(
     "Dags att skapa ert första erbjudande",
     `<p>Hej ${company.name}!</p>
-     <p style="margin-top:12px;">Ni har ett betalt paket, men inget erbjudande skapat ännu. Lägg upp ert första erbjudande så börjar ni synas för resenärer i ${REGION}.</p>`,
+     <p style="margin-top:12px;">Ni har ett betalt paket, men inget erbjudande skapat ännu. Lägg upp ert första erbjudande så är ni redo att synas för resenärer i ${REGION} så fort appen lanseras.</p>`,
     "Skapa erbjudande",
     `${SITE_URL}/portal/erbjudanden/nytt`
   );
