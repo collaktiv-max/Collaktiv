@@ -109,15 +109,20 @@ export function KpiCard({
 
 export function ContactCell({ name, email, phone }: { name: string; email: string; phone: string }) {
   return (
-    <div>
-      <p className="font-bold text-[var(--color-brand-ink)]">{name || "–"}</p>
+    <div className="min-w-0">
+      <p className="truncate font-bold text-[var(--color-brand-ink)]">{name || "–"}</p>
       <div className="mt-0.5 flex flex-col gap-0.5 text-xs font-medium text-[var(--color-brand-muted)]">
-        <span className="flex items-center gap-1.5">
-          <Mail className="h-3 w-3" /> {email}
+        <span className="flex items-start gap-1.5">
+          <Mail className="mt-0.5 h-3 w-3 shrink-0" />
+          {/* break-all: en lång e-postadress/telefonnummer har inga
+              mellanslag att radbryta vid, så den annars bara rinner
+              över in i nästa kolumn istället för att radbrytas. */}
+          <span className="min-w-0 break-all">{email}</span>
         </span>
         {phone && (
-          <span className="flex items-center gap-1.5">
-            <Phone className="h-3 w-3" /> {phone}
+          <span className="flex items-start gap-1.5">
+            <Phone className="mt-0.5 h-3 w-3 shrink-0" />
+            <span className="min-w-0 break-all">{phone}</span>
           </span>
         )}
       </div>
@@ -163,7 +168,7 @@ export function PaymentCell({
 
   if (company.paymentConfirmed && company.complimentary) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant="accent">
           <Gift className="h-3.5 w-3.5" />
           {company.complimentaryUntil
@@ -203,7 +208,7 @@ export function PaymentCell({
 
   if (pickingDuration) {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <select
           value={duration}
           onChange={(e) => setDuration(e.target.value as ComplimentaryDuration)}
@@ -555,10 +560,9 @@ export function ImpersonateButton({ company }: { company: CompanyProfile }) {
       }}
       disabled={loading}
       title="Logga in som företag"
-      className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-60"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-brand-border)] text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-60"
     >
-      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="h-3 w-3" />}
-      Logga in som företag
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
     </button>
   );
 }
@@ -571,17 +575,38 @@ export function EmptyRow({ text }: { text: string }) {
   );
 }
 
-function TableCard({ children }: { children: ReactNode }) {
+// `fixed` ger tabellen låsta kolumnbredder (satta via Th:s width-prop)
+// istället för webbläsarens standardbeteende att räkna om ALLA
+// kolumners bredd efter innehållet i varje cell – annars flyttar sig
+// hela tabellen varje gång en cell i en rad byter innehåll (t.ex. när
+// "Ge kostnadsfritt" öppnas i Betalning-kolumnen), vilket flyttar alla
+// andra rader och kolumner i sidled också. Används av tabeller med
+// PaymentCell, där det här annars märks tydligast.
+function TableCard({ children, fixed }: { children: ReactNode; fixed?: boolean }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[var(--color-brand-border)] bg-white">
-      <table className="w-full text-left text-sm">{children}</table>
+      <table className={`w-full text-left text-sm ${fixed ? "table-fixed min-w-[980px]" : ""}`}>
+        {children}
+      </table>
     </div>
   );
 }
 
-function Th({ children, align }: { children: ReactNode; align?: "right" }) {
+function Th({
+  children,
+  align,
+  width,
+}: {
+  children: ReactNode;
+  align?: "right";
+  /** Tailwind-bredd (t.ex. "w-[15%]") – bara verkningsfullt tillsammans
+   * med TableCard fixed, se där. */
+  width?: string;
+}) {
   return (
-    <th className={`px-5 py-3 ${align === "right" ? "text-right" : ""}`}>{children}</th>
+    <th className={`px-5 py-3 ${align === "right" ? "text-right" : ""} ${width ?? ""}`}>
+      {children}
+    </th>
   );
 }
 
@@ -738,15 +763,15 @@ export function ApplicationsSection({
       {pending.length === 0 ? (
         <EmptyRow text="Inga ansökningar väntar just nu." />
       ) : (
-        <TableCard>
+        <TableCard fixed>
           <THead>
-            <Th>Företag</Th>
-            <Th>Kontakt</Th>
-            <Th>Kategori</Th>
-            <Th>Paket</Th>
-            <Th>Betalning</Th>
-            <Th>Inskickad</Th>
-            <Th align="right">Åtgärd</Th>
+            <Th width="w-[15%]">Företag</Th>
+            <Th width="w-[20%]">Kontakt</Th>
+            <Th width="w-[10%]">Kategori</Th>
+            <Th width="w-[10%]">Paket</Th>
+            <Th width="w-[22%]">Betalning</Th>
+            <Th width="w-[10%]">Inskickad</Th>
+            <Th width="w-[13%]" align="right">Åtgärd</Th>
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {pending.map((c) => (
@@ -778,7 +803,7 @@ export function ApplicationsSection({
                 </td>
                 <td className="px-5 py-3.5">
                   <div className="flex flex-col items-end gap-2">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                       <button
                         onClick={() => onUpdate(c.id, { applicationStatus: "godkand" })}
                         className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
@@ -1058,16 +1083,16 @@ export function CompaniesSection({
       {visibleCompanies.length === 0 ? (
         <EmptyRow text={showRejected ? "Inga företag registrerade ännu." : "Inga aktiva företag just nu."} />
       ) : (
-        <TableCard>
+        <TableCard fixed>
           <THead>
-            <Th>Företag</Th>
-            <Th>Kontakt</Th>
-            <Th>Kategori</Th>
-            <Th>Paket</Th>
-            <Th>Status</Th>
-            <Th>Betalning</Th>
-            <Th>Registrerad</Th>
-            <Th align="right">Åtgärd</Th>
+            <Th width="w-[13%]">Företag</Th>
+            <Th width="w-[21%]">Kontakt</Th>
+            <Th width="w-[9%]">Kategori</Th>
+            <Th width="w-[9%]">Paket</Th>
+            <Th width="w-[14%]">Status</Th>
+            <Th width="w-[19%]">Betalning</Th>
+            <Th width="w-[9%]">Registrerad</Th>
+            <Th width="w-[6%]" align="right">Åtgärd</Th>
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {visibleCompanies.map((c) => (
@@ -1101,7 +1126,7 @@ export function CompaniesSection({
                   )}
                 </td>
                 <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={APPLICATION_STATUS_VARIANT[c.applicationStatus]}>
                       {APPLICATION_STATUS_LABELS[c.applicationStatus]}
                     </Badge>
