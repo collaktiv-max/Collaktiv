@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   Building2,
   Check,
@@ -283,7 +284,9 @@ function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: 
   const [overrideCity, setOverrideCity] = useState("");
   const [overrideReference, setOverrideReference] = useState("");
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState<{ email: string } | null>(null);
+  const [sent, setSent] = useState<{ email: string; pdfAttached: boolean; invoiceUrl: string } | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const amount = getDiscountedTotal(getPlan(plan), period);
@@ -293,25 +296,28 @@ function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: 
     setSending(true);
     setError(null);
     try {
-      await fetchJson(`/api/admin/companies/${company.id}/invoice`, {
-        method: "POST",
-        body: JSON.stringify({
-          planId: plan,
-          period,
-          billingOverride: showOverride
-            ? {
-                email: overrideEmail.trim() || undefined,
-                name: overrideName.trim() || undefined,
-                orgNumber: overrideOrgNumber.trim() || undefined,
-                addressLine1: overrideAddressLine1.trim() || undefined,
-                postalCode: overridePostalCode.trim() || undefined,
-                city: overrideCity.trim() || undefined,
-                reference: overrideReference.trim() || undefined,
-              }
-            : undefined,
-        }),
-      });
-      setSent({ email: recipientEmail });
+      const data = await fetchJson<{ invoiceUrl: string; pdfAttached: boolean }>(
+        `/api/admin/companies/${company.id}/invoice`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            planId: plan,
+            period,
+            billingOverride: showOverride
+              ? {
+                  email: overrideEmail.trim() || undefined,
+                  name: overrideName.trim() || undefined,
+                  orgNumber: overrideOrgNumber.trim() || undefined,
+                  addressLine1: overrideAddressLine1.trim() || undefined,
+                  postalCode: overridePostalCode.trim() || undefined,
+                  city: overrideCity.trim() || undefined,
+                  reference: overrideReference.trim() || undefined,
+                }
+              : undefined,
+          }),
+        }
+      );
+      setSent({ email: recipientEmail, pdfAttached: data.pdfAttached, invoiceUrl: data.invoiceUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte skicka fakturan.");
     } finally {
@@ -333,14 +339,37 @@ function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: 
 
         {sent ? (
           <div className="py-4 text-center">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
-              <Check className="h-6 w-6" />
+            <span
+              className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${
+                sent.pdfAttached
+                  ? "bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]"
+                  : "bg-[#fdf3e0] text-[#8a5a00]"
+              }`}
+            >
+              {sent.pdfAttached ? <Check className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
             </span>
             <h2 className="mt-4 text-lg font-extrabold text-[var(--color-brand-ink)]">
-              Fakturan skickad!
+              {sent.pdfAttached ? "Fakturan skickad!" : "Fakturan skickad – men utan PDF-bilaga"}
             </h2>
             <p className="mt-2 text-sm font-medium text-[var(--color-brand-muted)]">
-              Skickades till {sent.email}.
+              {sent.pdfAttached ? (
+                <>Skickades till {sent.email}.</>
+              ) : (
+                <>
+                  Skickades till {sent.email}, men vi lyckades inte hämta PDF:en från Stripe för att
+                  bifoga den i mejlet (fakturan i sig är skapad och skickad som vanligt). Om mottagaren
+                  kräver en PDF-bilaga, ladda ner den själv och skicka den manuellt:{" "}
+                  <a
+                    href={sent.invoiceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-[var(--color-brand-primary)] underline"
+                  >
+                    öppna fakturan hos Stripe
+                  </a>
+                  .
+                </>
+              )}
             </p>
             <button
               onClick={onClose}

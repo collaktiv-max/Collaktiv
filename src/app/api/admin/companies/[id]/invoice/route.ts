@@ -47,8 +47,9 @@ export async function POST(
       period,
       billingOverride,
     });
+    let pdfAttached = false;
     if (invoiceUrl) {
-      await sendAdminInvoiceEmail({
+      const result = await sendAdminInvoiceEmail({
         recipientEmail,
         recipientName,
         planName,
@@ -57,8 +58,9 @@ export async function POST(
         invoicePdfUrl,
         dueInDays,
       });
+      pdfAttached = result.pdfAttached;
     }
-    return NextResponse.json({ sent: true, invoiceUrl, dueInDays });
+    return NextResponse.json({ sent: true, invoiceUrl, dueInDays, pdfAttached });
   } catch (err) {
     console.error("[admin/invoice] Kunde inte skapa/skicka fakturan:", err);
     return NextResponse.json(

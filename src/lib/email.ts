@@ -33,9 +33,12 @@ async function sendEmail({
   to: string;
   subject: string;
   html: string;
-  /** `path` låter Resend hämta filen från en URL själva – vi behöver
-   * aldrig ladda ner t.ex. fakturans PDF här. */
-  attachments?: { filename: string; path: string }[];
+  /** Skickas alltid som `content` (en Buffer vi redan hämtat och
+   * verifierat själva) – INTE Resends egen `path`-hämtning, vars
+   * felhantering vid en trasig/långsam fjärr-URL är odokumenterad och
+   * kan missa bilagan helt utan att sendet misslyckas synligt. Se
+   * fetchPdfBuffer nedan. */
+  attachments?: { filename: string; content: Buffer }[];
 }) {
   if (!resend) {
     console.warn(
@@ -250,6 +253,40 @@ export async function sendOfferReturnedEmail(company: CompanyProfile, offer: Off
 // Collaktivs egen ton/design, och med villkorsgodkännandet tydligt
 // utskrivet – företaget har aldrig sett en kryssruta för det, de
 // godkänner genom att betala.
+// Stripe hinner inte alltid rendera PDF:en förrän en liten stund efter
+// att fakturan finaliseras – en hämtning direkt efter kan träffa en
+// 404 eller en ofullständig fil. Hämtar själva (istället för att ge
+// Resend en `path`-URL, vars felhantering vid en trasig/långsam
+// fjärr-hämtning inte är dokumenterad och kan missa bilagan helt utan
+// att mejlutskicket märks av det) så vi kan verifiera svaret och
+// försöka om. Kastar om alla försök misslyckas – anroparen avgör om
+// mejlet ändå ska skickas utan bilaga.
+async function fetchPdfBuffer(url: string): Promise<Buffer> {
+  const retryDelaysMs = [0, 1500, 3000];
+  let lastError: unknown;
+  for (const delay of retryDelaysMs) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    try {
+      const res = await fetch(url);
+      const contentType = res.headers.get("content-type") ?? "";
+      if (res.ok && contentType.includes("pdf")) {
+        return Buffer.from(await res.arrayBuffer());
+      }
+      lastError = new Error(`Oväntat svar (${res.status}, ${contentType || "okänd typ"})`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+// Skickas till FÖRETAGET när admin skickar en faktura direkt till dem
+// (se "Skicka faktura" i admin) – de behöver aldrig logga in i
+// portalen för att betala, Stripes egen fakturasida har en
+// betalningslänk. Komplement till Stripes eget fakturamejl, i
+// Collaktivs egen ton/design, och med villkorsgodkännandet tydligt
+// utskrivet – företaget har aldrig sett en kryssruta för det, de
+// godkänner genom att betala.
 export async function sendAdminInvoiceEmail(params: {
   /** Mottagarens mejl/namn – kan vara en egen fakturaadress istället
    * för företagets vanliga kontaktuppgifter, se InvoiceBillingOverride
@@ -261,27 +298,42 @@ export async function sendAdminInvoiceEmail(params: {
   invoiceUrl: string;
   invoicePdfUrl: string | null;
   dueInDays: number;
-}) {
+}): Promise<{ sent: boolean; pdfAttached: boolean }> {
   const { recipientEmail, recipientName, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays } =
     params;
+
+  let pdfAttachment: { filename: string; content: Buffer } | undefined;
+  if (invoicePdfUrl) {
+    try {
+      const content = await fetchPdfBuffer(invoicePdfUrl);
+      pdfAttachment = { filename: `Collaktiv-faktura-${planName}.pdf`, content };
+    } catch (err) {
+      // Fakturan är redan skapad och skickad hos Stripe oavsett – det
+      // vore fel att misslyckas hela anropet för att bara bilagan i
+      // VÅRT eget mejl inte gick att hämta. Skickas utan bilaga, och
+      // anroparen (admin-UI:t) får veta det via pdfAttached: false så
+      // ingen tror att en PDF kom fram som faktiskt inte gjorde det.
+      console.error(`[email] Kunde inte hämta fakturans PDF (${invoicePdfUrl}):`, err);
+    }
+  }
+
   const html = layout(
     "Ni har blivit inbjudna som partner i Collaktiv",
     `<p>Hej ${recipientName}!</p>
      <p style="margin-top:12px;">Vi har skickat en faktura för ${planName}-paketet (${amount} kr) med ${dueInDays}
-     dagars betalningsvillkor${invoicePdfUrl ? " – bifogad som PDF" : ""}. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
+     dagars betalningsvillkor${pdfAttachment ? " – bifogad som PDF" : ""}. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
      <p style="margin-top:12px;">Genom att betala fakturan godkänner ni Collaktivs
      <a href="${SITE_URL}/villkor" style="color:#166849;font-weight:700;">villkor</a>, inklusive betalningsvillkoren.</p>`,
     "Betala fakturan",
     invoiceUrl
   );
-  return sendEmail({
+  const { sent } = await sendEmail({
     to: recipientEmail,
     subject: `Faktura från Collaktiv – ${planName}-paketet`,
     html,
-    attachments: invoicePdfUrl
-      ? [{ filename: `Collaktiv-faktura-${planName}.pdf`, path: invoicePdfUrl }]
-      : undefined,
+    attachments: pdfAttachment ? [pdfAttachment] : undefined,
   });
+  return { sent, pdfAttached: !!pdfAttachment };
 }
 
 // Skickas till OSS SJÄLVA (ADMIN_EMAIL) när Stripe bekräftar att en
