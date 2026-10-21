@@ -2,6 +2,7 @@ import "server-only";
 import { Resend } from "resend";
 import { REGION } from "./config";
 import { BILLING_LABELS, type BillingPeriod } from "./pricing";
+import { createInvoiceRequestToken } from "./invoiceRequestToken";
 import { CATEGORY_LABELS, type CompanyProfile, type Offer } from "./types";
 
 const FROM = "Collaktiv <partner@collaktiv.se>";
@@ -107,10 +108,16 @@ export async function sendApprovalEmail(company: CompanyProfile) {
 }
 
 export async function sendPaymentReminderEmail(company: CompanyProfile) {
+  // Alternativ till att logga in och välja paket i portalen – en egen,
+  // tidsbegränsad länk (se invoiceRequestToken.ts) till /begar-faktura
+  // där företaget kan skicka in sina fakturauppgifter direkt, utan
+  // inloggning, och få fakturan som PDF på mejlen.
+  const invoiceRequestUrl = `${SITE_URL}/begar-faktura?token=${createInvoiceRequestToken(company.id)}`;
   const html = layout(
     "Glöm inte välja paket",
     `<p>Hej ${company.name}!</p>
-     <p style="margin-top:12px;">Ert konto är godkänt, men ni har ännu inte valt ett paket. Så fort ni publicerar ett erbjudande är ni redo att synas för resenärer i ${REGION} när appen lanseras – det tar bara några minuter.</p>`,
+     <p style="margin-top:12px;">Ert konto är godkänt, men ni har ännu inte valt ett paket. Så fort ni publicerar ett erbjudande är ni redo att synas för resenärer i ${REGION} när appen lanseras – det tar bara några minuter.</p>
+     <p style="margin-top:12px;">Vill ni hellre betala mot faktura utan att logga in? <a href="${invoiceRequestUrl}" style="color:#166849;font-weight:700;">Begär en faktura här</a> – fyll i era uppgifter så skickar vi den som PDF direkt.</p>`,
     "Välj paket",
     `${SITE_URL}/portal/erbjudanden`
   );
