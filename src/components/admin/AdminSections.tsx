@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Building2,
   Check,
+  ChevronDown,
   CircleDollarSign,
   Clock,
   Gift,
@@ -143,6 +144,37 @@ export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onT
       {confirmed ? <ShieldCheck className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
       {confirmed ? "Betald" : "Obetald"}
     </button>
+  );
+}
+
+// Läsbar statusbadge för den hopfällda radens Betalning-kolumn – inga
+// knappar/väljare, bara en sammanfattning. De faktiska åtgärderna
+// (PaymentCell nedan) visas istället i den expanderade panelen när
+// raden klickas upp, se ApplicationsSection/CompaniesSection.
+function PaymentStatusBadge({ company }: { company: CompanyProfile }) {
+  if (company.complimentary && company.paymentConfirmed) {
+    return (
+      <Badge variant="accent">
+        <Gift className="h-3.5 w-3.5" />
+        {company.complimentaryUntil
+          ? `Kostnadsfritt till ${formatDate(company.complimentaryUntil)}`
+          : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
+            ? `Kostnadsfritt (${complimentaryDurationLabel(company.complimentaryDuration)})`
+            : "Kostnadsfritt"}
+      </Badge>
+    );
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold ${
+        company.paymentConfirmed
+          ? "bg-[var(--color-brand-accent)]/15 text-[#3f7a1c]"
+          : "bg-[#fdecea] text-[#c0392b]"
+      }`}
+    >
+      {company.paymentConfirmed ? <ShieldCheck className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+      {company.paymentConfirmed ? "Betald" : "Obetald"}
+    </span>
   );
 }
 
@@ -559,10 +591,10 @@ export function ImpersonateButton({ company }: { company: CompanyProfile }) {
         }
       }}
       disabled={loading}
-      title="Logga in som företag"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-brand-border)] text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-60"
+      className="flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] px-3.5 py-1.5 text-xs font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-60"
     >
       {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
+      Logga in som företag
     </button>
   );
 }
@@ -597,7 +629,7 @@ function Th({
   align,
   width,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   align?: "right";
   /** Tailwind-bredd (t.ex. "w-[15%]") – bara verkningsfullt tillsammans
    * med TableCard fixed, se där. */
@@ -753,79 +785,175 @@ export function ApplicationsSection({
   const pending = companies.filter(
     (c) => c.applicationStatus === "inskickad" || c.applicationStatus === "under_granskning"
   );
+  // Vilken rad som är uppfälld – bara en i taget. Alla knappar/väljare
+  // flyttade hit från de egna kolumnerna (se CompanyRow nedan), så
+  // tabellens kolumner bara visar läsbara sammanfattningar och aldrig
+  // ändrar bredd av sig själva.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
     <div>
       <SectionHeader
         title="Ansökningar att granska"
-        description="Godkänn eller avvisa nya företag som skickat in en ansökan."
+        description="Klicka på en rad för att godkänna, avvisa eller ändra betalning."
       />
       {pending.length === 0 ? (
         <EmptyRow text="Inga ansökningar väntar just nu." />
       ) : (
         <TableCard fixed>
           <THead>
-            <Th width="w-[15%]">Företag</Th>
-            <Th width="w-[20%]">Kontakt</Th>
+            <Th width="w-[18%]">Företag</Th>
+            <Th width="w-[24%]">Kontakt</Th>
             <Th width="w-[10%]">Kategori</Th>
-            <Th width="w-[10%]">Paket</Th>
-            <Th width="w-[22%]">Betalning</Th>
-            <Th width="w-[10%]">Inskickad</Th>
-            <Th width="w-[13%]" align="right">Åtgärd</Th>
+            <Th width="w-[9%]">Paket</Th>
+            <Th width="w-[17%]">Betalning</Th>
+            <Th width="w-[12%]">Inskickad</Th>
+            <Th width="w-[10%]" />
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {pending.map((c) => (
-              <tr key={c.id}>
-                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {c.name}
-                    {c.fullServiceRequested && <FullServiceBadge />}
-                  </div>
-                </td>
-                <td className="px-5 py-3.5">
-                  <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
-                </td>
-                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                  {CATEGORY_LABELS[c.category]}
-                </td>
-                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                  {c.paymentConfirmed ? (
-                    <span className="capitalize">{c.packageTier}</span>
-                  ) : (
-                    <span className="italic">Inget paket</span>
-                  )}
-                </td>
-                <td className="px-5 py-3.5">
-                  <PaymentCell company={c} onUpdate={onUpdate} />
-                </td>
-                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                  {formatDate(c.createdAt)}
-                </td>
-                <td className="px-5 py-3.5">
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button
-                        onClick={() => onUpdate(c.id, { applicationStatus: "godkand" })}
-                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
-                      >
-                        <Check className="h-3.5 w-3.5" /> Godkänn
-                      </button>
-                      <button
-                        onClick={() => onReject(c)}
-                        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
-                      >
-                        <X className="h-3.5 w-3.5" /> Avvisa
-                      </button>
-                    </div>
-                    <ImpersonateButton company={c} />
-                  </div>
-                </td>
-              </tr>
+              <CompanyRow
+                key={c.id}
+                company={c}
+                columns={7}
+                expanded={expandedId === c.id}
+                onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                onUpdate={onUpdate}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => onUpdate(c.id, { applicationStatus: "godkand" })}
+                    className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3.5 py-2 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
+                  >
+                    <Check className="h-3.5 w-3.5" /> Godkänn
+                  </button>
+                  <button
+                    onClick={() => onReject(c)}
+                    className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3.5 py-2 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
+                  >
+                    <X className="h-3.5 w-3.5" /> Avvisa
+                  </button>
+                  <ImpersonateButton company={c} />
+                </div>
+              </CompanyRow>
             ))}
           </tbody>
         </TableCard>
       )}
     </div>
+  );
+}
+
+// Delas av Ansökningar och Alla företag – en rad som bara visar
+// läsbara sammanfattningar (namn, kontakt, kategori, paket, betalning,
+// datum) tills den klickas upp. Åtgärderna (children, plus paket/
+// betalning) visas då i en egen rad under, som spänner över hela
+// tabellens bredd istället för att tvingas in i en enda smal kolumn.
+function CompanyRow({
+  company: c,
+  columns,
+  expanded,
+  onToggle,
+  onUpdate,
+  statusBadge,
+  statusControl,
+  packageControl,
+  children,
+}: {
+  company: CompanyProfile;
+  /** Totalt antal kolumner i tabellen – avgör colSpan på den uppfällda panelen. */
+  columns: number;
+  expanded: boolean;
+  onToggle: () => void;
+  onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
+  /** Extra kolumn (status) för Alla företag – utelämnas i Ansökningar. */
+  statusBadge?: ReactNode;
+  /** Redigerbar status, visas i den uppfällda panelen om satt. */
+  statusControl?: ReactNode;
+  /** Redigerbart paket, visas i den uppfällda panelen om satt. */
+  packageControl?: ReactNode;
+  /** Knappar specifika för den här tabellen (Godkänn/Avvisa, eller inget). */
+  children?: ReactNode;
+}) {
+  return (
+    <>
+      <tr
+        onClick={onToggle}
+        className="cursor-pointer transition hover:bg-[var(--color-brand-secondary)]/40"
+      >
+        <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+          <div className="flex flex-wrap items-center gap-2">
+            {c.name}
+            {c.fullServiceRequested && <FullServiceBadge />}
+          </div>
+        </td>
+        <td className="px-5 py-3.5">
+          <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
+        </td>
+        <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+          {CATEGORY_LABELS[c.category]}
+        </td>
+        <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+          {c.paymentConfirmed ? (
+            <span className="capitalize">{c.packageTier}</span>
+          ) : (
+            <span className="italic">Inget paket</span>
+          )}
+        </td>
+        {statusBadge !== undefined && <td className="px-5 py-3.5">{statusBadge}</td>}
+        <td className="px-5 py-3.5">
+          <PaymentStatusBadge company={c} />
+        </td>
+        <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
+          {formatDate(c.createdAt)}
+        </td>
+        <td className="px-5 py-3.5">
+          <ChevronDown
+            className={`ml-auto h-4 w-4 text-[var(--color-brand-muted)] transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-[var(--color-brand-secondary)]/25">
+          <td colSpan={columns} className="px-5 py-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:gap-8">
+              {packageControl && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    Paket
+                  </p>
+                  {packageControl}
+                </div>
+              )}
+              {statusControl && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    Status
+                  </p>
+                  {statusControl}
+                </div>
+              )}
+              <div>
+                <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                  Betalning
+                </p>
+                <PaymentCell company={c} onUpdate={onUpdate} />
+              </div>
+              {children && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    Åtgärder
+                  </p>
+                  {children}
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -1055,6 +1183,7 @@ export function CompaniesSection({
   onReject: (company: CompanyProfile) => void;
 }) {
   const [showRejected, setShowRejected] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const rejectedCount = companies.filter((c) => c.applicationStatus === "avvisad").length;
   // Avvisade företag döljs som standard så de inte skräpar ner den
   // dagliga översikten – de finns kvar i databasen (betalnings-/
@@ -1068,7 +1197,7 @@ export function CompaniesSection({
     <div>
       <SectionHeader
         title="Alla företag"
-        description="Full översikt – ändra paket, status och betalning direkt."
+        description="Klicka på en rad för att ändra paket, status och betalning."
       />
       {rejectedCount > 0 && (
         <div className="mb-5 flex justify-end">
@@ -1090,27 +1219,46 @@ export function CompaniesSection({
             <Th width="w-[9%]">Kategori</Th>
             <Th width="w-[9%]">Paket</Th>
             <Th width="w-[14%]">Status</Th>
-            <Th width="w-[19%]">Betalning</Th>
+            <Th width="w-[17%]">Betalning</Th>
             <Th width="w-[9%]">Registrerad</Th>
-            <Th width="w-[6%]" align="right">Åtgärd</Th>
+            <Th width="w-[8%]" />
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {visibleCompanies.map((c) => (
-              <tr key={c.id}>
-                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {c.name}
-                    {c.fullServiceRequested && <FullServiceBadge />}
-                  </div>
-                </td>
-                <td className="px-5 py-3.5">
-                  <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
-                </td>
-                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                  {CATEGORY_LABELS[c.category]}
-                </td>
-                <td className="px-5 py-3.5">
-                  {c.paymentConfirmed ? (
+              <CompanyRow
+                key={c.id}
+                company={c}
+                columns={8}
+                expanded={expandedId === c.id}
+                onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                onUpdate={onUpdate}
+                statusBadge={
+                  <Badge variant={APPLICATION_STATUS_VARIANT[c.applicationStatus]}>
+                    {APPLICATION_STATUS_LABELS[c.applicationStatus]}
+                  </Badge>
+                }
+                statusControl={
+                  <select
+                    value={c.applicationStatus}
+                    onChange={(e) => {
+                      const next = e.target.value as ApplicationStatus;
+                      if (next === "avvisad") {
+                        onReject(c);
+                      } else {
+                        onUpdate(c.id, { applicationStatus: next });
+                      }
+                    }}
+                    className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+                  >
+                    {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                }
+                packageControl={
+                  c.paymentConfirmed ? (
                     <select
                       value={c.packageTier}
                       onChange={(e) => onUpdate(c.id, { packageTier: e.target.value as PackageTier })}
@@ -1119,49 +1267,11 @@ export function CompaniesSection({
                       <option value="standard">Standard</option>
                       <option value="premium">Premium</option>
                     </select>
-                  ) : (
-                    <span className="text-xs font-medium italic text-[var(--color-brand-muted)]">
-                      Inget paket
-                    </span>
-                  )}
-                </td>
-                <td className="px-5 py-3.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={APPLICATION_STATUS_VARIANT[c.applicationStatus]}>
-                      {APPLICATION_STATUS_LABELS[c.applicationStatus]}
-                    </Badge>
-                    <select
-                      value={c.applicationStatus}
-                      onChange={(e) => {
-                        const next = e.target.value as ApplicationStatus;
-                        if (next === "avvisad") {
-                          onReject(c);
-                        } else {
-                          onUpdate(c.id, { applicationStatus: next });
-                        }
-                      }}
-                      className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
-                    >
-                      {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </td>
-                <td className="px-5 py-3.5">
-                  <PaymentCell company={c} onUpdate={onUpdate} />
-                </td>
-                <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-                  {formatDate(c.createdAt)}
-                </td>
-                <td className="px-5 py-3.5">
-                  <div className="flex justify-end">
-                    <ImpersonateButton company={c} />
-                  </div>
-                </td>
-              </tr>
+                  ) : undefined
+                }
+              >
+                <ImpersonateButton company={c} />
+              </CompanyRow>
             ))}
           </tbody>
         </TableCard>
