@@ -251,17 +251,22 @@ export async function sendOfferReturnedEmail(company: CompanyProfile, offer: Off
 // utskrivet – företaget har aldrig sett en kryssruta för det, de
 // godkänner genom att betala.
 export async function sendAdminInvoiceEmail(params: {
-  company: CompanyProfile;
+  /** Mottagarens mejl/namn – kan vara en egen fakturaadress istället
+   * för företagets vanliga kontaktuppgifter, se InvoiceBillingOverride
+   * i src/lib/invoice.ts. */
+  recipientEmail: string;
+  recipientName: string;
   planName: string;
   amount: number;
   invoiceUrl: string;
   invoicePdfUrl: string | null;
   dueInDays: number;
 }) {
-  const { company, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays } = params;
+  const { recipientEmail, recipientName, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays } =
+    params;
   const html = layout(
     "Ni har blivit inbjudna som partner i Collaktiv",
-    `<p>Hej ${company.name}!</p>
+    `<p>Hej ${recipientName}!</p>
      <p style="margin-top:12px;">Vi har skickat en faktura för ${planName}-paketet (${amount} kr) med ${dueInDays}
      dagars betalningsvillkor${invoicePdfUrl ? " – bifogad som PDF" : ""}. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
      <p style="margin-top:12px;">Genom att betala fakturan godkänner ni Collaktivs
@@ -270,7 +275,7 @@ export async function sendAdminInvoiceEmail(params: {
     invoiceUrl
   );
   return sendEmail({
-    to: company.contactEmail,
+    to: recipientEmail,
     subject: `Faktura från Collaktiv – ${planName}-paketet`,
     html,
     attachments: invoicePdfUrl

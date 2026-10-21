@@ -1,4 +1,5 @@
 import "server-only";
+import type Stripe from "stripe";
 import { getCompanyById, getOfferById, createPayment } from "./db";
 import { stripe } from "./stripe";
 import {
@@ -12,6 +13,24 @@ import { TERMS_VERSION } from "./legal";
 import { getSwedishMomsTaxRateId } from "./tax";
 
 const DAYS_UNTIL_DUE = 30;
+
+// Vissa stora företag vill inte ha fakturan till den vanliga
+// kontaktadressen utan till en egen fakturaavdelning, med sin egna
+// juridiska namn/adress/org.nr på fakturan – se "Annan
+// faktureringsadress" i InvoiceModal (AdminSections.tsx). Allt är
+// valfritt; det som inte anges faller tillbaka på företagets egna
+// uppgifter.
+export interface InvoiceBillingOverride {
+  email?: string;
+  name?: string;
+  orgNumber?: string;
+  addressLine1?: string;
+  postalCode?: string;
+  city?: string;
+  /** Fri text – t.ex. butiksnummer eller en överenskommelse med en
+   * kontaktperson – visas som ett eget fält på fakturan. */
+  reference?: string;
+}
 
 // Samma SITE_URL-reservlösning som i email.ts – appen är deployad på
 // partner.collaktiv.se, inte collaktiv.se.
@@ -36,14 +55,17 @@ export async function createAndSendInvoice(params: {
    * godkännandet först när fakturan faktiskt betalas (betalning =
    * godkännande), se /api/webhooks/stripe. */
   termsAcceptedAt?: string;
+  billingOverride?: InvoiceBillingOverride;
 }): Promise<{
   invoiceUrl: string | null;
   invoicePdfUrl: string | null;
   dueInDays: number;
   amount: number;
   planName: string;
+  recipientEmail: string;
+  recipientName: string;
 }> {
-  const { companyId, offerId, planId, period, termsAcceptedAt } = params;
+  const { companyId, offerId, planId, period, termsAcceptedAt, billingOverride } = params;
 
   const [company, offer] = await Promise.all([
     getCompanyById(companyId),
@@ -59,17 +81,41 @@ export async function createAndSendInvoice(params: {
   const plan = getPlan(planId);
   const amount = getDiscountedTotal(plan, period);
 
+  // En "annan faktureringsadress" (se InvoiceBillingOverride) är en
+  // egen mottagare, inte en uppdatering av företagets egen kontakt i
+  // vårt system – kopplas bara till Stripe-kunden/fakturan.
+  const recipientEmail = billingOverride?.email || company.contactEmail;
+  const recipientName = billingOverride?.name || company.name;
+  const address: Stripe.AddressParam | undefined =
+    billingOverride?.addressLine1 || billingOverride?.postalCode || billingOverride?.city
+      ? {
+          line1: billingOverride?.addressLine1,
+          postal_code: billingOverride?.postalCode,
+          city: billingOverride?.city,
+          country: "SE",
+        }
+      : undefined;
+
   const existingCustomers = await stripe.customers.list({
-    email: company.contactEmail,
+    email: recipientEmail,
     limit: 1,
   });
-  const customer =
-    existingCustomers.data[0] ??
-    (await stripe.customers.create({
-      email: company.contactEmail,
-      name: company.name,
-      metadata: { companyId },
-    }));
+  const customer = existingCustomers.data[0]
+    ? await stripe.customers.update(existingCustomers.data[0].id, { name: recipientName, address })
+    : await stripe.customers.create({
+        email: recipientEmail,
+        name: recipientName,
+        address,
+        metadata: { companyId },
+      });
+
+  const customFields: Stripe.InvoiceCreateParams.CustomField[] = [];
+  if (billingOverride?.orgNumber) {
+    customFields.push({ name: "Org.nr", value: billingOverride.orgNumber });
+  }
+  if (billingOverride?.reference) {
+    customFields.push({ name: "Referens", value: billingOverride.reference });
+  }
 
   const momsTaxRateId = await getSwedishMomsTaxRateId();
 
@@ -85,6 +131,7 @@ export async function createAndSendInvoice(params: {
     // enda garanterade platsen att få med villkorsgodkännandet på en
     // admin-initierad faktura, där företaget aldrig sett en kryssruta.
     footer: `Genom att betala denna faktura godkänner ni Collaktivs villkor (${SITE_URL}/villkor), inklusive betalningsvillkoren.`,
+    custom_fields: customFields.length ? customFields : undefined,
     metadata: {
       companyId,
       ...(offerId ? { offerId } : {}),
@@ -144,5 +191,7 @@ export async function createAndSendInvoice(params: {
     dueInDays: DAYS_UNTIL_DUE,
     amount,
     planName: plan.name,
+    recipientEmail,
+    recipientName,
   };
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAndSendInvoice } from "@/lib/invoice";
+import { createAndSendInvoice, type InvoiceBillingOverride } from "@/lib/invoice";
 import { sendAdminInvoiceEmail } from "@/lib/email";
 import { getCompanyById } from "@/lib/db";
 import type { PlanId, BillingPeriod } from "@/lib/pricing";
@@ -7,6 +7,7 @@ import type { PlanId, BillingPeriod } from "@/lib/pricing";
 interface AdminInvoiceBody {
   planId: PlanId;
   period: BillingPeriod;
+  billingOverride?: InvoiceBillingOverride;
 }
 
 // Admin skickar en faktura direkt till företagets kontaktmejl, utan
@@ -21,7 +22,7 @@ export async function POST(
 ) {
   const { id: companyId } = await params;
   const body = (await req.json()) as Partial<AdminInvoiceBody>;
-  const { planId, period } = body;
+  const { planId, period, billingOverride } = body;
   if (!planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
@@ -32,13 +33,30 @@ export async function POST(
   }
 
   try {
-    const { invoiceUrl, invoicePdfUrl, dueInDays, amount, planName } = await createAndSendInvoice({
+    const {
+      invoiceUrl,
+      invoicePdfUrl,
+      dueInDays,
+      amount,
+      planName,
+      recipientEmail,
+      recipientName,
+    } = await createAndSendInvoice({
       companyId,
       planId,
       period,
+      billingOverride,
     });
     if (invoiceUrl) {
-      await sendAdminInvoiceEmail({ company, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays });
+      await sendAdminInvoiceEmail({
+        recipientEmail,
+        recipientName,
+        planName,
+        amount,
+        invoiceUrl,
+        invoicePdfUrl,
+        dueInDays,
+      });
     }
     return NextResponse.json({ sent: true, invoiceUrl, dueInDays });
   } catch (err) {

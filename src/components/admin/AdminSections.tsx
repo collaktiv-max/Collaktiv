@@ -158,10 +158,7 @@ export function PaymentCell({
 }) {
   const [pickingDuration, setPickingDuration] = useState(false);
   const [duration, setDuration] = useState<ComplimentaryDuration>("3m");
-  const [pickingInvoice, setPickingInvoice] = useState(false);
-  const [invoicePlan, setInvoicePlan] = useState<PlanId>("standard");
-  const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod>("year");
-  const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
   if (company.paymentConfirmed && company.complimentary) {
     return (
@@ -244,76 +241,6 @@ export function PaymentCell({
     );
   }
 
-  if (pickingInvoice) {
-    const amount = getDiscountedTotal(getPlan(invoicePlan), invoicePeriod);
-    return (
-      <div className="flex flex-wrap items-center gap-1.5">
-        <select
-          value={invoicePlan}
-          onChange={(e) => setInvoicePlan(e.target.value as PlanId)}
-          disabled={sendingInvoice}
-          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
-        >
-          <option value="standard">Standard</option>
-          <option value="premium">Premium</option>
-        </select>
-        <select
-          value={invoicePeriod}
-          onChange={(e) => setInvoicePeriod(e.target.value as BillingPeriod)}
-          disabled={sendingInvoice}
-          className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
-        >
-          {(Object.keys(BILLING_LABELS) as BillingPeriod[]).map((p) => (
-            <option key={p} value={p}>
-              {BILLING_LABELS[p]}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={async () => {
-            if (
-              !confirm(
-                `Skicka en faktura på ${amount} kr (${getPlan(invoicePlan).name}, ${BILLING_LABELS[invoicePeriod]}) till ${company.contactEmail}?`
-              )
-            ) {
-              return;
-            }
-            setSendingInvoice(true);
-            try {
-              await fetchJson(`/api/admin/companies/${company.id}/invoice`, {
-                method: "POST",
-                body: JSON.stringify({ planId: invoicePlan, period: invoicePeriod }),
-              });
-              alert(`Fakturan skickad till ${company.contactEmail}.`);
-              setPickingInvoice(false);
-            } catch (err) {
-              alert(err instanceof Error ? err.message : "Kunde inte skicka fakturan.");
-            } finally {
-              setSendingInvoice(false);
-            }
-          }}
-          disabled={sendingInvoice}
-          title="Skicka faktura"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] text-white transition hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-60"
-        >
-          {sendingInvoice ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Check className="h-3.5 w-3.5" />
-          )}
-        </button>
-        <button
-          onClick={() => setPickingInvoice(false)}
-          disabled={sendingInvoice}
-          title="Avbryt"
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-muted)] transition hover:border-[#c0392b] hover:text-[#c0392b] disabled:opacity-60"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       <PaymentToggle
@@ -327,11 +254,238 @@ export function PaymentCell({
         <Gift className="h-3 w-3" /> Ge kostnadsfritt
       </button>
       <button
-        onClick={() => setPickingInvoice(true)}
+        onClick={() => setInvoiceModalOpen(true)}
         className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
       >
         <Receipt className="h-3 w-3" /> Skicka faktura
       </button>
+      {invoiceModalOpen && (
+        <InvoiceModal company={company} onClose={() => setInvoiceModalOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+// Modal istället för en inline-picker – "Annan faktureringsadress" (för
+// stora företag med en egen fakturaavdelning, annan mottagaradress än
+// den löpande kontakten) behöver plats för fler fält än en tabellcell
+// rymmer. Skickar alltid till company.contactEmail om inget annat
+// anges – se billingOverride i src/lib/invoice.ts.
+function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: () => void }) {
+  const [plan, setPlan] = useState<PlanId>("standard");
+  const [period, setPeriod] = useState<BillingPeriod>("year");
+  const [showOverride, setShowOverride] = useState(false);
+  const [overrideEmail, setOverrideEmail] = useState("");
+  const [overrideName, setOverrideName] = useState("");
+  const [overrideOrgNumber, setOverrideOrgNumber] = useState("");
+  const [overrideAddressLine1, setOverrideAddressLine1] = useState("");
+  const [overridePostalCode, setOverridePostalCode] = useState("");
+  const [overrideCity, setOverrideCity] = useState("");
+  const [overrideReference, setOverrideReference] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<{ email: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const amount = getDiscountedTotal(getPlan(plan), period);
+  const recipientEmail = (showOverride && overrideEmail.trim()) || company.contactEmail;
+
+  async function handleSend() {
+    setSending(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/admin/companies/${company.id}/invoice`, {
+        method: "POST",
+        body: JSON.stringify({
+          planId: plan,
+          period,
+          billingOverride: showOverride
+            ? {
+                email: overrideEmail.trim() || undefined,
+                name: overrideName.trim() || undefined,
+                orgNumber: overrideOrgNumber.trim() || undefined,
+                addressLine1: overrideAddressLine1.trim() || undefined,
+                postalCode: overridePostalCode.trim() || undefined,
+                city: overrideCity.trim() || undefined,
+                reference: overrideReference.trim() || undefined,
+              }
+            : undefined,
+        }),
+      });
+      setSent({ email: recipientEmail });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte skicka fakturan.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 shadow-xl sm:p-7">
+        <button
+          onClick={onClose}
+          aria-label="Stäng"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-brand-muted)] hover:bg-[var(--color-brand-secondary)]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {sent ? (
+          <div className="py-4 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
+              <Check className="h-6 w-6" />
+            </span>
+            <h2 className="mt-4 text-lg font-extrabold text-[var(--color-brand-ink)]">
+              Fakturan skickad!
+            </h2>
+            <p className="mt-2 text-sm font-medium text-[var(--color-brand-muted)]">
+              Skickades till {sent.email}.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-5 rounded-full bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
+            >
+              Stäng
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-lg font-extrabold text-[var(--color-brand-ink)]">
+              Skicka faktura till {company.name}
+            </h2>
+            <p className="mt-1.5 text-sm font-medium text-[var(--color-brand-muted)]">
+              Skapas och skickas direkt via Stripe – inget behöver loggas in.
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                Paket
+                <select
+                  value={plan}
+                  onChange={(e) => setPlan(e.target.value as PlanId)}
+                  className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 text-sm font-bold text-[var(--color-brand-ink)]"
+                >
+                  <option value="standard">Standard</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </label>
+              <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                Period
+                <select
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as BillingPeriod)}
+                  className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 text-sm font-bold text-[var(--color-brand-ink)]"
+                >
+                  {(Object.keys(BILLING_LABELS) as BillingPeriod[]).map((p) => (
+                    <option key={p} value={p}>
+                      {BILLING_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <p className="mt-3 text-sm font-extrabold text-[var(--color-brand-ink)]">{amount} kr</p>
+
+            <button
+              onClick={() => setShowOverride((v) => !v)}
+              className="mt-4 text-xs font-extrabold text-[var(--color-brand-primary)] hover:underline"
+            >
+              {showOverride ? "− Dölj annan faktureringsadress" : "+ Annan faktureringsadress"}
+            </button>
+
+            {showOverride && (
+              <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[var(--color-brand-border)] p-4">
+                <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                  Faktureringsmejl
+                  <input
+                    type="email"
+                    value={overrideEmail}
+                    onChange={(e) => setOverrideEmail(e.target.value)}
+                    placeholder={company.contactEmail}
+                    className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                  />
+                </label>
+                <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                  Fakturamottagare (företagsnamn)
+                  <input
+                    value={overrideName}
+                    onChange={(e) => setOverrideName(e.target.value)}
+                    placeholder={company.name}
+                    className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                  />
+                </label>
+                <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                  Organisationsnummer
+                  <input
+                    value={overrideOrgNumber}
+                    onChange={(e) => setOverrideOrgNumber(e.target.value)}
+                    placeholder="XXXXXX-XXXX"
+                    className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="col-span-2 block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                    Adress
+                    <input
+                      value={overrideAddressLine1}
+                      onChange={(e) => setOverrideAddressLine1(e.target.value)}
+                      placeholder="T.ex. Box 177"
+                      className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                    />
+                  </label>
+                  <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                    Postnummer
+                    <input
+                      value={overridePostalCode}
+                      onChange={(e) => setOverridePostalCode(e.target.value)}
+                      placeholder="891 24"
+                      className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                    />
+                  </label>
+                  <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                    Ort
+                    <input
+                      value={overrideCity}
+                      onChange={(e) => setOverrideCity(e.target.value)}
+                      placeholder="Örnsköldsvik"
+                      className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                    />
+                  </label>
+                </div>
+                <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
+                  Referens/meddelande
+                  <textarea
+                    value={overrideReference}
+                    onChange={(e) => setOverrideReference(e.target.value)}
+                    rows={2}
+                    placeholder="T.ex. Store 82 – enligt överenskommelse med ..."
+                    className="mt-1.5 w-full resize-none rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-sm font-medium text-[var(--color-brand-ink)] placeholder:text-[var(--color-brand-muted)]"
+                  />
+                </label>
+              </div>
+            )}
+
+            {error && <p className="mt-3 text-xs font-bold text-[#c0392b]">{error}</p>}
+
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="flex items-center gap-2 rounded-full bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-60"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Receipt className="h-4 w-4" />
+                )}
+                {sending ? "Skickar..." : `Skicka till ${recipientEmail}`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
