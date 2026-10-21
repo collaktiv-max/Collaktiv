@@ -37,6 +37,7 @@ export async function POST(
       invoiceUrl,
       invoicePdfUrl,
       dueInDays,
+      dueDate,
       amount,
       planName,
       recipientEmail,
@@ -53,10 +54,11 @@ export async function POST(
         recipientEmail,
         recipientName,
         planName,
+        period,
         amount,
         invoiceUrl,
         invoicePdfUrl,
-        dueInDays,
+        dueDate,
       });
       pdfAttached = result.pdfAttached;
     }

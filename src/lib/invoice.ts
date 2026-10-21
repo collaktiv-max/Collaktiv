@@ -60,6 +60,10 @@ export async function createAndSendInvoice(params: {
   invoiceUrl: string | null;
   invoicePdfUrl: string | null;
   dueInDays: number;
+  /** Fakturans faktiska förfallodatum (ISO), från Stripes egen
+   * due_date – visas skrivet ut i klartext i admins fakturamejl
+   * istället för bara "om 30 dagar". */
+  dueDate: string | null;
   amount: number;
   planName: string;
   recipientEmail: string;
@@ -189,6 +193,7 @@ export async function createAndSendInvoice(params: {
     invoiceUrl: finalized.hosted_invoice_url ?? null,
     invoicePdfUrl: finalized.invoice_pdf ?? null,
     dueInDays: DAYS_UNTIL_DUE,
+    dueDate: finalized.due_date ? new Date(finalized.due_date * 1000).toISOString() : null,
     amount,
     planName: plan.name,
     recipientEmail,

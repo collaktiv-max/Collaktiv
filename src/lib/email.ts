@@ -1,6 +1,7 @@
 import "server-only";
 import { Resend } from "resend";
 import { REGION } from "./config";
+import { BILLING_LABELS, type BillingPeriod } from "./pricing";
 import { CATEGORY_LABELS, type CompanyProfile, type Offer } from "./types";
 
 const FROM = "Collaktiv <partner@collaktiv.se>";
@@ -56,7 +57,10 @@ async function sendEmail({
 }
 
 // Enkel, inline-stylad layout – e-postklienter stödjer inte extern CSS.
-function layout(title: string, bodyHtml: string, ctaLabel: string, ctaHref: string) {
+// ctaLabel/ctaHref är valfria – utelämnas för mejl som medvetet inte
+// ska ha en klickbar åtgärdslänk (t.ex. admins fakturamejl, se
+// sendAdminInvoiceEmail).
+function layout(title: string, bodyHtml: string, ctaLabel?: string, ctaHref?: string) {
   return `
 <div style="background:#f2faf7;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e2ece7;">
@@ -68,11 +72,15 @@ function layout(title: string, bodyHtml: string, ctaLabel: string, ctaHref: stri
       <div style="font-size:14px;line-height:1.65;color:#5b7168;font-weight:500;">
         ${bodyHtml}
       </div>
-      <div style="margin-top:28px;">
+      ${
+        ctaLabel && ctaHref
+          ? `<div style="margin-top:28px;">
         <a href="${ctaHref}" style="display:inline-block;background:#166849;color:#ffffff;font-weight:800;font-size:14px;text-decoration:none;padding:13px 26px;border-radius:999px;">
           ${ctaLabel}
         </a>
-      </div>
+      </div>`
+          : ""
+      }
     </div>
     <div style="padding:20px 32px;border-top:1px solid #e2ece7;">
       <p style="margin:0;font-size:11.5px;color:#5b7168;font-weight:600;">
@@ -282,11 +290,13 @@ async function fetchPdfBuffer(url: string): Promise<Buffer> {
 
 // Skickas till FÖRETAGET när admin skickar en faktura direkt till dem
 // (se "Skicka faktura" i admin) – de behöver aldrig logga in i
-// portalen för att betala, Stripes egen fakturasida har en
-// betalningslänk. Komplement till Stripes eget fakturamejl, i
-// Collaktivs egen ton/design, och med villkorsgodkännandet tydligt
-// utskrivet – företaget har aldrig sett en kryssruta för det, de
-// godkänner genom att betala.
+// portalen för att betala. Medvetet UTAN klickbar betalningslänk/CTA
+// (se layout() ovan) – fakturan ska gå att betala direkt från den
+// bifogade PDF:en, med alla uppgifter (belopp, period, förfallodatum)
+// utskrivna i klartext i mejlet, inte gömda bakom en länk. Komplement
+// till Stripes eget fakturamejl, i Collaktivs egen ton/design, och med
+// villkorsgodkännandet tydligt utskrivet – företaget har aldrig sett
+// en kryssruta för det, de godkänner genom att betala.
 export async function sendAdminInvoiceEmail(params: {
   /** Mottagarens mejl/namn – kan vara en egen fakturaadress istället
    * för företagets vanliga kontaktuppgifter, se InvoiceBillingOverride
@@ -294,12 +304,13 @@ export async function sendAdminInvoiceEmail(params: {
   recipientEmail: string;
   recipientName: string;
   planName: string;
+  period: BillingPeriod;
   amount: number;
   invoiceUrl: string;
   invoicePdfUrl: string | null;
-  dueInDays: number;
+  dueDate: string | null;
 }): Promise<{ sent: boolean; pdfAttached: boolean }> {
-  const { recipientEmail, recipientName, planName, amount, invoiceUrl, invoicePdfUrl, dueInDays } =
+  const { recipientEmail, recipientName, planName, period, amount, invoiceUrl, invoicePdfUrl, dueDate } =
     params;
 
   let pdfAttachment: { filename: string; content: Buffer } | undefined;
@@ -317,15 +328,32 @@ export async function sendAdminInvoiceEmail(params: {
     }
   }
 
+  const dueDateLabel = dueDate
+    ? new Date(dueDate).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+
+  // Om PDF:en ändå inte gick att bifoga (pdfAttachment saknas) har
+  // mottagaren annars ingen väg till betalning alls härifrån – då får
+  // de i alla fall en vanlig textlänk som reservlösning, istället för
+  // den klickbara CTA-knappen vi annars medvetet utelämnar.
+  const fallbackLinkHtml = !pdfAttachment
+    ? `<p style="margin-top:12px;">Vi lyckades tyvärr inte bifoga fakturan som PDF i det här mejlet – öppna den istället via
+       <a href="${invoiceUrl}" style="color:#166849;font-weight:700;">den här länken</a>.</p>`
+    : "";
+
   const html = layout(
     "Ni har blivit inbjudna som partner i Collaktiv",
     `<p>Hej ${recipientName}!</p>
-     <p style="margin-top:12px;">Vi har skickat en faktura för ${planName}-paketet (${amount} kr) med ${dueInDays}
-     dagars betalningsvillkor${pdfAttachment ? " – bifogad som PDF" : ""}. Betala enkelt via länken nedan – ni behöver inte logga in någonstans.</p>
+     <p style="margin-top:12px;">Vi har skickat en faktura${pdfAttachment ? ", bifogad som PDF" : ""} med följande uppgifter:</p>
+     <ul style="margin:12px 0 0;padding-left:18px;">
+       <li>Paket: ${planName} – ${BILLING_LABELS[period]}</li>
+       <li>Belopp: ${amount} kr (inkl. 25% moms)</li>
+       ${dueDateLabel ? `<li>Förfallodatum: ${dueDateLabel}</li>` : ""}
+     </ul>
+     <p style="margin-top:12px;">Betala enkelt direkt från den bifogade fakturan – ni behöver inte logga in någonstans.</p>
+     ${fallbackLinkHtml}
      <p style="margin-top:12px;">Genom att betala fakturan godkänner ni Collaktivs
-     <a href="${SITE_URL}/villkor" style="color:#166849;font-weight:700;">villkor</a>, inklusive betalningsvillkoren.</p>`,
-    "Betala fakturan",
-    invoiceUrl
+     <a href="${SITE_URL}/villkor" style="color:#166849;font-weight:700;">villkor</a>, inklusive betalningsvillkoren.</p>`
   );
   const { sent } = await sendEmail({
     to: recipientEmail,
