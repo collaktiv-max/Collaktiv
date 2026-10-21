@@ -162,6 +162,10 @@ export default function VillkorPage() {
               förutom i marknadsföringsmaterial som redan publicerats.
             </p>
             <p>
+              Collaktiv har även rätt att, oavsett ovanstående, offentligt nämna att företaget är
+              partner i Collaktiv (t.ex. i pressmaterial, på webbplatsen eller i sociala medier).
+            </p>
+            <p>
               Vid upprepade eller allvarliga brott mot dessa villkor kan Collaktiv avsluta hela
               ert partnerskap, inte bara ett enskilt erbjudande, utan rätt till återbetalning för
               innevarande period.
