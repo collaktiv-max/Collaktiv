@@ -52,17 +52,17 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
+                className={`flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-bold transition ${
                   active
                     ? "bg-[var(--color-brand-primary)] text-white"
                     : "text-[var(--color-brand-ink)]/75 hover:bg-[var(--color-brand-secondary)]"
                 }`}
               >
-                <Icon className="h-[18px] w-[18px]" />
-                <span className="flex-1">{item.label}</span>
+                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 {comingSoon && (
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                       active
                         ? "bg-white/20 text-white"
                         : "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]"
@@ -158,17 +158,17 @@ export function PortalShell({ children }: { children: ReactNode }) {
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
+                      className={`flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-bold transition ${
                         active
                           ? "bg-[var(--color-brand-primary)] text-white"
                           : "text-[var(--color-brand-ink)]/75 hover:bg-[var(--color-brand-secondary)]"
                       }`}
                     >
-                      <Icon className="h-[18px] w-[18px]" />
-                      <span className="flex-1">{item.label}</span>
+                      <Icon className="h-[18px] w-[18px] shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
                       {comingSoon && (
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                             active
                               ? "bg-white/20 text-white"
                               : "bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]"
