@@ -50,6 +50,7 @@ interface CompanyRow {
   terms_accepted_at: string | null;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
+  full_service_requested: boolean;
   referred_by_company_id: string | null;
   bonus_access_until: string | null;
   approved_at: string | null;
@@ -134,6 +135,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     termsAcceptedAt: row.terms_accepted_at ?? undefined,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
+    fullServiceRequested: row.full_service_requested,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
     bonusAccessUntil: row.bonus_access_until ?? undefined,
     approvedAt: row.approved_at ?? undefined,
@@ -242,6 +244,7 @@ export async function createCompany(input: {
   packageTier?: PackageTier;
   applicationStatus?: ApplicationStatus;
   referredByCompanyId?: string;
+  fullServiceRequested?: boolean;
   passwordHash: string;
 }): Promise<CompanyProfile> {
   const rows = (await sql`
@@ -249,13 +252,14 @@ export async function createCompany(input: {
       name, logo_data_url, website, description, category,
       contact_name, contact_email, contact_phone, region, address,
       package_tier, application_status, password_hash,
-      onboarding_logo, referred_by_company_id
+      onboarding_logo, referred_by_company_id, full_service_requested
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
       ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"},
-      ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null}
+      ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
+      ${input.fullServiceRequested ?? false}
     )
     returning *
   `) as CompanyRow[];
@@ -306,6 +310,7 @@ export async function updateCompany(
       terms_accepted_at = ${next.termsAcceptedAt ?? null},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
+      full_service_requested = ${next.fullServiceRequested ?? false},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
       approved_at = ${approvedAt ?? null},
       payment_confirmed_at = ${paymentConfirmedAt ?? null},

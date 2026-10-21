@@ -28,6 +28,7 @@ interface FormState {
   contactPhone: string;
   accountEmail: string;
   password: string;
+  fullServiceRequested: boolean;
 }
 
 const initialForm: FormState = {
@@ -42,6 +43,7 @@ const initialForm: FormState = {
   contactPhone: "",
   accountEmail: "",
   password: "",
+  fullServiceRequested: false,
 };
 
 export default function RegistreraPage() {
@@ -108,6 +110,7 @@ function RegistreraForm() {
       address: form.address,
       password: form.password,
       referredByCompanyId,
+      fullServiceRequested: form.fullServiceRequested,
     });
     setSubmitting(false);
     if (result.ok) {
@@ -261,6 +264,18 @@ function RegistreraForm() {
                         onChange={(e) => update("password", e.target.value)}
                       />
                     </Field>
+                    <label className="flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] p-4 text-xs font-semibold text-[var(--color-brand-ink)]">
+                      <input
+                        type="checkbox"
+                        checked={form.fullServiceRequested}
+                        onChange={(e) => update("fullServiceRequested", e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-brand-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
+                      />
+                      <span>
+                        Vi vill ha hjälp med allt – hör av er till oss istället för att vi ska
+                        behöva logga in och sköta paket, erbjudande och fakturering själva.
+                      </span>
+                    </label>
                     <div className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-secondary)] p-4 text-xs font-semibold text-[var(--color-brand-muted)]">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
                       Ni loggas in direkt och kan börja skapa erbjudanden.
@@ -376,6 +391,12 @@ function SummaryStep({
           </div>
         ))}
       </div>
+      {form.fullServiceRequested && (
+        <p className="mt-4 rounded-xl bg-[var(--color-brand-secondary)] px-4 py-3 text-xs font-bold text-[var(--color-brand-ink)]">
+          ⭐ Ni har valt att vi sköter allt åt er – vi hör av oss så fort ansökan är godkänd,
+          istället för att ni behöver logga in och göra det själva.
+        </p>
+      )}
       <p className="mt-4 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
         Ni loggas in i portalen direkt och kan skapa erbjudanden helt
         kostnadsfritt. Er ansökan går samtidigt till vårt team för

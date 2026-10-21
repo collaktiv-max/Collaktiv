@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Plus, X } from "lucide-react";
+import { LogOut, Menu, Plus, UserCog, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { useAppState } from "@/lib/store";
@@ -15,7 +15,7 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 }
 
 export function PortalShell({ children }: { children: ReactNode }) {
-  const { ready, currentCompany, logout } = useAppState();
+  const { ready, currentCompany, impersonating, logout } = useAppState();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -35,7 +35,29 @@ export function PortalShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-brand-secondary)]/30 lg:flex">
+    <div className="min-h-screen bg-[var(--color-brand-secondary)]/30">
+      {impersonating && (
+        <div className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#8a5a00] px-4 py-2 text-center text-xs font-extrabold text-white">
+          <span className="flex items-center gap-1.5">
+            <UserCog className="h-3.5 w-3.5" />
+            Admin-läge: inloggad som {currentCompany.name}
+          </span>
+          <button
+            onClick={async () => {
+              // Hård navigering, inte router.push: att nollställa
+              // currentCompany via logout() triggrar annars effekten
+              // ovan (omdirigerar till /logga-in) i samma render, som
+              // kan vinna kapplöpningen mot en vanlig klientnavigering.
+              await logout();
+              window.location.href = "/admin";
+            }}
+            className="underline decoration-dotted underline-offset-2 hover:text-white/80"
+          >
+            Avsluta och gå tillbaka till admin
+          </button>
+        </div>
+      )}
+      <div className="lg:flex">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-[var(--color-brand-border)] bg-white lg:flex">
         <div className="flex h-20 items-center px-6">
@@ -225,6 +247,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+      </div>
       </div>
     </div>
   );

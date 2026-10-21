@@ -67,6 +67,10 @@ export interface CompanyProfile {
   termsAcceptedAt?: string;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
+  /** Ikryssat vid registrering – företaget vill inte använda portalen
+   * själva utan vill att vi sköter paketval, erbjudande och
+   * fakturering åt dem (se admins "Logga in som företag"). */
+  fullServiceRequested: boolean;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */
   referredByCompanyId?: string;
   /** Bonusåtkomst intjänad via inbjudningar – satt/förlängd 30 dagar

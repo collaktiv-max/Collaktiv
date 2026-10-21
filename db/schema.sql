@@ -50,6 +50,11 @@ create table if not exists companies (
   terms_accepted_at    timestamptz,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
+  -- Ikryssat av företaget vid registrering – de vill inte använda
+  -- portalen själva utan vill att vi sköter paketval, erbjudande och
+  -- fakturering åt dem. Visas som badge i admin och nämns i
+  -- sendAdminNewCompanyEmail (se src/lib/email.ts).
+  full_service_requested     boolean not null default false,
   -- Sätts automatiskt när ansökan godkänns/första betalningen
   -- bekräftas – används för att räkna ut när påminnelsemejl ska gå ut.
   approved_at                timestamptz,
@@ -90,6 +95,7 @@ alter table companies add column if not exists complimentary_until timestamptz;
 alter table companies add column if not exists complimentary_duration text;
 alter table companies add column if not exists terms_version text;
 alter table companies add column if not exists terms_accepted_at timestamptz;
+alter table companies add column if not exists full_service_requested boolean not null default false;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

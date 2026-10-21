@@ -144,6 +144,17 @@ export async function sendRejectionEmail(company: CompanyProfile) {
 // Till oss själva (ADMIN_EMAIL) – så vi inte behöver sitta och
 // uppdatera admin-panelen manuellt för att upptäcka nya registreringar.
 export async function sendAdminNewCompanyEmail(company: CompanyProfile) {
+  // Ikryssat av företaget vid registrering – de vill inte använda
+  // portalen själva utan vill att vi sköter allt åt dem (paket,
+  // erbjudande, fakturering), se full_service_requested. Lyft fram det
+  // tydligt så det inte drunknar bland vanliga nyregistreringar.
+  const fullServiceCallout = company.fullServiceRequested
+    ? `<p style="margin-top:12px;background:#fdf3e0;border-radius:10px;padding:12px 14px;font-weight:700;">
+         ⭐ Vill ha hjälp med allt – de vill inte logga in själva. Hör av er direkt istället för
+         att vänta på att de loggar in, och använd "Logga in som företag" i admin för att skapa
+         erbjudandet och skicka fakturan åt dem.
+       </p>`
+    : "";
   const html = layout(
     "Nytt företag har registrerat sig",
     `<p><strong>${company.name}</strong> har precis skapat ett konto i partnerportalen.</p>
@@ -152,13 +163,16 @@ export async function sendAdminNewCompanyEmail(company: CompanyProfile) {
        <li>Kontakt: ${company.contactName || "–"} · ${company.contactEmail}${company.contactPhone ? ` · ${company.contactPhone}` : ""}</li>
        <li>Region: ${company.region}</li>
      </ul>
+     ${fullServiceCallout}
      <p style="margin-top:12px;">Ansökan väntar på granskning i admin-panelen.</p>`,
     "Öppna admin-panelen",
     `${SITE_URL}/admin`
   );
   return sendEmail({
     to: ADMIN_EMAIL,
-    subject: `Nytt företag: ${company.name}`,
+    subject: company.fullServiceRequested
+      ? `⭐ Vill ha hjälp med allt: ${company.name}`
+      : `Nytt företag: ${company.name}`,
     html,
   });
 }

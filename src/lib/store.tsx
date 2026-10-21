@@ -23,11 +23,13 @@ interface RegisterInput {
   logoDataUrl?: string;
   address?: string;
   referredByCompanyId?: string;
+  fullServiceRequested?: boolean;
 }
 
 interface Ctx {
   ready: boolean;
   currentCompany: CompanyProfile | null;
+  impersonating: boolean;
   companyOffers: Offer[];
   companyCampaigns: Campaign[];
   companyLocations: CompanyLocation[];
@@ -59,14 +61,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [companyCampaigns, setCompanyCampaigns] = useState<Campaign[]>([]);
   const [companyLocations, setCompanyLocations] = useState<CompanyLocation[]>([]);
   const [referralCount, setReferralCount] = useState(0);
+  const [impersonating, setImpersonating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { company } = await fetchJson<{ company: CompanyProfile | null }>("/api/auth/me");
+        const { company, impersonating } = await fetchJson<{
+          company: CompanyProfile | null;
+          impersonating: boolean;
+        }>("/api/auth/me");
         if (cancelled) return;
         setCurrentCompany(company);
+        setImpersonating(impersonating);
         if (company) {
           const [{ offers }, { count }, { campaigns }, { locations }] = await Promise.all([
             fetchJson<{ offers: Offer[] }>("/api/offers"),
@@ -106,6 +113,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setCompanyCampaigns([]);
       setCompanyLocations([]);
       setReferralCount(0);
+      setImpersonating(false);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -129,6 +137,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setReferralCount(count);
       setCompanyCampaigns(campaigns);
       setCompanyLocations(locations);
+      setImpersonating(false);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -142,6 +151,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCompanyCampaigns([]);
     setCompanyLocations([]);
     setReferralCount(0);
+    setImpersonating(false);
   }, []);
 
   const updateCompany = useCallback(async (_id: string, partial: Partial<CompanyProfile>) => {
@@ -231,6 +241,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     ready,
     currentCompany,
+    impersonating,
     companyOffers,
     companyCampaigns,
     companyLocations,

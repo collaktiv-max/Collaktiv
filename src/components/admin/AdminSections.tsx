@@ -8,7 +8,9 @@ import {
   CircleDollarSign,
   Clock,
   Gift,
+  Headset,
   Loader2,
+  LogIn,
   Mail,
   Phone,
   Receipt,
@@ -334,6 +336,50 @@ export function PaymentCell({
   );
 }
 
+// Ikryssat av företaget vid registrering (se full_service_requested) –
+// de vill inte logga in i portalen själva utan vill att vi sköter
+// paket, erbjudande och fakturering åt dem. Visas bredvid
+// företagsnamnet i Ansökningar/Alla företag.
+export function FullServiceBadge() {
+  return (
+    <span
+      title="Vill ha hjälp med allt – hör av er till dem istället för att vänta på att de loggar in"
+      className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#fdf3e0] px-2 py-0.5 text-[10px] font-extrabold text-[#8a5a00]"
+    >
+      <Headset className="h-3 w-3" /> Vill ha hjälp
+    </span>
+  );
+}
+
+// Loggar in admin SOM företaget (se /api/admin/companies/[id]/impersonate)
+// – används för att skapa/publicera erbjudanden och fylla i profilen åt
+// företag som inte vill/hinner göra det själva. Öppnas i en ny flik så
+// admin-panelen inte stängs eller ersätts i den nuvarande.
+export function ImpersonateButton({ company }: { company: CompanyProfile }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        setLoading(true);
+        try {
+          await fetchJson(`/api/admin/companies/${company.id}/impersonate`, { method: "POST" });
+          window.open("/portal", "_blank");
+        } catch (err) {
+          alert(err instanceof Error ? err.message : "Kunde inte logga in som företaget.");
+        } finally {
+          setLoading(false);
+        }
+      }}
+      disabled={loading}
+      title="Logga in som företag"
+      className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-60"
+    >
+      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="h-3 w-3" />}
+      Logga in som företag
+    </button>
+  );
+}
+
 export function EmptyRow({ text }: { text: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-[var(--color-brand-border)] bg-white p-6 text-center text-sm font-medium text-[var(--color-brand-muted)]">
@@ -522,7 +568,12 @@ export function ApplicationsSection({
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {pending.map((c) => (
               <tr key={c.id}>
-                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">{c.name}</td>
+                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {c.name}
+                    {c.fullServiceRequested && <FullServiceBadge />}
+                  </div>
+                </td>
                 <td className="px-5 py-3.5">
                   <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
                 </td>
@@ -543,19 +594,22 @@ export function ApplicationsSection({
                   {formatDate(c.createdAt)}
                 </td>
                 <td className="px-5 py-3.5">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => onUpdate(c.id, { applicationStatus: "godkand" })}
-                      className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
-                    >
-                      <Check className="h-3.5 w-3.5" /> Godkänn
-                    </button>
-                    <button
-                      onClick={() => onReject(c)}
-                      className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
-                    >
-                      <X className="h-3.5 w-3.5" /> Avvisa
-                    </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => onUpdate(c.id, { applicationStatus: "godkand" })}
+                        className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-primary)] px-3 py-1.5 text-xs font-extrabold text-white hover:bg-[var(--color-brand-primary-hover)]"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Godkänn
+                      </button>
+                      <button
+                        onClick={() => onReject(c)}
+                        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] hover:border-[#c0392b] hover:text-[#c0392b]"
+                      >
+                        <X className="h-3.5 w-3.5" /> Avvisa
+                      </button>
+                    </div>
+                    <ImpersonateButton company={c} />
                   </div>
                 </td>
               </tr>
@@ -830,11 +884,17 @@ export function CompaniesSection({
             <Th>Status</Th>
             <Th>Betalning</Th>
             <Th>Registrerad</Th>
+            <Th align="right">Åtgärd</Th>
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {visibleCompanies.map((c) => (
               <tr key={c.id}>
-                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">{c.name}</td>
+                <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {c.name}
+                    {c.fullServiceRequested && <FullServiceBadge />}
+                  </div>
+                </td>
                 <td className="px-5 py-3.5">
                   <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
                 </td>
@@ -887,6 +947,11 @@ export function CompaniesSection({
                 </td>
                 <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                   {formatDate(c.createdAt)}
+                </td>
+                <td className="px-5 py-3.5">
+                  <div className="flex justify-end">
+                    <ImpersonateButton company={c} />
+                  </div>
                 </td>
               </tr>
             ))}

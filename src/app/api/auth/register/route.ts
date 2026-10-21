@@ -17,6 +17,7 @@ interface RegisterBody {
   address?: string;
   password: string;
   referredByCompanyId?: string;
+  fullServiceRequested?: boolean;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
       contactPhone: body.contactPhone,
       address: body.address,
       referredByCompanyId,
+      fullServiceRequested: body.fullServiceRequested,
       passwordHash,
     });
     await createSession(company.id);
