@@ -56,6 +56,8 @@ interface CompanyRow {
   payment_confirmed_at: string | null;
   payment_reminder_sent_at: string | null;
   offer_reminder_sent_at: string | null;
+  payment_reminder_count: number;
+  offer_reminder_count: number;
   password_hash: string;
   onboarding_logo: boolean;
   onboarding_first_offer: boolean;
@@ -138,6 +140,8 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     paymentConfirmedAt: row.payment_confirmed_at ?? undefined,
     paymentReminderSentAt: row.payment_reminder_sent_at ?? undefined,
     offerReminderSentAt: row.offer_reminder_sent_at ?? undefined,
+    paymentReminderCount: row.payment_reminder_count ?? 0,
+    offerReminderCount: row.offer_reminder_count ?? 0,
     passwordHash: row.password_hash,
     createdAt: row.created_at,
     onboardingChecklist: {
@@ -307,6 +311,8 @@ export async function updateCompany(
       payment_confirmed_at = ${paymentConfirmedAt ?? null},
       payment_reminder_sent_at = ${next.paymentReminderSentAt ?? null},
       offer_reminder_sent_at = ${next.offerReminderSentAt ?? null},
+      payment_reminder_count = ${next.paymentReminderCount ?? 0},
+      offer_reminder_count = ${next.offerReminderCount ?? 0},
       onboarding_logo = ${checklist.logo},
       onboarding_first_offer = ${checklist.firstOffer},
       onboarding_profile_complete = ${checklist.profileComplete},
@@ -325,7 +331,9 @@ export async function updateCompanyPassword(id: string, passwordHash: string): P
 // Se src/lib/reminders.ts för hur de här används (daglig cron-körning).
 
 // Godkända företag som inte valt/betalat för ett paket, minst 2 dagar
-// efter godkännande, och inte redan påminda de senaste 5 dagarna.
+// efter godkännande, inte redan påminda de senaste 5 dagarna, och inte
+// redan fått 4 påminnelser (vi slutar automatiskt istället för att
+// nagga i all oändlighet, se markPaymentReminderSent).
 export async function getCompaniesNeedingPaymentReminder(): Promise<CompanyProfile[]> {
   const rows = (await sql`
     select * from companies
@@ -334,12 +342,14 @@ export async function getCompaniesNeedingPaymentReminder(): Promise<CompanyProfi
       and approved_at is not null
       and approved_at <= now() - interval '2 days'
       and (payment_reminder_sent_at is null or payment_reminder_sent_at <= now() - interval '5 days')
+      and payment_reminder_count < 4
   `) as CompanyRow[];
   return rows.map((r) => stripPassword(toCompany(r)));
 }
 
 // Företag som betalat men inte skapat något erbjudande, minst 3 dagar
-// efter betalningen, och inte redan påminda de senaste 5 dagarna.
+// efter betalningen, inte redan påminda de senaste 5 dagarna, och inte
+// redan fått 4 påminnelser (se markOfferReminderSent).
 export async function getCompaniesNeedingOfferReminder(): Promise<CompanyProfile[]> {
   const rows = (await sql`
     select c.* from companies c
@@ -347,17 +357,18 @@ export async function getCompaniesNeedingOfferReminder(): Promise<CompanyProfile
       and c.payment_confirmed_at is not null
       and c.payment_confirmed_at <= now() - interval '3 days'
       and (c.offer_reminder_sent_at is null or c.offer_reminder_sent_at <= now() - interval '5 days')
+      and c.offer_reminder_count < 4
       and not exists (select 1 from offers o where o.company_id = c.id)
   `) as CompanyRow[];
   return rows.map((r) => stripPassword(toCompany(r)));
 }
 
 export async function markPaymentReminderSent(id: string): Promise<void> {
-  await sql`update companies set payment_reminder_sent_at = now() where id = ${id}`;
+  await sql`update companies set payment_reminder_sent_at = now(), payment_reminder_count = payment_reminder_count + 1 where id = ${id}`;
 }
 
 export async function markOfferReminderSent(id: string): Promise<void> {
-  await sql`update companies set offer_reminder_sent_at = now() where id = ${id}`;
+  await sql`update companies set offer_reminder_sent_at = now(), offer_reminder_count = offer_reminder_count + 1 where id = ${id}`;
 }
 
 // Kostnadsfri åtkomst (se "Ge kostnadsfri åtkomst" i admin) som admin

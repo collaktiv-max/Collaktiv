@@ -79,6 +79,10 @@ export interface CompanyProfile {
   /** Senast ett påminnelsemejl av respektive typ skickades. */
   paymentReminderSentAt?: string;
   offerReminderSentAt?: string;
+  /** Antal skickade påminnelser av respektive typ – vi slutar
+   * automatiskt efter 4 (se src/lib/db.ts). */
+  paymentReminderCount: number;
+  offerReminderCount: number;
   createdAt: string;
   onboardingChecklist: {
     logo: boolean;

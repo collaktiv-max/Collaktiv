@@ -58,6 +58,11 @@ create table if not exists companies (
   -- mejlar samma företag varje dag – se src/lib/reminders.ts.
   payment_reminder_sent_at   timestamptz,
   offer_reminder_sent_at     timestamptz,
+  -- Antal skickade påminnelser av respektive typ – vi slutar automatiskt
+  -- efter 4 (se src/lib/reminders.ts) så vi inte naggar ett företag i
+  -- all oändlighet.
+  payment_reminder_count     integer not null default 0,
+  offer_reminder_count       integer not null default 0,
   password_hash     text not null,
   onboarding_logo             boolean not null default false,
   onboarding_first_offer      boolean not null default false,
@@ -78,6 +83,8 @@ alter table companies add column if not exists approved_at timestamptz;
 alter table companies add column if not exists payment_confirmed_at timestamptz;
 alter table companies add column if not exists payment_reminder_sent_at timestamptz;
 alter table companies add column if not exists offer_reminder_sent_at timestamptz;
+alter table companies add column if not exists payment_reminder_count integer not null default 0;
+alter table companies add column if not exists offer_reminder_count integer not null default 0;
 alter table companies add column if not exists complimentary boolean not null default false;
 alter table companies add column if not exists complimentary_until timestamptz;
 alter table companies add column if not exists complimentary_duration text;
