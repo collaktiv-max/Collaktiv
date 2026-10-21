@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCompanyId } from "@/lib/session";
-import { createAndSendInvoice } from "@/lib/invoice";
+import { createAndSendInvoice, type InvoiceBillingOverride } from "@/lib/invoice";
 import type { PlanId, BillingPeriod } from "@/lib/pricing";
 
 interface InvoiceBody {
@@ -8,12 +8,13 @@ interface InvoiceBody {
   planId: PlanId;
   period: BillingPeriod;
   termsAccepted: boolean;
+  billingOverride?: InvoiceBillingOverride;
 }
 
 // Alternativ till /api/checkout för företag som vill betala mot faktura
-// istället för kort, initierat av företaget självt (för en admin-
-// initierad faktura, se /api/admin/companies/[id]/invoice). Den
-// faktiska faktura-/Stripe-logiken ligger i src/lib/invoice.ts.
+// istället för kort, initierat av företaget självt på /portal/faktura
+// (för en admin-initierad faktura, se /api/admin/companies/[id]/invoice).
+// Den faktiska faktura-/Stripe-logiken ligger i src/lib/invoice.ts.
 export async function POST(req: NextRequest) {
   const companyId = await getSessionCompanyId();
   if (!companyId) {
@@ -21,24 +22,40 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json()) as Partial<InvoiceBody>;
-  const { offerId, planId, period, termsAccepted } = body;
+  const { offerId, planId, period, termsAccepted, billingOverride } = body;
   if (!planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
   if (!termsAccepted) {
     return NextResponse.json({ error: "Ni måste godkänna villkoren för att betala." }, { status: 400 });
   }
+  // Kärnuppgifterna på en svensk faktura – kontrolleras här också, inte
+  // bara i formuläret på /portal/faktura, så vi aldrig skickar en
+  // faktura utan rätt mottagaruppgifter.
+  if (
+    !billingOverride?.name?.trim() ||
+    !billingOverride?.orgNumber?.trim() ||
+    !billingOverride?.addressLine1?.trim() ||
+    !billingOverride?.postalCode?.trim() ||
+    !billingOverride?.city?.trim()
+  ) {
+    return NextResponse.json(
+      { error: "Fyll i företagsnamn, organisationsnummer och fakturaadress." },
+      { status: 400 }
+    );
+  }
   const termsAcceptedAt = new Date().toISOString();
 
   try {
-    const { invoiceUrl, dueInDays } = await createAndSendInvoice({
+    const { invoiceUrl, dueInDays, recipientEmail } = await createAndSendInvoice({
       companyId,
       offerId,
       planId,
       period,
       termsAcceptedAt,
+      billingOverride,
     });
-    return NextResponse.json({ sent: true, invoiceUrl, dueInDays });
+    return NextResponse.json({ sent: true, invoiceUrl, dueInDays, recipientEmail });
   } catch (err) {
     console.error("[invoice] Kunde inte skapa/skicka fakturan:", err);
     const message = err instanceof Error ? err.message : "";

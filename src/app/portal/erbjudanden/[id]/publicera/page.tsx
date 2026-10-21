@@ -38,10 +38,6 @@ export default function PubliceraErbjudandePage() {
   const [period, setPeriod] = useState<BillingPeriod>("year");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [invoicing, setInvoicing] = useState(false);
-  const [invoiceSent, setInvoiceSent] = useState<{ email: string; dueInDays: number } | null>(
-    null
-  );
   const [verifying, setVerifying] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,53 +146,14 @@ export default function PubliceraErbjudandePage() {
     }
   }
 
-  async function handleInvoice() {
-    setInvoicing(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          offerId: offer!.id,
-          planId: selectedTier,
-          period,
-          termsAccepted,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error ?? "Kunde inte skicka fakturan.");
-      }
-      setInvoiceSent({ email: currentCompany!.contactEmail, dueInDays: data.dueInDays ?? 30 });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kunde inte skicka fakturan. Försök igen.");
-    } finally {
-      setInvoicing(false);
-    }
-  }
-
-  if (invoiceSent) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-border)] bg-white p-8 text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]">
-            <Check className="h-7 w-7" />
-          </span>
-          <h2 className="mt-4 text-lg font-extrabold text-[var(--color-brand-ink)]">
-            Faktura skickad!
-          </h2>
-          <p className="mt-2 text-sm font-medium text-[var(--color-brand-muted)]">
-            Vi har skickat en faktura till <strong>{invoiceSent.email}</strong> med{" "}
-            {invoiceSent.dueInDays} dagars betalningsvillkor. Så fort den är betald skickas
-            erbjudandet automatiskt in för granskning.
-          </p>
-          <Button href="/portal/erbjudanden" className="mt-5">
-            Tillbaka till erbjudanden
-          </Button>
-        </div>
-      </div>
-    );
+  function goToInvoiceDetails() {
+    const params = new URLSearchParams({
+      planId: selectedTier,
+      period,
+      termsAccepted: termsAccepted ? "1" : "0",
+      offerId: offer!.id,
+    });
+    router.push(`/portal/faktura?${params.toString()}`);
   }
 
   if (verifying) {
@@ -416,15 +373,15 @@ export default function PubliceraErbjudandePage() {
         <div className="mt-5 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
           {!alreadyPaidForTier && (
             <Button
-              onClick={handleInvoice}
-              disabled={!PAYMENTS_ENABLED || processing || invoicing || !termsAccepted}
+              onClick={goToInvoiceDetails}
+              disabled={!PAYMENTS_ENABLED || processing || !termsAccepted}
               variant="secondary"
               size="lg"
               className="w-full sm:w-auto"
-              icon={invoicing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
+              icon={<Receipt className="h-4 w-4" />}
               iconPosition="left"
             >
-              {invoicing ? "Skickar faktura..." : "Betala mot faktura (30 dagar)"}
+              Betala mot faktura (30 dagar)
             </Button>
           )}
           <Button
@@ -432,7 +389,6 @@ export default function PubliceraErbjudandePage() {
             disabled={
               (!PAYMENTS_ENABLED && !alreadyPaidForTier) ||
               processing ||
-              invoicing ||
               (showTermsCheckbox && !termsAccepted)
             }
             size="lg"
