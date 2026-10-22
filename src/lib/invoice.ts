@@ -14,6 +14,13 @@ import { getSwedishMomsTaxRateId } from "./tax";
 
 const DAYS_UNTIL_DUE = 30;
 
+// Collaktiv AB:s eget Bankgironummer – Stripe lägger inte
+// automatiskt till det på en hostad faktura (bara "Betala
+// online"-länken), så många större företag som vill betala via
+// banköverföring/bankgiro saknar annars uppgiften helt. Läggs på som
+// ett eget fält på varje faktura, se nedan.
+const BANKGIRONUMMER = "5425-2226";
+
 // Vissa stora företag vill inte ha fakturan till den vanliga
 // kontaktadressen utan till en egen fakturaavdelning, med sin egna
 // juridiska namn/adress/org.nr på fakturan – se "Annan
@@ -113,7 +120,9 @@ export async function createAndSendInvoice(params: {
         metadata: { companyId },
       });
 
-  const customFields: Stripe.InvoiceCreateParams.CustomField[] = [];
+  const customFields: Stripe.InvoiceCreateParams.CustomField[] = [
+    { name: "Bankgiro", value: BANKGIRONUMMER },
+  ];
   if (billingOverride?.orgNumber) {
     customFields.push({ name: "Org.nr", value: billingOverride.orgNumber });
   }
@@ -134,7 +143,7 @@ export async function createAndSendInvoice(params: {
     // Visas längst ner på den hostade fakturasidan och i PDF:en – den
     // enda garanterade platsen att få med villkorsgodkännandet på en
     // admin-initierad faktura, där företaget aldrig sett en kryssruta.
-    footer: `Genom att betala denna faktura godkänner ni Collaktivs villkor (${SITE_URL}/villkor), inklusive betalningsvillkoren.`,
+    footer: `Vid betalning via bankgiro, ange fakturanumret som referens/meddelande. Genom att betala denna faktura godkänner ni Collaktivs villkor (${SITE_URL}/villkor), inklusive betalningsvillkoren.`,
     custom_fields: customFields.length ? customFields : undefined,
     metadata: {
       companyId,
