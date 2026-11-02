@@ -9,7 +9,7 @@ import { Reveal } from "./Reveal";
 const faqs = [
   {
     q: "Vad kostar det att gå med?",
-    a: "Standard-paketet är helt gratis – för alltid, även när ni publicerar erbjudanden i appen. Vill ni synas ännu mer (prioriterad placering, fler erbjudanden samtidigt, full statistik) kan ni när som helst uppgradera till Premium, som är det enda betalda paketet.",
+    a: "Standard-paketet är helt gratis, även när ni publicerar erbjudanden i appen. Vill ni synas ännu mer (prioriterad placering, fler erbjudanden samtidigt, full statistik) kan ni när som helst uppgradera till Premium, som är det enda betalda paketet.",
   },
   {
     q: "Är det någon bindningstid?",

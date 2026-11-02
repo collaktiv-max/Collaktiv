@@ -130,7 +130,7 @@ export function ContactCell({ name, email, phone }: { name: string; email: strin
   );
 }
 
-// Standard är gratis för alla, för alltid (se createCompany i db.ts) –
+// Standard är gratis för alla (se createCompany i db.ts) –
 // varje företag har alltså redan paymentConfirmed=true och
 // complimentary=true så fort de registrerat sig. Det enda som
 // fortfarande går att administrera här är PREMIUM: uppgradera (betalt

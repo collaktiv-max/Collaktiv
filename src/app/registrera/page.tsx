@@ -14,7 +14,15 @@ import { LogoUpload } from "@/components/onboarding/LogoUpload";
 import { useAppState } from "@/lib/store";
 import { CATEGORY_LABELS, type Category } from "@/lib/types";
 
-const STEP_LABELS = ["Företagsinfo", "Kontaktinfo", "Konto", "Skicka in"];
+// Så enkel som möjligt: 3 steg istället för 4, och bara det som
+// faktiskt krävs för att skapa kontot och granska ansökan är
+// obligatoriskt. Logotyp, webbadress, adress och beskrivning är
+// redan designade som EFTER-registrering-steg (se "Lägg till er
+// logotyp"/"Komplettera företagsprofilen" i OnboardingChecklist.tsx,
+// som länkar till /portal/profil) – de ska alltså inte blockera
+// registreringen. Inloggningsmejlet är samma som kontaktmejlet, inget
+// separat fält att fylla i eller ta ställning till.
+const STEP_LABELS = ["Företag", "Kontakt", "Skicka in"];
 
 interface FormState {
   name: string;
@@ -26,7 +34,6 @@ interface FormState {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  accountEmail: string;
   password: string;
   fullServiceRequested: boolean;
 }
@@ -41,7 +48,6 @@ const initialForm: FormState = {
   contactName: "",
   contactEmail: "",
   contactPhone: "",
-  accountEmail: "",
   password: "",
   fullServiceRequested: false,
 };
@@ -75,29 +81,24 @@ function RegistreraForm() {
   }
 
   function canProceed() {
-    if (step === 0) return form.name.trim().length > 1 && form.address.trim().length > 1;
+    if (step === 0) return form.name.trim().length > 1;
     if (step === 1)
       return (
         form.contactName.trim().length > 1 &&
         /\S+@\S+\.\S+/.test(form.contactEmail) &&
-        form.contactPhone.trim().length > 3
+        form.contactPhone.trim().length > 3 &&
+        form.password.length >= 6
       );
-    if (step === 2)
-      return /\S+@\S+\.\S+/.test(form.accountEmail) && form.password.length >= 6;
     return true;
   }
 
   function goNext() {
-    if (step === 1 && !form.accountEmail) {
-      update("accountEmail", form.contactEmail);
-    }
     setStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
   }
 
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
-    const email = form.accountEmail || form.contactEmail;
     const result = await registerCompany({
       name: form.name,
       logoDataUrl: form.logoDataUrl,
@@ -105,7 +106,7 @@ function RegistreraForm() {
       description: form.description,
       category: form.category,
       contactName: form.contactName,
-      contactEmail: email,
+      contactEmail: form.contactEmail,
       contactPhone: form.contactPhone,
       address: form.address,
       password: form.password,
@@ -117,7 +118,7 @@ function RegistreraForm() {
       router.push("/portal");
     } else {
       setError(result.reason ?? "Något gick fel, försök igen.");
-      setStep(2);
+      setStep(1);
     }
   }
 
@@ -169,37 +170,6 @@ function RegistreraForm() {
                         onChange={(e) => update("name", e.target.value)}
                       />
                     </Field>
-                    <Field label="Logotyp" hint="Valfritt – kan läggas till senare">
-                      <LogoUpload
-                        value={form.logoDataUrl}
-                        onChange={(v) => update("logoDataUrl", v)}
-                      />
-                    </Field>
-                    <Field label="Webbadress" hint="Valfritt">
-                      <Input
-                        placeholder="https://"
-                        value={form.website}
-                        onChange={(e) => update("website", e.target.value)}
-                      />
-                    </Field>
-                    <Field
-                      label="Adress"
-                      required
-                      hint="Används för att visa er för resenärer nära er i appen"
-                    >
-                      <Input
-                        placeholder="Gatuadress, ort"
-                        value={form.address}
-                        onChange={(e) => update("address", e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Kort beskrivning av företaget">
-                      <Textarea
-                        placeholder="Vad gör ni, och vad gör er speciella?"
-                        value={form.description}
-                        onChange={(e) => update("description", e.target.value)}
-                      />
-                    </Field>
                     <Field label="Kategori" required>
                       <Select
                         value={form.category}
@@ -211,6 +181,37 @@ function RegistreraForm() {
                           </option>
                         ))}
                       </Select>
+                    </Field>
+                    <div className="my-1 border-t border-[var(--color-brand-border)]" />
+                    <p className="-mb-2 text-xs font-bold text-[var(--color-brand-muted)]">
+                      Allt nedan är valfritt – fyll i nu eller lägg till senare i profilen.
+                    </p>
+                    <Field label="Logotyp" hint="Valfritt – kan läggas till senare">
+                      <LogoUpload
+                        value={form.logoDataUrl}
+                        onChange={(v) => update("logoDataUrl", v)}
+                      />
+                    </Field>
+                    <Field label="Adress" hint="Valfritt – visar er för resenärer nära er i appen">
+                      <Input
+                        placeholder="Gatuadress, ort"
+                        value={form.address}
+                        onChange={(e) => update("address", e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Webbadress" hint="Valfritt">
+                      <Input
+                        placeholder="https://"
+                        value={form.website}
+                        onChange={(e) => update("website", e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Kort beskrivning av företaget" hint="Valfritt">
+                      <Textarea
+                        placeholder="Vad gör ni, och vad gör er speciella?"
+                        value={form.description}
+                        onChange={(e) => update("description", e.target.value)}
+                      />
                     </Field>
                   </>
                 )}
@@ -224,7 +225,7 @@ function RegistreraForm() {
                         onChange={(e) => update("contactName", e.target.value)}
                       />
                     </Field>
-                    <Field label="E-post" required>
+                    <Field label="E-post" required hint="Används även för att logga in">
                       <Input
                         type="email"
                         placeholder="namn@foretag.se"
@@ -238,22 +239,6 @@ function RegistreraForm() {
                         placeholder="070-123 45 67"
                         value={form.contactPhone}
                         onChange={(e) => update("contactPhone", e.target.value)}
-                      />
-                    </Field>
-                  </>
-                )}
-
-                {step === 2 && (
-                  <>
-                    <Field
-                      label="E-post för inloggning"
-                      required
-                      hint="Förifylld från föregående steg – ändra vid behov"
-                    >
-                      <Input
-                        type="email"
-                        value={form.accountEmail || form.contactEmail}
-                        onChange={(e) => update("accountEmail", e.target.value)}
                       />
                     </Field>
                     <Field label="Lösenord" required hint="Minst 6 tecken">
@@ -272,15 +257,21 @@ function RegistreraForm() {
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-brand-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
                       />
                       <span>
-                        Vi vill ha hjälp med allt – hör av er till oss istället för att vi ska
-                        behöva logga in och sköta paket, erbjudande och fakturering själva.
+                        Vi vill ha hjälp med allt – hör av er till oss istället för att skapa
+                        och publicera erbjudanden själva.
                       </span>
                     </label>
+                    {form.fullServiceRequested && (
+                      <p className="-mt-2 rounded-xl bg-[var(--color-brand-secondary)] px-4 py-3 text-xs font-semibold leading-relaxed text-[var(--color-brand-ink)]">
+                        Standard (grundpaketet) är redan gratis och kräver ingen fakturering.
+                        Fakturering blir bara aktuellt om ni även vill att vi hjälper er
+                        uppgradera till Premium, som är det enda betalda paketet.
+                      </p>
+                    )}
                     <div className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-secondary)] p-4 text-xs font-semibold text-[var(--color-brand-muted)]">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
-                      Ni loggas in direkt och kan börja skapa erbjudanden.
-                      Publicering kräver att vi godkänt både kontot och
-                      erbjudandet.
+                      Ni loggas in direkt och kan börja skapa erbjudanden helt gratis.
+                      Publicering kräver att vi godkänt både kontot och erbjudandet.
                     </div>
                     {error && (
                       <p className="rounded-lg bg-[#fdecea] px-3 py-2 text-xs font-bold text-[#c0392b]">
@@ -290,7 +281,7 @@ function RegistreraForm() {
                   </>
                 )}
 
-                {step === 3 && (
+                {step === 2 && (
                   <SummaryStep form={form} onEditStep={setStep} />
                 )}
               </motion.div>
@@ -311,7 +302,7 @@ function RegistreraForm() {
               <span />
             )}
 
-            {step < 3 ? (
+            {step < 2 ? (
               <Button
                 onClick={goNext}
                 disabled={!canProceed()}
@@ -348,19 +339,17 @@ function SummaryStep({
   form: FormState;
   onEditStep: (step: number) => void;
 }) {
+  // Valfria fält (adress, webbadress) visas bara i sammanfattningen om
+  // de faktiskt fyllts i – annars bara brus i en lista som ska vara
+  // snabb att scanna innan man skickar in.
   const rows: { label: string; value: string; step: number }[] = [
     { label: "Företagsnamn", value: form.name || "–", step: 0 },
     { label: "Kategori", value: CATEGORY_LABELS[form.category], step: 0 },
-    { label: "Webbadress", value: form.website || "–", step: 0 },
-    { label: "Adress", value: form.address || "–", step: 0 },
+    ...(form.address ? [{ label: "Adress", value: form.address, step: 0 }] : []),
+    ...(form.website ? [{ label: "Webbadress", value: form.website, step: 0 }] : []),
     { label: "Kontaktperson", value: form.contactName || "–", step: 1 },
-    { label: "E-post (kontakt)", value: form.contactEmail || "–", step: 1 },
+    { label: "E-post (kontakt och inloggning)", value: form.contactEmail || "–", step: 1 },
     { label: "Telefon", value: form.contactPhone || "–", step: 1 },
-    {
-      label: "Inloggning",
-      value: form.accountEmail || form.contactEmail || "–",
-      step: 2,
-    },
   ];
 
   return (

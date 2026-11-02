@@ -51,10 +51,9 @@ export default function VillkorPage() {
               erbjudanden.
             </p>
             <p>
-              Standard-paketet är helt kostnadsfritt – för alltid, även när ni publicerar
-              erbjudanden i appen. Det kostar alltså aldrig något att gå med och synas med
-              Collaktiv. Vill ni ha ännu mer synlighet kan ni när som helst uppgradera till
-              Premium, se punkt 3–4.
+              Standard-paketet är helt kostnadsfritt, även när ni publicerar erbjudanden i
+              appen. Det kostar alltså aldrig något att gå med och synas med Collaktiv. Vill ni
+              ha ännu mer synlighet kan ni när som helst uppgradera till Premium, se punkt 3–4.
             </p>
           </Section>
 
@@ -81,8 +80,8 @@ export default function VillkorPage() {
           <Section title="3. Paket och priser">
             <p>
               Erbjudanden publiceras under något av två paket: {PLANS.map((p) => p.name).join(" och ")}.{" "}
-              <strong>Standard är kostnadsfritt, för alltid</strong> – det finns inget pris och
-              ingen period att betala för. <strong>Premium är det enda betalda paketet</strong>,
+              <strong>Standard är kostnadsfritt</strong> – det finns inget pris och ingen
+              period att betala för. <strong>Premium är det enda betalda paketet</strong>,
               och är valfritt: ni kan uppgradera till det när ni vill, direkt vid registreringen
               eller senare från portalen. Aktuella Premium-priser och vad respektive paket
               innehåller visas alltid på{" "}

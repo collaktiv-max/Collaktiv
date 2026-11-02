@@ -34,8 +34,8 @@ export function PricingSection() {
             Välj ert paket
           </h2>
           <p className="mt-4 text-[16px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-            Standard är gratis – för alltid, även när ni publicerar. Vill ni synas ännu mer kan
-            ni uppgradera till Premium när ni vill.
+            Standard är gratis, även när ni publicerar. Vill ni synas ännu mer kan ni
+            uppgradera till Premium när ni vill.
           </p>
         </Reveal>
 
@@ -149,7 +149,7 @@ export function PricingSection() {
                 )}
                 {plan.free ? (
                   <p className="mt-1.5 text-xs font-semibold text-[var(--color-brand-muted)]">
-                    För alltid – inget att betala, någonsin.
+                    Inget att betala.
                   </p>
                 ) : (
                   <>
@@ -190,7 +190,7 @@ export function PricingSection() {
 
         <p className="mx-auto mt-8 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
           Traditionella annonser kostar 5 000–10 000 kr för en enda publicering. Med Standard
-          är ni synliga i appen dygnet runt – helt gratis, för alltid.
+          är ni synliga i appen dygnet runt – helt gratis.
         </p>
       </Container>
     </section>

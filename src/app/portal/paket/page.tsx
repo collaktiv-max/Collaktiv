@@ -223,9 +223,6 @@ export default function PaketPage() {
                   <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
                     Gratis
                   </span>
-                  <span className="text-xs font-bold text-[var(--color-brand-muted)]">
-                    för alltid
-                  </span>
                 </div>
               ) : (
                 <div className="mt-1 flex items-baseline gap-1.5">

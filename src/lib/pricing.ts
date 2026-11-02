@@ -19,10 +19,10 @@ export interface PlanDefinition {
   id: PlanId;
   name: string;
   tagline: string;
-  /** Standard är gratis för alltid – prices nedan är bara kvar som
-   * referens (visades tidigare som pris) och används inte längre i
-   * något betalflöde. Ingen betalning sker eller krävs för ett paket
-   * där free är true, se createCompany i db.ts. */
+  /** Standard är gratis – prices nedan är bara kvar som referens
+   * (visades tidigare som pris) och används inte längre i något
+   * betalflöde. Ingen betalning sker eller krävs för ett paket där
+   * free är true, se createCompany i db.ts. */
   free?: boolean;
   prices: Record<BillingPeriod, number>;
   features: PlanFeature[];
@@ -32,7 +32,7 @@ export const PLANS: PlanDefinition[] = [
   {
     id: "standard",
     name: "Standard",
-    tagline: "Gratis för alltid – bra start för att synas i appen",
+    tagline: "Gratis – bra start för att synas i appen",
     free: true,
     prices: {
       sixMonths: 2999,

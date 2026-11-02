@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!planId || !period) {
     return NextResponse.json({ error: "Ofullständig förfrågan." }, { status: 400 });
   }
-  // Standard är gratis för alla, för alltid (se createCompany i db.ts)
+  // Standard är gratis för alla (se createCompany i db.ts)
   // – bara Premium går att betala för. Spärrar här, inte bara i UI:t,
   // så ingen betalning av misstag kan startas för 0 kr.
   if (planId !== "premium") {

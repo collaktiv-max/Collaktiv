@@ -233,7 +233,7 @@ export default function PubliceraErbjudandePage() {
             <Gift className="h-4.5 w-4.5" />
           </span>
           <p className="text-xs font-bold text-[var(--color-brand-ink)]">
-            Standard är gratis för alltid – inget att betala. Vill ni ha fler platser, mer
+            Standard är gratis – inget att betala. Vill ni ha fler platser, mer
             synlighet och full statistik kan ni uppgradera till Premium nedan.
           </p>
         </div>
@@ -317,9 +317,6 @@ export default function PubliceraErbjudandePage() {
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
                     Gratis
-                  </span>
-                  <span className="text-xs font-bold text-[var(--color-brand-muted)]">
-                    för alltid
                   </span>
                 </div>
               ) : (

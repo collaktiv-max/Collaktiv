@@ -78,7 +78,7 @@ export async function createAndSendInvoice(params: {
 }> {
   const { companyId, offerId, planId, period, termsAcceptedAt, billingOverride } = params;
 
-  // Standard är gratis för alla, för alltid (se createCompany i db.ts)
+  // Standard är gratis för alla (se createCompany i db.ts)
   // – det finns ingen faktura att skicka för det, bara Premium går att
   // betala för. Spärrar här, inte bara i UI:t, så ingen faktura av
   // misstag kan skapas för 0 kr.

@@ -247,14 +247,14 @@ export async function createCompany(input: {
   fullServiceRequested?: boolean;
   passwordHash: string;
 }): Promise<CompanyProfile> {
-  // Standard är gratis för alltid (se config.ts-anteckningen i
-  // villkor/page.tsx och PLANS i pricing.ts) – nya företag är därför
-  // redan "betalda" för Standard från dag ett, utan att någon
-  // Stripe-betalning någonsin sker. complimentary=true håller isär det
-  // här från en riktig Premium-betalning i statistik/fakturering,
-  // exakt som för ett admin-berviljat kostnadsfritt-undantag tidigare.
-  // Enda sättet att ändra det är att uppgradera till Premium (betald
-  // eller admin-beviljad), se completePayment och grantReferralBonus.
+  // Standard är gratis (se villkor/page.tsx och PLANS i pricing.ts) –
+  // nya företag är därför redan "betalda" för Standard från dag ett,
+  // utan att någon Stripe-betalning någonsin sker. complimentary=true
+  // håller isär det här från en riktig Premium-betalning i statistik/
+  // fakturering, exakt som för ett admin-beviljat kostnadsfritt-
+  // undantag tidigare. Enda sättet att ändra det är att uppgradera
+  // till Premium (betald eller admin-beviljad), se completePayment och
+  // grantReferralBonus.
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
