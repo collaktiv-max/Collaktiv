@@ -48,6 +48,7 @@ interface CompanyRow {
   complimentary_duration: string | null;
   terms_version: string | null;
   terms_accepted_at: string | null;
+  brand_usage_consent_at: string | null;
   contest_host_interested: boolean;
   contest_prize_description: string | null;
   full_service_requested: boolean;
@@ -133,6 +134,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     complimentaryDuration: (row.complimentary_duration ?? undefined) as CompanyProfile["complimentaryDuration"],
     termsVersion: row.terms_version ?? undefined,
     termsAcceptedAt: row.terms_accepted_at ?? undefined,
+    brandUsageConsentAt: row.brand_usage_consent_at ?? undefined,
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     fullServiceRequested: row.full_service_requested,
@@ -245,6 +247,9 @@ export async function createCompany(input: {
   applicationStatus?: ApplicationStatus;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
+  /** Krävs för att slutföra registreringen, se brandUsageConsentAt i
+   * types.ts – servern (api/auth/register) avvisar annars anropet. */
+  brandUsageConsent: boolean;
   passwordHash: string;
 }): Promise<CompanyProfile> {
   // Standard är gratis (se villkor/page.tsx och PLANS i pricing.ts) –
@@ -267,7 +272,8 @@ export async function createCompany(input: {
       contact_name, contact_email, contact_phone, region, address,
       package_tier, application_status, payment_confirmed, complimentary,
       payment_confirmed_at,
-      password_hash, onboarding_logo, referred_by_company_id, full_service_requested
+      password_hash, onboarding_logo, referred_by_company_id, full_service_requested,
+      brand_usage_consent_at
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
@@ -275,7 +281,8 @@ export async function createCompany(input: {
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
       now(),
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
-      ${input.fullServiceRequested ?? false}
+      ${input.fullServiceRequested ?? false},
+      ${input.brandUsageConsent ? new Date().toISOString() : null}
     )
     returning *
   `) as CompanyRow[];
@@ -324,6 +331,7 @@ export async function updateCompany(
       complimentary_duration = ${next.complimentaryDuration ?? null},
       terms_version = ${next.termsVersion ?? null},
       terms_accepted_at = ${next.termsAcceptedAt ?? null},
+      brand_usage_consent_at = ${next.brandUsageConsentAt ?? null},
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       full_service_requested = ${next.fullServiceRequested ?? false},

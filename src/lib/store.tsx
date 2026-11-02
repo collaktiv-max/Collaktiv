@@ -24,6 +24,7 @@ interface RegisterInput {
   address?: string;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
+  brandUsageConsent?: boolean;
 }
 
 interface Ctx {

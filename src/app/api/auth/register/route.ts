@@ -18,6 +18,7 @@ interface RegisterBody {
   password: string;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
+  brandUsageConsent?: boolean;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +30,16 @@ export async function POST(req: NextRequest) {
   if (!name?.trim() || !contactEmail?.trim() || !password || password.length < 6) {
     return NextResponse.json(
       { error: "Fyll i företagsnamn, e-post och ett lösenord på minst 6 tecken." },
+      { status: 400 }
+    );
+  }
+  // Krävs för att vi ska få nämna företagsnamn/logga i marknadsföring
+  // och försäljning av tjänsten redan från registreringen – se
+  // brandUsageConsentAt i types.ts. Kontrolleras även server-sidan,
+  // inte bara via knappen i UI:t, som är lätt att kringgå.
+  if (!body.brandUsageConsent) {
+    return NextResponse.json(
+      { error: "Ni måste godkänna att vi får nämna er som partner för att registrera er." },
       { status: 400 }
     );
   }
@@ -57,6 +68,7 @@ export async function POST(req: NextRequest) {
       address: body.address,
       referredByCompanyId,
       fullServiceRequested: body.fullServiceRequested,
+      brandUsageConsent: body.brandUsageConsent,
       passwordHash,
     });
     await createSession(company.id);

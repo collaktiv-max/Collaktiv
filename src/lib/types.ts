@@ -72,6 +72,12 @@ export interface CompanyProfile {
    * godkännande loggas istället per betalning (se Payment). */
   termsVersion?: string;
   termsAcceptedAt?: string;
+  /** Ikryssat vid registrering – ett eget, kort samtycke till att vi får
+   * nämna företagsnamn och visa logga i marknadsföring/försäljning av
+   * tjänsten redan från registreringen, innan de godkänner hela
+   * villkoren (det sker först vid första publicering, se termsAcceptedAt).
+   * Krävs för att slutföra registreringen, se /registrera. */
+  brandUsageConsentAt?: string;
   contestHostInterested: boolean;
   contestPrizeDescription?: string;
   /** Ikryssat vid registrering – företaget vill inte använda portalen

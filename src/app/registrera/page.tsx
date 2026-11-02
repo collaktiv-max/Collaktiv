@@ -36,6 +36,7 @@ interface FormState {
   contactPhone: string;
   password: string;
   fullServiceRequested: boolean;
+  brandUsageConsent: boolean;
 }
 
 const initialForm: FormState = {
@@ -50,6 +51,7 @@ const initialForm: FormState = {
   contactPhone: "",
   password: "",
   fullServiceRequested: false,
+  brandUsageConsent: false,
 };
 
 export default function RegistreraPage() {
@@ -87,7 +89,8 @@ function RegistreraForm() {
         form.contactName.trim().length > 1 &&
         /\S+@\S+\.\S+/.test(form.contactEmail) &&
         form.contactPhone.trim().length > 3 &&
-        form.password.length >= 6
+        form.password.length >= 6 &&
+        form.brandUsageConsent
       );
     return true;
   }
@@ -112,6 +115,7 @@ function RegistreraForm() {
       password: form.password,
       referredByCompanyId,
       fullServiceRequested: form.fullServiceRequested,
+      brandUsageConsent: form.brandUsageConsent,
     });
     setSubmitting(false);
     if (result.ok) {
@@ -268,6 +272,23 @@ function RegistreraForm() {
                         uppgradera till Premium, som är det enda betalda paketet.
                       </p>
                     )}
+                    <label className="flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] p-4 text-xs font-semibold text-[var(--color-brand-ink)]">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={form.brandUsageConsent}
+                        onChange={(e) => update("brandUsageConsent", e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-brand-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
+                      />
+                      <span>
+                        Vi godkänner att Collaktiv får nämna vårt företagsnamn och visa vår
+                        logga i sin marknadsföring och försäljning av tjänsten, redan från
+                        registreringen.{" "}
+                        <span className="font-extrabold text-[var(--color-brand-primary)]">
+                          Krävs för att registrera er.
+                        </span>
+                      </span>
+                    </label>
                     <div className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-secondary)] p-4 text-xs font-semibold text-[var(--color-brand-muted)]">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
                       Ni loggas in direkt och kan börja skapa erbjudanden helt gratis.
@@ -390,7 +411,9 @@ function SummaryStep({
         Ni loggas in i portalen direkt och kan skapa erbjudanden helt
         kostnadsfritt. Er ansökan går samtidigt till vårt team för
         granskning – publicering kräver att vi godkänt både kontot och
-        erbjudandet.
+        erbjudandet. Ni godkänner samtidigt att vi får nämna er som
+        partner i vår marknadsföring och försäljning redan nu – de fulla
+        villkoren godkänns separat när ni publicerar ert första erbjudande.
       </p>
     </div>
   );

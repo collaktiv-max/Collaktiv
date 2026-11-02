@@ -174,6 +174,9 @@ export default function VillkorPage() {
             <p>
               Collaktiv har även rätt att, oavsett ovanstående, offentligt nämna att företaget är
               partner i Collaktiv (t.ex. i pressmaterial, på webbplatsen eller i sociala medier).
+              Rätten att nämna företagsnamn och visa logga i marknadsföring och försäljning av
+              tjänsten gäller redan från registreringen, genom det separata samtycket som ges då –
+              innan resten av dessa villkor godkänns vid första publicerade erbjudandet.
             </p>
             <p>
               Vid upprepade eller allvarliga brott mot dessa villkor kan Collaktiv avsluta hela

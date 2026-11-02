@@ -48,6 +48,12 @@ create table if not exists companies (
   -- betalning, se terms_version/terms_accepted_at på payments).
   terms_version        text,
   terms_accepted_at    timestamptz,
+  -- Eget, kort samtycke vid registrering – inte samma som
+  -- terms_accepted_at ovan (hela villkoren, som godkänns först vid
+  -- första publicering). Ger oss rätt att nämna företagsnamn/logga i
+  -- marknadsföring och försäljning av tjänsten redan från registreringen.
+  -- Krävs för att slutföra registreringen, se /registrera.
+  brand_usage_consent_at timestamptz,
   contest_host_interested    boolean not null default false,
   contest_prize_description  text default '',
   -- Ikryssat av företaget vid registrering – de vill inte använda
@@ -96,6 +102,7 @@ alter table companies add column if not exists complimentary_duration text;
 alter table companies add column if not exists terms_version text;
 alter table companies add column if not exists terms_accepted_at timestamptz;
 alter table companies add column if not exists full_service_requested boolean not null default false;
+alter table companies add column if not exists brand_usage_consent_at timestamptz;
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),
