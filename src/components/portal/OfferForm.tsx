@@ -11,6 +11,7 @@ import {
   Smartphone,
   Sparkles,
   Ticket,
+  TrendingUp,
   Wand2,
   X,
 } from "lucide-react";
@@ -364,6 +365,14 @@ export function OfferForm({
             placeholder="Vad ingår i erbjudandet, och hur löser man in det?"
           />
         </Field>
+
+        <div className="flex items-start gap-2.5 rounded-xl bg-[var(--color-brand-secondary)]/50 p-4 text-xs font-semibold text-[var(--color-brand-ink)]">
+          <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-brand-primary)]" />
+          <span>
+            Ju mer attraktivt erbjudandet är, desto fler resenärer löser in det och
+            hittar till er – ett generösare rabattvärde ger er alltså fler nya kunder.
+          </span>
+        </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Typ av rabatt" required hint="Klicka för att ändra vilken typ av rabatt det är">
