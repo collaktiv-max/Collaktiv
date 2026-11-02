@@ -247,17 +247,25 @@ export async function createCompany(input: {
   fullServiceRequested?: boolean;
   passwordHash: string;
 }): Promise<CompanyProfile> {
+  // Standard är gratis för alltid (se config.ts-anteckningen i
+  // villkor/page.tsx och PLANS i pricing.ts) – nya företag är därför
+  // redan "betalda" för Standard från dag ett, utan att någon
+  // Stripe-betalning någonsin sker. complimentary=true håller isär det
+  // här från en riktig Premium-betalning i statistik/fakturering,
+  // exakt som för ett admin-berviljat kostnadsfritt-undantag tidigare.
+  // Enda sättet att ändra det är att uppgradera till Premium (betald
+  // eller admin-beviljad), se completePayment och grantReferralBonus.
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
       contact_name, contact_email, contact_phone, region, address,
-      package_tier, application_status, password_hash,
-      onboarding_logo, referred_by_company_id, full_service_requested
+      package_tier, application_status, payment_confirmed, complimentary,
+      password_hash, onboarding_logo, referred_by_company_id, full_service_requested
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
       ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
-      ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"},
+      ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
       ${input.fullServiceRequested ?? false}
     )
@@ -619,7 +627,37 @@ export async function updateOffer(id: string, partial: Partial<Offer>): Promise<
     where id = ${id}
     returning *
   `) as OfferRow[];
-  return toOffer(rows[0]);
+  const updated = toOffer(rows[0]);
+
+  // Referral-bonusen ("gratis månad Premium") ges bara när det inbjudna
+  // företaget faktiskt publicerar sitt FÖRSTA erbjudande (inte bara
+  // registrerar sig eller betalar) – se ReferralCard.tsx. publishedAt
+  // ovan avgör om just DET HÄR erbjudandet blir publicerat första
+  // gången; kollar här separat att företaget inte redan har ett annat
+  // publicerat erbjudande sedan tidigare, så bonusen bara betalas ut en
+  // gång per inbjudet företag.
+  const becomingFirstPublish =
+    current.status !== "publicerad" && next.status === "publicerad" && !current.publishedAt;
+  if (becomingFirstPublish && updated) {
+    try {
+      const owner = await getCompanyById(updated.companyId);
+      if (owner?.referredByCompanyId) {
+        const priorPublished = (await sql`
+          select count(*)::int as count from offers
+          where company_id = ${updated.companyId} and status = 'publicerad' and id != ${id}
+        `) as { count: number }[];
+        if ((priorPublished[0]?.count ?? 0) === 0) {
+          await grantReferralBonus(owner.referredByCompanyId);
+        }
+      }
+    } catch (err) {
+      // Bonusen är en sidoeffekt – ett fel här ska aldrig få
+      // publiceringen av själva erbjudandet att se ut att misslyckas.
+      console.error("[updateOffer] Kunde inte bevilja referral-bonus:", err);
+    }
+  }
+
+  return updated;
 }
 
 export async function deleteOffer(id: string): Promise<void> {
@@ -674,46 +712,38 @@ export async function getReferralCountForCompany(companyId: string): Promise<num
 
 const REFERRAL_BONUS_DAYS = 30;
 
-// Körs när ett inbjudet företag bekräftar sin FÖRSTA betalning (se
-// /api/checkout/verify). Tre fall för den som bjöd in:
-//   - Inget betalt paket sedan tidigare -> Standard låses upp gratis i
-//     30 dagar.
-//   - Betalar redan för Standard -> uppgraderas till Premium i 30
-//     dagar (en uppgradering, inte en förlängning av Standard-tiden).
-//   - Betalar redan för Premium -> får 30 extra dagar på det de redan
-//     har kvar (förlängning).
-// bonus_access_until är ett kvitto på bonusen – appen har i övrigt
-// ingen utgångshantering av betalda paket.
+// Körs när ett inbjudet företag publicerar sitt FÖRSTA erbjudande (se
+// becomingFirstPublish i updateOffer ovan) – inte vid registrering
+// eller betalning. Standard är redan gratis för alla, så belöningen
+// till den som bjöd in är istället en gratis månad Premium:
+//   - Har inte redan kostnadsfri Premium -> uppgraderas till Premium,
+//     kostnadsfritt i REFERRAL_BONUS_DAYS dagar.
+//   - Har redan kostnadsfri Premium sedan tidigare (t.ex. från en
+//     tidigare referral) -> förlängs med ytterligare 30 dagar.
+//   - Är redan en riktigt BETALANDE Premium-kund (complimentary=false)
+//     -> inget att bevilja, det finns ingen prenumeration att förlänga.
 export async function grantReferralBonus(companyId: string): Promise<CompanyProfile | null> {
   const company = await getCompanyById(companyId);
   if (!company) return null;
 
+  if (company.packageTier === "premium" && !company.complimentary) {
+    return company;
+  }
+
   const now = new Date();
-  const freshBonusUntil = new Date(
-    now.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
-  ).toISOString();
-
-  if (!company.paymentConfirmed) {
-    return updateCompany(companyId, {
-      paymentConfirmed: true,
-      packageTier: "standard",
-      bonusAccessUntil: freshBonusUntil,
-    });
-  }
-
-  if (company.packageTier === "standard") {
-    return updateCompany(companyId, {
-      packageTier: "premium",
-      bonusAccessUntil: freshBonusUntil,
-    });
-  }
-
-  const currentUntil = company.bonusAccessUntil ? new Date(company.bonusAccessUntil) : null;
+  const currentUntil = company.complimentaryUntil ? new Date(company.complimentaryUntil) : null;
   const base = currentUntil && currentUntil > now ? currentUntil : now;
-  const extendedBonusUntil = new Date(
+  const complimentaryUntil = new Date(
     base.getTime() + REFERRAL_BONUS_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
-  return updateCompany(companyId, { bonusAccessUntil: extendedBonusUntil });
+
+  return updateCompany(companyId, {
+    packageTier: "premium",
+    paymentConfirmed: true,
+    complimentary: true,
+    complimentaryDuration: undefined,
+    complimentaryUntil,
+  });
 }
 
 // ---------- Betalningar ----------

@@ -67,8 +67,8 @@ export function ValueGrid() {
             Vad ni faktiskt får ut av att gå med
           </h2>
           <p className="mt-4 text-[16px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-            Med Collaktiv betalar ni för att synas med exakt statistik på vem
-            som faktiskt kommer in genom dörren!
+            Med Collaktiv syns ni gratis – med exakt statistik på vem som
+            faktiskt kommer in genom dörren!
           </p>
         </Reveal>
 

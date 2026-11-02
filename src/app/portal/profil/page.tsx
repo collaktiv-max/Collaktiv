@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
   Check,
   Clock,
   CreditCard,
   Download,
-  Gift,
   Loader2,
   Mail,
   Pencil,
@@ -534,54 +532,9 @@ function BillingCard({ company }: { company: CompanyProfile }) {
   const latestPaid = payments?.find((p) => p.status === "paid");
   const pendingInvoice = payments?.find((p) => p.status === "pending");
 
-  if (!company.paymentConfirmed) {
-    return (
-      <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
-        <h2 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Paket & fakturering</h2>
-        {pendingInvoice ? (
-          <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#b5862b]">
-                <Clock className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
-                  Faktura skickad – väntar på betalning
-                </p>
-                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-                  {getPlan(pendingInvoice.planId as CompanyProfile["packageTier"]).name} ·{" "}
-                  {formatKr(pendingInvoice.amount)} · skickad {formatDate(pendingInvoice.createdAt)}.
-                  Paketet aktiveras automatiskt så fort fakturan är betald.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-5 flex flex-col items-start gap-4 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-brand-muted)]">
-                <CreditCard className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">Inget aktivt paket</p>
-                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-                  Välj Standard eller Premium och betala när ni publicerar ert erbjudande.
-                </p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={goToPackages}
-              icon={<ArrowRight className="h-4 w-4" />}
-            >
-              Se paket och betala
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
+  // Standard är gratis och aktivt från dag ett för alla företag (se
+  // createCompany i db.ts), så "inget aktivt paket" kan inte längre
+  // inträffa – bara en väntande Premium-fakturabetalning kan göra det.
   const plan = getPlan(company.packageTier);
 
   return (
@@ -618,19 +571,19 @@ function BillingCard({ company }: { company: CompanyProfile }) {
         )}
       </div>
 
-      {company.bonusAccessUntil && new Date(company.bonusAccessUntil) > new Date() && (
-        <div className="mt-5 flex items-start gap-3 rounded-xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
-            <Gift className="h-4 w-4" />
+      {pendingInvoice && (
+        <div className="mt-5 flex items-start gap-3 rounded-xl border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#b5862b]">
+            <Clock className="h-4 w-4" />
           </span>
           <div>
             <p className="text-xs font-extrabold text-[var(--color-brand-ink)]">
-              Bonus från inbjudningar
+              Premium-faktura skickad – väntar på betalning
             </p>
             <p className="mt-0.5 text-xs font-medium leading-relaxed text-[var(--color-brand-muted)]">
-              Ett företag ni bjöd in har registrerat sig och betalat – ni
-              har fått en gratis bonusmånad med {plan.name} inräknad till
-              och med {formatDate(company.bonusAccessUntil)}.
+              {getPlan(pendingInvoice.planId as CompanyProfile["packageTier"]).name} ·{" "}
+              {formatKr(pendingInvoice.amount)} · skickad {formatDate(pendingInvoice.createdAt)}.
+              Uppgraderingen aktiveras automatiskt så fort fakturan är betald.
             </p>
           </div>
         </div>

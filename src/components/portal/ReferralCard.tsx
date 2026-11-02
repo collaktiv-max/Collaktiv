@@ -48,9 +48,9 @@ export function ReferralCard() {
       </h3>
       <p className="mt-1.5 text-[12.5px] font-medium leading-relaxed text-white/70">
         Dela er personliga länk. När ett företag registrerar sig via den
-        och betalar för sitt första paket får ni en gratis bonusmånad –
-        Standard om ni inget paket har, uppgradering till Premium om ni
-        har Standard, eller en extra månad om ni redan har Premium.
+        och publicerar sitt första erbjudande får ni en gratis månad
+        Premium – eller en extra månad om ni redan har kostnadsfri
+        Premium sedan tidigare.
       </p>
 
       <div className="mt-4 flex gap-2">

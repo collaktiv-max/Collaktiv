@@ -9,11 +9,11 @@ import { Reveal } from "./Reveal";
 const faqs = [
   {
     q: "Vad kostar det att gå med?",
-    a: "Det är gratis att registrera ert företag och skapa ett utkast till erbjudande. Ni betalar först när ni väljer att publicera erbjudandet i appen – och ser exakt hur många resenärer ni når innan ni betalar något.",
+    a: "Standard-paketet är helt gratis – för alltid, även när ni publicerar erbjudanden i appen. Vill ni synas ännu mer (prioriterad placering, fler erbjudanden samtidigt, full statistik) kan ni när som helst uppgradera till Premium, som är det enda betalda paketet.",
   },
   {
     q: "Är det någon bindningstid?",
-    a: "Nej, ingen prenumeration – ni betalar en gång för en period (6 eller 12 månader), utan automatisk förnyelse. Ni kan pausa erbjudandet när ni vill i portalen utan extra kostnad, men perioden ni redan betalat för återbetalas inte.",
+    a: "Nej. Standard har ingen betalning alls att binda sig till. Väljer ni Premium betalar ni en gång för en period (6 eller 12 månader), utan automatisk förnyelse. Ni kan pausa erbjudandet när ni vill i portalen utan extra kostnad, men en redan betald Premium-period återbetalas inte.",
   },
   {
     q: "Hur snabbt kommer vi igång?",

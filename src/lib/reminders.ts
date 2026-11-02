@@ -22,13 +22,17 @@ export async function runReminderSweep() {
     getCompaniesWithExpiredComplimentaryAccess(),
   ]);
 
-  // Kostnadsfri åtkomst som admin gav en bestämd löptid för (se "Ge
-  // kostnadsfri åtkomst" i admin) återkallas automatiskt här – annars
-  // skulle löptiden bara vara kosmetisk text utan faktisk effekt.
+  // Kostnadsfri Premium som admin eller en referral-bonus gav en
+  // bestämd löptid för (se "Ge Premium kostnadsfritt" i admin och
+  // grantReferralBonus i db.ts) återkallas automatiskt här – annars
+  // skulle löptiden bara vara kosmetisk text utan faktisk effekt. Faller
+  // tillbaka till den gratis Standard-baslinjen (se createCompany i
+  // db.ts), inte till ett "obetalt" läge – det läget finns inte längre.
   for (const company of complimentaryExpired) {
     await updateCompany(company.id, {
-      paymentConfirmed: false,
-      complimentary: false,
+      paymentConfirmed: true,
+      packageTier: "standard",
+      complimentary: true,
       complimentaryUntil: undefined,
       complimentaryDuration: undefined,
     });

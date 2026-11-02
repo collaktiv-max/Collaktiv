@@ -34,8 +34,8 @@ export function PricingSection() {
             Välj ert paket
           </h2>
           <p className="mt-4 text-[16px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
-            Gratis att skapa erbjudanden och se hur det ser ut i appen.
-            Ni betalar först när ni väljer att publicera.
+            Standard är gratis – för alltid, även när ni publicerar. Vill ni synas ännu mer kan
+            ni uppgradera till Premium när ni vill.
           </p>
         </Reveal>
 
@@ -61,7 +61,7 @@ export function PricingSection() {
             </motion.span>
             <p className="text-sm font-extrabold text-[var(--color-brand-ink)] sm:text-base md:text-[17px]">
               De {EARLY_BIRD_SLOTS} första företagen får{" "}
-              <span className="text-[#e0432c]">20% rabatt</span> på hela paketet.
+              <span className="text-[#e0432c]">20% rabatt</span> på Premium.
             </p>
           </motion.div>
         </Reveal>
@@ -128,26 +128,42 @@ export function PricingSection() {
                   {plan.tagline}
                 </p>
 
-                <div className="mt-5 flex items-baseline gap-2">
-                  <span className="text-base font-bold text-[var(--color-brand-muted)] line-through">
-                    {regularMonthly} kr
-                  </span>
-                  <span className="text-[2.5rem] font-extrabold leading-none text-[#e0432c]">
-                    {discountedMonthly}
-                  </span>
-                  <span className="text-sm font-bold text-[var(--color-brand-muted)]">
-                    kr/mån
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs font-semibold text-[var(--color-brand-muted)]">
-                  {formatKr(discountedTotal)}{" "}
-                  <span className="line-through">{formatKr(regularTotal)}</span> för{" "}
-                  {BILLING_LABELS[period]}
-                </p>
-                {period === "year" && (
-                  <p className="mt-0.5 text-xs font-semibold text-[var(--color-brand-muted)]">
-                    Spara {formatKr(savings)} mot 6-månaderspriset
+                {plan.free ? (
+                  <div className="mt-5 flex items-baseline gap-2">
+                    <span className="text-[2.5rem] font-extrabold leading-none text-[var(--color-brand-primary)]">
+                      Gratis
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-5 flex items-baseline gap-2">
+                    <span className="text-base font-bold text-[var(--color-brand-muted)] line-through">
+                      {regularMonthly} kr
+                    </span>
+                    <span className="text-[2.5rem] font-extrabold leading-none text-[#e0432c]">
+                      {discountedMonthly}
+                    </span>
+                    <span className="text-sm font-bold text-[var(--color-brand-muted)]">
+                      kr/mån
+                    </span>
+                  </div>
+                )}
+                {plan.free ? (
+                  <p className="mt-1.5 text-xs font-semibold text-[var(--color-brand-muted)]">
+                    För alltid – inget att betala, någonsin.
                   </p>
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-xs font-semibold text-[var(--color-brand-muted)]">
+                      {formatKr(discountedTotal)}{" "}
+                      <span className="line-through">{formatKr(regularTotal)}</span> för{" "}
+                      {BILLING_LABELS[period]}
+                    </p>
+                    {period === "year" && (
+                      <p className="mt-0.5 text-xs font-semibold text-[var(--color-brand-muted)]">
+                        Spara {formatKr(savings)} mot 6-månaderspriset
+                      </p>
+                    )}
+                  </>
                 )}
 
                 <Button
@@ -157,7 +173,7 @@ export function PricingSection() {
                   className="mt-6 w-full justify-center"
                   icon={<ArrowRight className="h-4 w-4" />}
                 >
-                  Välj {plan.name}
+                  {plan.free ? "Kom igång gratis" : `Välj ${plan.name}`}
                 </Button>
 
                 <FeatureList
@@ -174,8 +190,7 @@ export function PricingSection() {
 
         <p className="mx-auto mt-8 max-w-xl text-center text-xs font-semibold leading-relaxed text-[var(--color-brand-muted)]">
           Traditionella annonser kostar 5 000–10 000 kr för en enda publicering. Med Standard
-          är ni synliga i appen dygnet runt i {BILLING_LABELS[period].toLowerCase()} – från{" "}
-          {getDiscountedMonthly(PLANS[0], period)} kr/mån.
+          är ni synliga i appen dygnet runt – helt gratis, för alltid.
         </p>
       </Container>
     </section>

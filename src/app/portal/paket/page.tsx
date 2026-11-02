@@ -135,8 +135,8 @@ export default function PaketPage() {
   return (
     <div>
       <PageHeader
-        title="Välj paket"
-        subtitle="Betala för ert paket nu – sen kan ni skapa och publicera erbjudanden när ni vill."
+        title="Paket"
+        subtitle="Standard ingår redan gratis. Uppgradera till Premium för mer synlighet, fler erbjudanden samtidigt och full statistik."
       />
 
       {(error || searchParams.get("canceled")) && (
@@ -181,7 +181,7 @@ export default function PaketPage() {
         </div>
       </div>
       <p className="mb-4 -mt-2 text-xs font-bold text-[#e0432c]">
-        De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på hela paketet – priserna nedan visar det.
+        De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på Premium – priset nedan visar det.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
         {PLANS.map((plan) => {
@@ -218,16 +218,27 @@ export default function PaketPage() {
               >
                 {plan.name}
               </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
-                  {regularMonthly} kr
-                </span>
-                <span
-                  className={`font-extrabold text-[#e0432c] ${isPremium ? "text-2xl" : "text-xl"}`}
-                >
-                  {discountedMonthly} kr/mån
-                </span>
-              </div>
+              {plan.free ? (
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
+                    Gratis
+                  </span>
+                  <span className="text-xs font-bold text-[var(--color-brand-muted)]">
+                    för alltid
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
+                    {regularMonthly} kr
+                  </span>
+                  <span
+                    className={`font-extrabold text-[#e0432c] ${isPremium ? "text-2xl" : "text-xl"}`}
+                  >
+                    {discountedMonthly} kr/mån
+                  </span>
+                </div>
+              )}
               <p className="text-xs font-semibold text-[var(--color-brand-muted)]">
                 {plan.tagline}
               </p>
@@ -236,18 +247,20 @@ export default function PaketPage() {
                 checkClassName="text-[var(--color-brand-primary)]"
                 className="mt-4"
               />
-              <button
-                type="button"
-                onClick={() => setSelectedTier(plan.id)}
-                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[15px] font-extrabold transition ${
-                  isPremium
-                    ? "bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-hover)]"
-                    : "border-2 border-[var(--color-brand-primary)]/25 bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)] hover:border-[var(--color-brand-primary)]/50"
-                }`}
-              >
-                {active && <Check className="h-4 w-4" strokeWidth={3} />}
-                Välj {plan.name}
-              </button>
+              {plan.free ? (
+                <div className="mt-5 flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--color-brand-primary)]/25 bg-[var(--color-brand-secondary)]/60 py-3.5 text-[15px] font-extrabold text-[var(--color-brand-primary)]">
+                  <Check className="h-4 w-4" strokeWidth={3} /> Ingår redan
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTier(plan.id)}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-brand-primary)] py-3.5 text-[15px] font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)]"
+                >
+                  {active && <Check className="h-4 w-4" strokeWidth={3} />}
+                  {currentCompany.packageTier === "premium" ? "Er nivå" : "Uppgradera till Premium"}
+                </button>
+              )}
             </div>
           );
         })}

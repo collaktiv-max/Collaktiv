@@ -62,7 +62,11 @@ export default function AdminPage() {
   // bekräftelse och visa vad som faktiskt kommer/kan hända.
   async function handleReject(company: CompanyProfile) {
     let confirmText = `Avvisa ${company.name}?`;
-    if (company.paymentConfirmed) {
+    // Standard är gratis för alla (se createCompany i db.ts), så bara
+    // ett företag som uppgraderat till Premium kan ha en riktig
+    // betalning att kolla upp/återbetala – ett vanligt gratis
+    // Standard-företag har aldrig haft en Payment-rad alls.
+    if (company.packageTier === "premium") {
       const { payments } = await fetchJson<{
         payments: { amount: number; status: string; stripePaymentIntentId: string | null }[];
       }>(`/api/admin/payments/${company.id}`);
@@ -75,7 +79,9 @@ export default function AdminPage() {
         confirmText = `${company.name} har betalat ${autoRefundable} kr. Om ni avvisar återbetalas beloppet automatiskt via Stripe. Fortsätta?`;
       } else if (manualOnly > 0) {
         confirmText = `${company.name} har betalat ${manualOnly} kr via banköverföring (faktura). Stripe kan inte återbetala det automatiskt – ni måste återbetala manuellt. Fortsätta ändå med avvisningen?`;
-      } else {
+      } else if (company.complimentary) {
+        confirmText = `${company.name} har kostnadsfri Premium (ingen riktig betalning att återbetala). Avvisa?`;
+      } else if (paid.length > 0) {
         confirmText = `${company.name} har betalat, men beloppet är redan återbetalat. Avvisa ändå?`;
       }
     }

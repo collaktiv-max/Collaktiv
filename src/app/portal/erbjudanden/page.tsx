@@ -33,12 +33,17 @@ export default function ErbjudandenPage() {
     }
   }
 
-  // Ett företag som redan betalat behöver inte välja paket på nytt för
-  // varje erbjudande – skicka in direkt härifrån istället för att gå
-  // via publiceringssidan. Kostnadsfria partners ska däremot alltid dit
-  // (se publiceringssidan – den dubblar som "uppdatera paket"-sida för
-  // dem), så de undantas trots att de också är "paymentConfirmed".
-  const canQuickPublish = currentCompany?.paymentConfirmed && !currentCompany.complimentary;
+  // Ett företag som redan har ett aktivt paket och godkänt villkoren
+  // behöver inte gå via publiceringssidan för varje nytt erbjudande –
+  // skicka in direkt härifrån istället. Ett kostnadsfritt företag
+  // (vilket numera är ALLA nya Standard-företag, se createCompany i
+  // db.ts – inte bara ett undantag admin beviljat) måste först dit en
+  // gång för att godkänna villkoren (se termsAcceptedAt i
+  // submitOfferForReview), eftersom de aldrig ser betalflödets egen
+  // kryssruta. Efter det slipper de sidan precis som en betalande kund.
+  const canQuickPublish =
+    currentCompany?.paymentConfirmed &&
+    (!currentCompany.complimentary || !!currentCompany.termsAcceptedAt);
 
   async function handleQuickPublish(offerId: string) {
     setSubmittingId(offerId);

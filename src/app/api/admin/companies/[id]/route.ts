@@ -67,7 +67,15 @@ export async function PATCH(
       }
     }
     if (refundedAmount > 0 || manualRefundAmount > 0) {
-      partial.paymentConfirmed = false;
+      // En återbetald Premium-uppgradering ska inte lämna företaget i
+      // ett "obetalt" limbo-läge (det läget finns inte längre, se
+      // createCompany i db.ts) – de faller tillbaka till den gratis
+      // Standard-baslinjen precis som vid en vanlig nedgradering.
+      partial.paymentConfirmed = true;
+      partial.packageTier = "standard";
+      partial.complimentary = true;
+      partial.complimentaryDuration = undefined;
+      partial.complimentaryUntil = undefined;
     }
 
     // Obetalda, skickade fakturor ska aldrig kunna betalas för en

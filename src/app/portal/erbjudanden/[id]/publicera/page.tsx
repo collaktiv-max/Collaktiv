@@ -93,17 +93,17 @@ export default function PubliceraErbjudandePage() {
 
   const companyApproved = currentCompany.applicationStatus === "godkand";
 
-  // Redan betalat för det valda paketet (t.ex. ett erbjudande som
-  // skickades tillbaka för redigering) – skicka bara in på nytt utan
-  // att dra en ny betalning. Gäller även kostnadsfria partners (de är
-  // "betalconfirmed" utan att ha betalat, se company.complimentary).
+  // Redan har tillgång till det valda paketet – skicka bara in på nytt
+  // utan att gå via betalflödet. Sant per default för Standard (gratis
+  // för alla, se createCompany i db.ts) och för en redan betald/
+  // kostnadsfri Premium-uppgradering.
   const alreadyPaidForTier =
     currentCompany.paymentConfirmed && currentCompany.packageTier === selectedTier;
 
-  // Kostnadsfria partners går aldrig via betalflödet och har därför
-  // aldrig sett villkors-kryssrutan – kräv och visa den här istället,
-  // men bara första gången (ett redan godkänt företag slipper se den
-  // igen när de publicerar fler erbjudanden).
+  // Gratis/kostnadsfria partners går aldrig via betalflödet och har
+  // därför aldrig sett villkors-kryssrutan – kräv och visa den här
+  // istället, men bara första gången (ett redan godkänt företag slipper
+  // se den igen när de publicerar fler erbjudanden).
   const needsComplimentaryTerms =
     currentCompany.complimentary && !currentCompany.termsAcceptedAt;
   const showTermsCheckbox = !alreadyPaidForTier || needsComplimentaryTerms;
@@ -184,6 +184,19 @@ export default function PubliceraErbjudandePage() {
               ? "Vi granskar erbjudandet innan det går live i appen för resenärer i " + REGION + ". Godkända partners brukar få besked snabbt."
               : "Vi granskar både er ansökan och erbjudandet. Så fort ni är godkända går det live i appen för resenärer i " + REGION + " – ni får besked via e-post."}
           </p>
+          {currentCompany.packageTier === "standard" && (
+            <div className="mt-5 rounded-xl bg-[var(--color-brand-secondary)] p-4 text-left">
+              <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">
+                Du är med! Vill du synas mer? Testa Premium.
+              </p>
+              <p className="mt-1 text-xs font-medium text-[var(--color-brand-muted)]">
+                Prioriterad placering, fler erbjudanden samtidigt och full statistik.
+              </p>
+              <Button href="/portal/paket" size="sm" className="mt-3">
+                Se Premium
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -194,9 +207,9 @@ export default function PubliceraErbjudandePage() {
       <PageHeader
         title="Publicera erbjudande"
         subtitle={
-          currentCompany.complimentary
-            ? `"${offer.title}" är sparat som utkast. Ni har kostnadsfri åtkomst – uppdatera ert paket här, eller publicera direkt på det ni redan har.`
-            : `"${offer.title}" är sparat som utkast – välj paket för att publicera det.`
+          currentCompany.packageTier === "premium"
+            ? `"${offer.title}" är sparat som utkast. Ni har Premium – publicera direkt nedan.`
+            : `"${offer.title}" är sparat som utkast. Standard ingår redan gratis – publicera direkt, eller uppgradera till Premium nedan.`
         }
         action={
           <Button href={`/portal/erbjudanden/${offer.id}`} variant="ghost" icon={<ArrowLeft className="h-4 w-4" />} iconPosition="left">
@@ -214,27 +227,37 @@ export default function PubliceraErbjudandePage() {
         </div>
       )}
 
-      {currentCompany.complimentary && (
+      {currentCompany.packageTier === "standard" && (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
             <Gift className="h-4.5 w-4.5" />
           </span>
           <p className="text-xs font-bold text-[var(--color-brand-ink)]">
-            Ni har kostnadsfri åtkomst till Standard-paketet
+            Standard är gratis för alltid – inget att betala. Vill ni ha fler platser, mer
+            synlighet och full statistik kan ni uppgradera till Premium nedan.
+          </p>
+        </div>
+      )}
+      {currentCompany.packageTier === "premium" && currentCompany.complimentary && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-brand-primary)]">
+            <Gift className="h-4.5 w-4.5" />
+          </span>
+          <p className="text-xs font-bold text-[var(--color-brand-ink)]">
+            Ni har kostnadsfri Premium
             {currentCompany.complimentaryUntil
               ? ` till och med ${formatDate(currentCompany.complimentaryUntil)}`
               : currentCompany.complimentaryDuration && currentCompany.complimentaryDuration !== "indefinite"
                 ? ` i ${complimentaryDurationLabel(currentCompany.complimentaryDuration)} efter lansering`
                 : " tillsvidare"}
-            . Vill ni ha fler platser, mer synlighet och full statistik kan ni uppgradera till
-            Premium nedan.
+            .
           </p>
         </div>
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-          {currentCompany.complimentary ? "Uppdatera ert paket" : "Välj paket för att publicera"}
+          {currentCompany.packageTier === "standard" ? "Uppgradera till Premium" : "Ert paket"}
         </h3>
         <div className="inline-flex items-center rounded-full border border-[var(--color-brand-border)] bg-white p-1">
           {(["sixMonths", "year"] as BillingPeriod[]).map((p) => (
@@ -253,7 +276,7 @@ export default function PubliceraErbjudandePage() {
         </div>
       </div>
       <p className="mb-4 -mt-2 text-xs font-bold text-[#e0432c]">
-        De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på hela paketet – priserna nedan visar det.
+        De {EARLY_BIRD_SLOTS} första företagen får 20% rabatt på Premium – priset nedan visar det.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
         {PLANS.map((plan) => {
@@ -290,16 +313,27 @@ export default function PubliceraErbjudandePage() {
               >
                 {plan.name}
               </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
-                  {regularMonthly} kr
-                </span>
-                <span
-                  className={`font-extrabold text-[#e0432c] ${isPremium ? "text-2xl" : "text-xl"}`}
-                >
-                  {discountedMonthly} kr/mån
-                </span>
-              </div>
+              {plan.free ? (
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold text-[var(--color-brand-primary)]">
+                    Gratis
+                  </span>
+                  <span className="text-xs font-bold text-[var(--color-brand-muted)]">
+                    för alltid
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-sm font-bold text-[var(--color-brand-muted)] line-through">
+                    {regularMonthly} kr
+                  </span>
+                  <span
+                    className={`font-extrabold text-[#e0432c] ${isPremium ? "text-2xl" : "text-xl"}`}
+                  >
+                    {discountedMonthly} kr/mån
+                  </span>
+                </div>
+              )}
               <p className="text-xs font-semibold text-[var(--color-brand-muted)]">
                 {plan.tagline}
               </p>
@@ -308,18 +342,20 @@ export default function PubliceraErbjudandePage() {
                 checkClassName="text-[var(--color-brand-primary)]"
                 className="mt-4"
               />
-              <button
-                type="button"
-                onClick={() => setSelectedTier(plan.id)}
-                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[15px] font-extrabold transition ${
-                  isPremium
-                    ? "bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-hover)]"
-                    : "border-2 border-[var(--color-brand-primary)]/25 bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)] hover:border-[var(--color-brand-primary)]/50"
-                }`}
-              >
-                {active && <Check className="h-4 w-4" strokeWidth={3} />}
-                Välj {plan.name}
-              </button>
+              {plan.free ? (
+                <div className="mt-5 flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--color-brand-primary)]/25 bg-[var(--color-brand-secondary)]/60 py-3.5 text-[15px] font-extrabold text-[var(--color-brand-primary)]">
+                  <Check className="h-4 w-4" strokeWidth={3} /> Ingår redan
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTier(plan.id)}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-brand-primary)] py-3.5 text-[15px] font-extrabold text-white transition hover:bg-[var(--color-brand-primary-hover)]"
+                >
+                  {active && <Check className="h-4 w-4" strokeWidth={3} />}
+                  {currentCompany.packageTier === "premium" ? "Er nivå" : "Uppgradera till Premium"}
+                </button>
+              )}
             </div>
           );
         })}

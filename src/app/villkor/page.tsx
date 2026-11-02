@@ -51,8 +51,10 @@ export default function VillkorPage() {
               erbjudanden.
             </p>
             <p>
-              Det är kostnadsfritt att registrera ert företag och spara erbjudanden som utkast.
-              En betalning krävs först när ni väljer att publicera ett erbjudande i appen.
+              Standard-paketet är helt kostnadsfritt – för alltid, även när ni publicerar
+              erbjudanden i appen. Det kostar alltså aldrig något att gå med och synas med
+              Collaktiv. Vill ni ha ännu mer synlighet kan ni när som helst uppgradera till
+              Premium, se punkt 3–4.
             </p>
           </Section>
 
@@ -64,86 +66,95 @@ export default function VillkorPage() {
               missvisande eller inte passar reseappens målgrupp.
             </p>
             <p>
-              Om en ansökan eller ett redan betalt erbjudande nekas återbetalas betalningen
-              automatiskt i sin helhet. Ni behöver inte kontakta oss för detta.
+              Om en ansökan eller ett erbjudande med en betald Premium-uppgradering nekas
+              återbetalas den betalningen automatiskt i sin helhet. Ni behöver inte kontakta oss
+              för detta.
             </p>
             <p>
               Appen är under uppbyggnad och planeras lanseras för resenärer kring årsskiftet
-              2026/2027 (exakt lanseringsdatum meddelas separat). Ett godkänt och betalt
-              erbjudande publiceras för resenärer först i samband med lanseringen – inte innan,
-              oavsett när ansökan godkändes eller betalningen genomfördes.
+              2026/2027 (exakt lanseringsdatum meddelas separat). Ett godkänt erbjudande
+              publiceras för resenärer först i samband med lanseringen – inte innan, oavsett när
+              ansökan godkändes eller en eventuell Premium-betalning genomfördes.
             </p>
           </Section>
 
           <Section title="3. Paket och priser">
             <p>
-              Erbjudanden publiceras under något av två paket:{" "}
-              {PLANS.map((p) => p.name).join(" och ")}. Aktuella priser och vad respektive
-              paket innehåller visas alltid på{" "}
+              Erbjudanden publiceras under något av två paket: {PLANS.map((p) => p.name).join(" och ")}.{" "}
+              <strong>Standard är kostnadsfritt, för alltid</strong> – det finns inget pris och
+              ingen period att betala för. <strong>Premium är det enda betalda paketet</strong>,
+              och är valfritt: ni kan uppgradera till det när ni vill, direkt vid registreringen
+              eller senare från portalen. Aktuella Premium-priser och vad respektive paket
+              innehåller visas alltid på{" "}
               <Link href="/#varfor" className="font-bold text-[var(--color-brand-primary)] underline">
                 startsidan
               </Link>{" "}
-              och vid publicering i portalen, och gäller före de villkor som anges här vid
+              och vid uppgradering i portalen, och gäller före de villkor som anges här vid
               eventuell motstridighet i sakuppgifter om pris.
             </p>
             <p>
-              Ett paket köps för en vald period – {BILLING_LABELS.sixMonths.toLowerCase()} eller{" "}
+              Premium köps för en vald period – {BILLING_LABELS.sixMonths.toLowerCase()} eller{" "}
               {BILLING_LABELS.year.toLowerCase()}. De {EARLY_BIRD_SLOTS} första partnerföretagen
-              får {Math.round(EARLY_BIRD_DISCOUNT * 100)}% rabatt på hela paketpriset.
+              som uppgraderar till Premium får {Math.round(EARLY_BIRD_DISCOUNT * 100)}% rabatt på
+              hela paketpriset.
             </p>
             <p>
-              Betalar ni innan appen har lanserats (se punkt 2) börjar den valda perioden räknas
-              från lanseringsdatumet, inte från betalningsdatumet. Väntetiden fram till
-              lanseringen förkortar alltså inte er period.
+              Uppgraderar ni till Premium innan appen har lanserats (se punkt 2) börjar den valda
+              perioden räknas från lanseringsdatumet, inte från betalningsdatumet. Väntetiden fram
+              till lanseringen förkortar alltså inte er period.
             </p>
             <p>
-              Collaktiv kan, efter eget val, ge ett enskilt företag kostnadsfri åtkomst till ett
-              paket, t.ex. som del av ett marknadsförings- eller samarbetsavtal. Det sker alltid
-              på Collaktivs initiativ och ger inte andra företag rätt till motsvarande villkor.
-              Kostnadsfri åtkomst kan ges för en begränsad period – när den löper ut avslutas
-              åtkomsten automatiskt om inget annat avtalats. Dessa villkor gäller fullt ut även
-              vid kostnadsfri åtkomst; ni bekräftar att ni godkänner dem i samband med att ni
-              publicerar ert första erbjudande.
+              Collaktiv kan, efter eget val, ge ett enskilt företag kostnadsfri åtkomst till
+              Premium, t.ex. som del av ett marknadsförings- eller samarbetsavtal, eller som en
+              bonus för att ha bjudit in ett annat företag som sedan publicerat ett erbjudande.
+              Det sker alltid på Collaktivs eget initiativ och ger inte andra företag rätt till
+              motsvarande villkor. Kostnadsfri åtkomst kan ges för en begränsad period – när den
+              löper ut återgår företaget automatiskt till det kostnadsfria Standard-paketet om
+              inget annat avtalats.
             </p>
           </Section>
 
           <Section title="4. Betalning">
             <p>
-              Alla priser som visas i portalen och i appen är i svenska kronor och inkluderar
-              25% svensk moms. Betalning sker antingen med kort direkt vid publicering, eller
-              mot faktura med 30 dagars betalningsvillkor – ni väljer själva vid
-              publiceringstillfället.
+              Allt som sägs nedan gäller bara om och när ni väljer att uppgradera till Premium –
+              Standard kräver aldrig någon betalning. Alla priser som visas i portalen och i
+              appen är i svenska kronor och inkluderar 25% svensk moms. Betalning för Premium
+              sker antingen med kort direkt vid uppgraderingen, eller mot faktura med 30 dagars
+              betalningsvillkor – ni väljer själva.
             </p>
             <p>
               Betalningen är en engångsbetalning för den valda perioden – det är ingen
-              prenumeration och ingen automatisk förnyelse. När perioden löper ut slutar
-              erbjudandet synas i appen tills ni väljer att betala för en ny period.
+              prenumeration och ingen automatisk förnyelse. När en betald Premium-period löper ut
+              går paketet tillbaka till det kostnadsfria Standard-paketet, så erbjudandet
+              fortsätter synas i appen (enligt Standards villkor) tills ni eventuellt väljer att
+              betala för en ny Premium-period.
             </p>
             <p>
               Om ni betalar mot faktura men inte betalar i tid skickar vi betalningspåminnelser.
-              Erbjudandet publiceras inte, och ert konto räknas inte som betalt, förrän fakturan
+              Premium-uppgraderingen aktiveras inte, och räknas inte som betald, förrän fakturan
               är betald.
             </p>
           </Section>
 
           <Section title="5. Ingen bindningstid, paus och uppsägning">
             <p>
-              Det finns ingen bindningstid i bemärkelsen att ni binder er till återkommande
-              betalningar – ni betalar en gång per period och kan när som helst, utan extra
-              kostnad, pausa ett publicerat erbjudande från portalen. Ett pausat erbjudande tas
-              bort från appen men ni behåller er redan betalda period och kan återuppta
-              erbjudandet när ni vill, utan ny betalning.
+              Det finns ingen bindningstid, varken för Standard (som inte har någon betalning
+              alls) eller Premium (ni betalar en gång per period, ingen återkommande betalning).
+              Ni kan när som helst, utan extra kostnad, pausa ett publicerat erbjudande från
+              portalen. Ett pausat erbjudande tas bort från appen men ni behåller ert paket (och,
+              om ni har Premium, resten av er redan betalda period) och kan återuppta erbjudandet
+              när ni vill, utan ny betalning.
             </p>
             <p>
-              Paus, eller att ni väljer att inte använda hela den betalda perioden, ger ingen
-              återbetalning. Betalningen avser rätten att publicera under den valda perioden,
-              oavsett hur stor del av perioden erbjudandet faktiskt är synligt.
+              Paus av ett erbjudande, eller att ni väljer att inte använda hela en betald
+              Premium-period, ger ingen återbetalning. En Premium-betalning avser rätten att
+              publicera med Premiums förmåner under den valda perioden, oavsett hur stor del av
+              perioden erbjudandet faktiskt är synligt.
             </p>
             <p>
-              Ni kan fritt redigera ett erbjudandes innehåll (text, rabatt, bild m.m.) under hela
-              perioden utan ny betalning. Vill ni byta från Standard till Premium under en
-              pågående period sker det genom en ny betalning enligt de villkor som visas vid
-              köptillfället.
+              Ni kan fritt redigera ett erbjudandes innehåll (text, rabatt, bild m.m.) när som
+              helst utan ny betalning. Vill ni uppgradera från Standard till Premium gör ni det
+              genom en betalning enligt de villkor som visas vid köptillfället.
             </p>
           </Section>
 

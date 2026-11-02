@@ -39,7 +39,6 @@ import {
   type CampaignStatus,
   type CompanyProfile,
   type Offer,
-  type PackageTier,
 } from "@/lib/types";
 import type { AdminTab } from "./AdminTabs";
 
@@ -131,20 +130,18 @@ export function ContactCell({ name, email, phone }: { name: string; email: strin
   );
 }
 
-export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold transition ${
-        confirmed
-          ? "bg-[var(--color-brand-accent)]/15 text-[#3f7a1c]"
-          : "bg-[#fdecea] text-[#c0392b]"
-      }`}
-    >
-      {confirmed ? <ShieldCheck className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-      {confirmed ? "Betald" : "Obetald"}
-    </button>
-  );
+// Standard är gratis för alla, för alltid (se createCompany i db.ts) –
+// varje företag har alltså redan paymentConfirmed=true och
+// complimentary=true så fort de registrerat sig. Det enda som
+// fortfarande går att administrera här är PREMIUM: uppgradera (betalt
+// eller admin-beviljat kostnadsfritt) eller nedgradera tillbaka till
+// den gratis Standard-baslinjen.
+function premiumState(company: CompanyProfile) {
+  const isPremium = company.packageTier === "premium";
+  return {
+    isPaidPremium: isPremium && !company.complimentary,
+    isComplimentaryPremium: isPremium && company.complimentary,
+  };
 }
 
 // Läsbar statusbadge för den hopfällda radens Betalning-kolumn – inga
@@ -152,41 +149,45 @@ export function PaymentToggle({ confirmed, onToggle }: { confirmed: boolean; onT
 // (PaymentCell nedan) visas istället i den expanderade panelen när
 // raden klickas upp, se ApplicationsSection/CompaniesSection.
 function PaymentStatusBadge({ company }: { company: CompanyProfile }) {
-  if (company.complimentary && company.paymentConfirmed) {
+  const { isPaidPremium, isComplimentaryPremium } = premiumState(company);
+
+  if (isPaidPremium) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brand-accent)]/15 px-3 py-1.5 text-xs font-extrabold text-[#3f7a1c]">
+        <ShieldCheck className="h-3.5 w-3.5" /> Premium
+      </span>
+    );
+  }
+  if (isComplimentaryPremium) {
     return (
       <Badge variant="accent">
         <Gift className="h-3.5 w-3.5" />
         {company.complimentaryUntil
-          ? `Kostnadsfritt till ${formatDate(company.complimentaryUntil)}`
+          ? `Kostnadsfritt Premium till ${formatDate(company.complimentaryUntil)}`
           : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
-            ? `Kostnadsfritt (${complimentaryDurationLabel(company.complimentaryDuration)})`
-            : "Kostnadsfritt"}
+            ? `Kostnadsfritt Premium (${complimentaryDurationLabel(company.complimentaryDuration)})`
+            : "Kostnadsfritt Premium"}
       </Badge>
     );
   }
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold ${
-        company.paymentConfirmed
-          ? "bg-[var(--color-brand-accent)]/15 text-[#3f7a1c]"
-          : "bg-[#fdecea] text-[#c0392b]"
-      }`}
-    >
-      {company.paymentConfirmed ? <ShieldCheck className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-      {company.paymentConfirmed ? "Betald" : "Obetald"}
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brand-secondary)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-ink)]">
+      <Gift className="h-3.5 w-3.5" /> Kostnadsfritt (Standard)
     </span>
   );
 }
 
-// Betalningscell som även hanterar kostnadsfri åtkomst (partners vi
-// medvetet vill ha med utan att de betalar, t.ex. för
-// marknadsföringsbyte) – skiljs från en riktig Stripe-betalning via
-// company.complimentary, så den aldrig syns som en riktig betalning i
-// fakturahistorik/statistik. Admin väljer löptid (eller tillsvidare);
-// en bestämd löptid räknas från lanseringen för resenärer, inte från
-// dagen den beviljas (se src/lib/complimentary.ts), och återkallas
-// automatiskt av den dagliga cron-sopningen i src/lib/reminders.ts
-// när den har löpt ut.
+// Betalningscell: Standard behöver aldrig hanteras här (alltid gratis,
+// alltid aktivt), så det enda admin gör är att koppla på eller ta bort
+// Premium – betalt via faktura/kort (se InvoiceModal, kort sker i
+// portalen), eller admin-beviljat kostnadsfritt (t.ex. ett
+// marknadsföringsbyte eller en referral-bonus, se grantReferralBonus i
+// db.ts). En bestämd löptid räknas från lanseringen för resenärer, inte
+// från dagen den beviljas (se src/lib/complimentary.ts), och återkallas
+// automatiskt av den dagliga cron-sopningen i src/lib/reminders.ts när
+// den har löpt ut – återkallelsen faller då tillbaka till den gratis
+// Standard-baslinjen, inte till ett "obetalt" läge (det läget finns
+// inte längre).
 export function PaymentCell({
   company,
   onUpdate,
@@ -197,31 +198,37 @@ export function PaymentCell({
   const [pickingDuration, setPickingDuration] = useState(false);
   const [duration, setDuration] = useState<ComplimentaryDuration>("3m");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const { isPaidPremium, isComplimentaryPremium } = premiumState(company);
 
-  if (company.paymentConfirmed && company.complimentary) {
+  function downgradeToFreeStandard() {
+    onUpdate(company.id, {
+      packageTier: "standard",
+      paymentConfirmed: true,
+      complimentary: true,
+      complimentaryDuration: undefined,
+      complimentaryUntil: undefined,
+    });
+  }
+
+  if (isComplimentaryPremium) {
     return (
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="accent">
           <Gift className="h-3.5 w-3.5" />
           {company.complimentaryUntil
-            ? `Kostnadsfritt till ${formatDate(company.complimentaryUntil)}`
+            ? `Kostnadsfritt Premium till ${formatDate(company.complimentaryUntil)}`
             : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
-              ? `Kostnadsfritt (${complimentaryDurationLabel(company.complimentaryDuration)} efter lansering)`
-              : "Kostnadsfritt"}
+              ? `Kostnadsfritt Premium (${complimentaryDurationLabel(company.complimentaryDuration)} efter lansering)`
+              : "Kostnadsfritt Premium"}
         </Badge>
         <button
           onClick={() => {
             if (
               confirm(
-                `Ta bort kostnadsfri åtkomst för ${company.name}? Företaget markeras då som obetalt igen.`
+                `Ta bort kostnadsfri Premium för ${company.name}? Företaget går då tillbaka till gratis Standard.`
               )
             ) {
-              onUpdate(company.id, {
-                paymentConfirmed: false,
-                complimentary: false,
-                complimentaryUntil: undefined,
-                complimentaryDuration: undefined,
-              });
+              downgradeToFreeStandard();
             }
           }}
           className="text-[11px] font-bold text-[var(--color-brand-muted)] underline decoration-dotted hover:text-[#c0392b]"
@@ -232,9 +239,25 @@ export function PaymentCell({
     );
   }
 
-  if (company.paymentConfirmed) {
+  if (isPaidPremium) {
     return (
-      <PaymentToggle confirmed onToggle={() => onUpdate(company.id, { paymentConfirmed: false })} />
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brand-accent)]/15 px-3 py-1.5 text-xs font-extrabold text-[#3f7a1c]">
+          <ShieldCheck className="h-3.5 w-3.5" /> Premium
+        </span>
+        <button
+          onClick={() => {
+            if (
+              confirm(`Nedgradera ${company.name} till gratis Standard? Ingen automatisk återbetalning sker.`)
+            ) {
+              downgradeToFreeStandard();
+            }
+          }}
+          className="text-[11px] font-bold text-[var(--color-brand-muted)] underline decoration-dotted hover:text-[#c0392b]"
+        >
+          Nedgradera till Standard
+        </button>
+      </div>
     );
   }
 
@@ -257,7 +280,7 @@ export function PaymentCell({
             onUpdate(company.id, {
               paymentConfirmed: true,
               complimentary: true,
-              packageTier: "standard",
+              packageTier: "premium",
               complimentaryDuration: duration,
               complimentaryUntil: computeComplimentaryUntil(duration),
             });
@@ -281,21 +304,20 @@ export function PaymentCell({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <PaymentToggle
-        confirmed={false}
-        onToggle={() => onUpdate(company.id, { paymentConfirmed: true })}
-      />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brand-secondary)] px-3 py-1.5 text-xs font-extrabold text-[var(--color-brand-ink)]">
+        <Gift className="h-3.5 w-3.5" /> Kostnadsfritt (Standard)
+      </span>
       <button
         onClick={() => setPickingDuration(true)}
         className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
       >
-        <Gift className="h-3 w-3" /> Ge kostnadsfritt
+        <Gift className="h-3 w-3" /> Ge Premium kostnadsfritt
       </button>
       <button
         onClick={() => setInvoiceModalOpen(true)}
         className="flex items-center gap-1 rounded-full border border-[var(--color-brand-border)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--color-brand-ink)] transition hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-secondary)]"
       >
-        <Receipt className="h-3 w-3" /> Skicka faktura
+        <Receipt className="h-3 w-3" /> Uppgradera till Premium
       </button>
       {invoiceModalOpen && (
         <InvoiceModal company={company} onClose={() => setInvoiceModalOpen(false)} />
@@ -309,8 +331,11 @@ export function PaymentCell({
 // den löpande kontakten) behöver plats för fler fält än en tabellcell
 // rymmer. Skickar alltid till company.contactEmail om inget annat
 // anges – se billingOverride i src/lib/invoice.ts.
+// Bara Premium går att fakturera numera – Standard är gratis för alla
+// och har aldrig någon betalning att skicka en faktura för (se
+// createCompany i db.ts).
 function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: () => void }) {
-  const [plan, setPlan] = useState<PlanId>("standard");
+  const plan: PlanId = "premium";
   const [period, setPeriod] = useState<BillingPeriod>("year");
   const [showOverride, setShowOverride] = useState(false);
   const [overrideEmail, setOverrideEmail] = useState("");
@@ -418,24 +443,14 @@ function InvoiceModal({ company, onClose }: { company: CompanyProfile; onClose: 
         ) : (
           <>
             <h2 className="text-lg font-extrabold text-[var(--color-brand-ink)]">
-              Skicka faktura till {company.name}
+              Skicka Premium-faktura till {company.name}
             </h2>
             <p className="mt-1.5 text-sm font-medium text-[var(--color-brand-muted)]">
-              Skapas och skickas direkt via Stripe – inget behöver loggas in.
+              Skapas och skickas direkt via Stripe – inget behöver loggas in. Standard är redan
+              aktivt och gratis, så bara Premium går att fakturera.
             </p>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
-                Paket
-                <select
-                  value={plan}
-                  onChange={(e) => setPlan(e.target.value as PlanId)}
-                  className="mt-1.5 w-full rounded-xl border border-[var(--color-brand-border)] bg-white px-3 py-2 text-sm font-bold text-[var(--color-brand-ink)]"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="premium">Premium</option>
-                </select>
-              </label>
+            <div className="mt-5">
               <label className="block text-xs font-extrabold text-[var(--color-brand-ink)]">
                 Period
                 <select
@@ -857,7 +872,6 @@ function CompanyRow({
   onUpdate,
   statusBadge,
   statusControl,
-  packageControl,
   children,
 }: {
   company: CompanyProfile;
@@ -870,8 +884,6 @@ function CompanyRow({
   statusBadge?: ReactNode;
   /** Redigerbar status, visas i den uppfällda panelen om satt. */
   statusControl?: ReactNode;
-  /** Redigerbart paket, visas i den uppfällda panelen om satt. */
-  packageControl?: ReactNode;
   /** Knappar specifika för den här tabellen (Godkänn/Avvisa, eller inget). */
   children?: ReactNode;
 }) {
@@ -893,12 +905,8 @@ function CompanyRow({
         <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
           {CATEGORY_LABELS[c.category]}
         </td>
-        <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
-          {c.paymentConfirmed ? (
-            <span className="capitalize">{c.packageTier}</span>
-          ) : (
-            <span className="italic">Inget paket</span>
-          )}
+        <td className="px-5 py-3.5 font-medium capitalize text-[var(--color-brand-muted)]">
+          {c.packageTier}
         </td>
         {statusBadge !== undefined && <td className="px-5 py-3.5">{statusBadge}</td>}
         <td className="px-5 py-3.5">
@@ -919,14 +927,6 @@ function CompanyRow({
         <tr className="bg-[var(--color-brand-secondary)]/25">
           <td colSpan={columns} className="px-5 py-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:gap-8">
-              {packageControl && (
-                <div>
-                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
-                    Paket
-                  </p>
-                  {packageControl}
-                </div>
-              )}
               {statusControl && (
                 <div>
                   <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
@@ -1256,18 +1256,6 @@ export function CompaniesSection({
                       </option>
                     ))}
                   </select>
-                }
-                packageControl={
-                  c.paymentConfirmed ? (
-                    <select
-                      value={c.packageTier}
-                      onChange={(e) => onUpdate(c.id, { packageTier: e.target.value as PackageTier })}
-                      className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
-                    >
-                      <option value="standard">Standard</option>
-                      <option value="premium">Premium</option>
-                    </select>
-                  ) : undefined
                 }
               >
                 <ImpersonateButton company={c} />

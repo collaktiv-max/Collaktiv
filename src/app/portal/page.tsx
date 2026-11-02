@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, Clock, Eye, Gift, Plus, Ticket, Trophy, TrendingUp } from "lucide-react";
+import { BarChart3, Clock, Eye, Gift, Plus, Sparkles, Ticket, Trophy, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { PremiumGate } from "@/components/portal/PremiumGate";
@@ -184,11 +184,36 @@ export default function OversiktPage() {
         </div>
 
         <div className="flex flex-col gap-5">
+          {!isPremium && <PremiumUpsellCard />}
           <OnboardingChecklist company={currentCompany} />
           <RedemptionGuideCard />
           <ReferralCard />
         </div>
       </div>
+    </div>
+  );
+}
+
+// "Du är med! Vill du synas mer? Testa Premium." – samma uppmaning som
+// visas direkt efter att ett erbjudande publicerats (se "done"-läget i
+// /portal/erbjudanden/[id]/publicera), men här som en stående, odramatisk
+// påminnelse i översikten så länge företaget är kvar på gratis Standard.
+function PremiumUpsellCard() {
+  return (
+    <div className="rounded-2xl border border-[var(--color-brand-primary)]/25 bg-gradient-to-br from-[var(--color-brand-secondary)] to-white p-6">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[var(--color-brand-primary)] shadow-sm">
+        <Sparkles className="h-5 w-5" />
+      </span>
+      <h3 className="mt-4 text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+        Du är med! Vill du synas mer?
+      </h3>
+      <p className="mt-1.5 text-[12.5px] font-medium leading-relaxed text-[var(--color-brand-muted)]">
+        Testa Premium: prioriterad placering, fler erbjudanden samtidigt, &ldquo;Veckans
+        erbjudande&rdquo; och full statistik.
+      </p>
+      <Button href="/portal/paket" size="sm" className="mt-4">
+        Se Premium
+      </Button>
     </div>
   );
 }
