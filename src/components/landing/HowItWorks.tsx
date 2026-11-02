@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Store, Tags, CreditCard, ShieldCheck, Rocket } from "lucide-react";
+import { ArrowRight, Store, Tags, Gift, ShieldCheck, Rocket } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Reveal } from "./Reveal";
 
@@ -18,10 +18,10 @@ const steps = [
       "Helt gratis – beskriv rabatten eller låt vår AI föreslå ett förslag utifrån er bransch.",
   },
   {
-    icon: CreditCard,
-    title: "Välj paket & publicera",
+    icon: Gift,
+    title: "Publicera gratis",
     description:
-      "Standard eller Premium – ni betalar först när ni skickar in erbjudandet för publicering.",
+      "Standard är gratis – skicka in erbjudandet för publicering direkt, utan att betala något. Vill ni synas ännu mer kan ni uppgradera till Premium.",
   },
   {
     icon: ShieldCheck,

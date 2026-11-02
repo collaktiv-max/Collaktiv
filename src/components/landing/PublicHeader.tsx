@@ -40,7 +40,7 @@ export function PublicHeader() {
             Logga in
           </Button>
           <Button href="/registrera" variant="primary" size="sm">
-            Registrera ert företag
+            Kom igång gratis
           </Button>
         </div>
 
@@ -72,7 +72,7 @@ export function PublicHeader() {
               Redan partner? Logga in
             </Button>
             <Button href="/registrera" variant="primary">
-              Registrera ert företag
+              Kom igång gratis
             </Button>
           </div>
         </div>

@@ -10,8 +10,8 @@ import { PartnerPortalPreview } from "./PartnerPortalPreview";
 import { REGION } from "@/lib/config";
 
 const proofPoints = [
+  "Helt gratis – inget kort behövs",
   "Nya kunder in i butiken",
-  "Live inom 1–2 dagar",
   "Ni styr erbjudandena själva",
   "Tydlig statistik",
 ];
@@ -29,7 +29,7 @@ export function Hero() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-accent)]/40 bg-[var(--color-brand-accent)]/10 px-4 py-1.5 text-xs font-extrabold text-[#3f7a1c]">
             <Sparkles className="h-3.5 w-3.5" />
-            Nya kunder – utan annonsbudget
+            Helt gratis att synas i appen
           </span>
 
           <h1 className="mt-4 text-[2rem] font-extrabold leading-[1.08] tracking-tight text-[var(--color-brand-ink)] sm:text-4xl lg:text-[2.75rem]">
@@ -37,13 +37,13 @@ export function Hero() {
             <span className="text-[var(--color-brand-primary)]">
               hållbara resenärer
             </span>{" "}
-            i {REGION}
+            i {REGION} – gratis
           </h1>
 
           <p className="mt-3.5 max-w-xl text-[15.5px] font-medium leading-relaxed text-[var(--color-brand-muted)] sm:text-base">
             Collaktiv belönar kollektivtrafikresande med rabatter hos lokala
-            företag. Lägg upp ett erbjudande – och låt resenärerna bli era
-            nya stamkunder.
+            företag. Lägg upp ett erbjudande helt kostnadsfritt – och låt
+            resenärerna bli era nya stamkunder.
           </p>
 
           <dl className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -65,7 +65,7 @@ export function Hero() {
               size="lg"
               icon={<ArrowRight className="h-4.5 w-4.5" />}
             >
-              Registrera ert företag
+              Kom igång gratis
             </Button>
             <Button href="/logga-in" variant="secondary" size="lg">
               Redan partner? Logga in
@@ -73,7 +73,7 @@ export function Hero() {
           </div>
 
           <p className="mt-4 text-center text-xs font-semibold text-[var(--color-brand-muted)]">
-            Gratis att komma igång · Ingen bindningstid
+            Standard är gratis – publicera direkt, utan kort eller bindningstid
           </p>
         </motion.div>
 

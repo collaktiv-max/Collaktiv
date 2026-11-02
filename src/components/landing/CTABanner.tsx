@@ -15,8 +15,8 @@ export function CTABanner() {
             Redo att nå {REGION}s hållbara resenärer?
           </h2>
           <p className="relative mx-auto mt-4 max-w-xl text-[15.5px] font-medium text-white/80">
-            Registreringen tar under fem minuter, är gratis att komma igång
-            med och helt utan bindningstid.
+            Registreringen tar under fem minuter. Standard är helt gratis – även
+            att publicera – och ni betalar aldrig något för det, utan bindningstid.
           </p>
           <div className="relative mt-8 flex items-center justify-center">
             <Button
@@ -25,7 +25,7 @@ export function CTABanner() {
               variant="white"
               icon={<ArrowRight className="h-4.5 w-4.5" />}
             >
-              Registrera ert företag
+              Kom igång gratis
             </Button>
           </div>
         </Reveal>
