@@ -255,17 +255,25 @@ export async function createCompany(input: {
   // undantag tidigare. Enda sättet att ändra det är att uppgradera
   // till Premium (betald eller admin-beviljad), se completePayment och
   // grantReferralBonus.
+  // payment_confirmed_at sätts här också (inte bara via updateCompanys
+  // övergångsdetektering) – annars skulle den aldrig sättas alls för
+  // ett nytt företag (payment_confirmed är redan true direkt vid
+  // insättning, det finns ingen false->true-övergång att upptäcka i
+  // efterhand), vilket tyst skulle göra getCompaniesNeedingOfferReminder
+  // (kräver payment_confirmed_at) obrukbar för alla nya företag.
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
       contact_name, contact_email, contact_phone, region, address,
       package_tier, application_status, payment_confirmed, complimentary,
+      payment_confirmed_at,
       password_hash, onboarding_logo, referred_by_company_id, full_service_requested
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
       ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
+      now(),
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
       ${input.fullServiceRequested ?? false}
     )

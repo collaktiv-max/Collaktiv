@@ -687,7 +687,12 @@ export function OversiktSection({
     (c) => c.applicationStatus === "inskickad" || c.applicationStatus === "under_granskning"
   );
   const pendingOffers = offers.filter((o) => o.status === "granskas");
-  const payingCompanies = companies.filter((c) => c.paymentConfirmed);
+  // paymentConfirmed är numera true för alla företag (Standard är
+  // gratis för alla från dag ett, se createCompany i db.ts) – "betalande"
+  // måste alltså också utesluta complimentary (gratis Standard OCH
+  // admin-/referral-beviljad kostnadsfri Premium) för att bara räkna
+  // riktiga Stripe-betalningar, se samma mönster i premiumState ovan.
+  const payingCompanies = companies.filter((c) => c.paymentConfirmed && !c.complimentary);
   const pendingCampaigns = campaigns.filter((c) => c.status === "intresseanmald");
   const contestHosts = companies.filter((c) => c.contestHostInterested);
 
