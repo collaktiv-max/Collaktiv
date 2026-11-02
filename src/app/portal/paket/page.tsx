@@ -29,9 +29,13 @@ export default function PaketPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentCompany, syncCompany } = useAppState();
-  const [selectedTier, setSelectedTier] = useState<PackageTier>(
-    currentCompany?.packageTier ?? "standard"
-  );
+  // Den här sidan handlar numera uteslutande om att uppgradera till
+  // Premium – Standard är redan aktivt och inte valbart här (se
+  // Standard-kortets "Ingår redan" nedan). Förvalt till "premium" även
+  // om företaget just nu har Standard, så att den som klickar
+  // "Uppgradera till Premium" någonstans i portalen hamnar direkt i
+  // betalflödet istället för att behöva klicka en gång till här.
+  const [selectedTier, setSelectedTier] = useState<PackageTier>("premium");
   const [period, setPeriod] = useState<BillingPeriod>("year");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -152,8 +156,7 @@ export default function PaketPage() {
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[var(--color-brand-accent)]/30 bg-[var(--color-brand-mint)]/30 p-4">
           <Check className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[var(--color-brand-primary)]" />
           <p className="text-sm font-bold text-[var(--color-brand-ink)]">
-            Ni har redan ett aktivt {PLANS.find((p) => p.id === selectedTier)!.name}-paket. Välj{" "}
-            {selectedTier === "standard" ? "Premium nedan för att uppgradera, eller" : "gärna"}{" "}
+            Ni har redan Premium. Välj gärna{" "}
             <Link href="/portal/erbjudanden/nytt" className="underline">
               skapa ett erbjudande
             </Link>
@@ -163,7 +166,7 @@ export default function PaketPage() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Välj paket</h3>
+        <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">Uppgradera till Premium</h3>
         <div className="inline-flex items-center rounded-full border border-[var(--color-brand-border)] bg-white p-1">
           {(["sixMonths", "year"] as BillingPeriod[]).map((p) => (
             <button

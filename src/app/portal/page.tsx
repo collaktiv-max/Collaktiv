@@ -12,9 +12,6 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
 
-const UNLOCK_DESCRIPTION = "Lås upp genom att välja och betala för ett paket.";
-const UNLOCK_CTA = "Lås upp med ett paket";
-
 export default function OversiktPage() {
   const { currentCompany, companyOffers } = useAppState();
   const router = useRouter();
@@ -25,11 +22,10 @@ export default function OversiktPage() {
   const conversion = totalViews > 0 ? Math.round((totalRedemptions / totalViews) * 100) : 0;
   const topOffer = [...companyOffers].sort((a, b) => b.stats.views - a.stats.views)[0];
 
-  // All statistik kräver ett betalt paket. Vilken statistik som sedan
-  // låses upp beror på Standard eller Premium.
-  const hasPaid = currentCompany.paymentConfirmed;
+  // Standard är gratis och aktivt för alla (se createCompany i db.ts),
+  // så Premium är det enda som längre avgör vad som är upplåst –
+  // antal visningar och visningar per veckodag ingår redan i Standard.
   const isPremium = currentCompany.packageTier === "premium";
-  const premiumUnlocked = hasPaid && isPremium;
 
   const goUnlock = () => router.push("/portal/paket");
 
@@ -78,63 +74,48 @@ export default function OversiktPage() {
           icon={Eye}
           label="Visningar totalt"
           value={totalViews.toLocaleString("sv-SE")}
-          locked={!hasPaid}
-          lockReason="payment"
-          onUpgrade={goUnlock}
         />
         <StatCard
           icon={Ticket}
           label="Inlösningar"
           value={totalRedemptions.toLocaleString("sv-SE")}
-          locked={!premiumUnlocked}
-          lockReason={hasPaid ? "premium" : "payment"}
+          locked={!isPremium}
           onUpgrade={goUnlock}
         />
         <StatCard
           icon={TrendingUp}
           label="Konverteringsgrad"
           value={`${conversion}%`}
-          locked={!premiumUnlocked}
-          lockReason={hasPaid ? "premium" : "payment"}
+          locked={!isPremium}
           onUpgrade={goUnlock}
         />
         <StatCard
           icon={Trophy}
           label="Mest populära erbjudande"
           value={topOffer ? topOffer.title : "–"}
-          locked={!premiumUnlocked}
-          lockReason={hasPaid ? "premium" : "payment"}
+          locked={!isPremium}
           onUpgrade={goUnlock}
         />
       </div>
 
       <div className="mt-8 grid gap-5 lg:grid-cols-3">
         <div className="flex flex-col gap-5 lg:col-span-2">
-          {hasPaid ? (
-            <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
-                    Visningar per veckodag
-                  </h3>
-                  <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-                    Senaste 7 dagarna
-                  </p>
-                </div>
-                {!isPremium && <Badge>Standard</Badge>}
+          <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-extrabold text-[var(--color-brand-ink)]">
+                  Visningar per veckodag
+                </h3>
+                <p className="text-xs font-medium text-[var(--color-brand-muted)]">
+                  Senaste 7 dagarna
+                </p>
               </div>
-              <StatsPlaceholder />
+              {!isPremium && <Badge>Standard</Badge>}
             </div>
-          ) : (
-            <PremiumGate
-              title="Visningar per veckodag"
-              description={UNLOCK_DESCRIPTION}
-              ctaLabel={UNLOCK_CTA}
-              onUpgrade={goUnlock}
-            />
-          )}
+            <StatsPlaceholder />
+          </div>
 
-          {premiumUnlocked ? (
+          {isPremium ? (
             <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
@@ -152,17 +133,12 @@ export default function OversiktPage() {
           ) : (
             <PremiumGate
               title="Mest populära tider"
-              description={
-                hasPaid
-                  ? "Uppgradera till Premium för att se när erbjudandet ses och löses in mest."
-                  : UNLOCK_DESCRIPTION
-              }
-              ctaLabel={hasPaid ? "Uppgradera till Premium" : UNLOCK_CTA}
+              description="Uppgradera till Premium för att se när erbjudandet ses och löses in mest."
               onUpgrade={goUnlock}
             />
           )}
 
-          {premiumUnlocked ? (
+          {isPremium ? (
             <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6">
               <h3 className="mb-4 text-[15px] font-extrabold text-[var(--color-brand-ink)]">
                 Erbjudanden i detalj
@@ -172,12 +148,7 @@ export default function OversiktPage() {
           ) : (
             <PremiumGate
               title="Erbjudanden i detalj"
-              description={
-                hasPaid
-                  ? "Se visningar, inlösningar och konvertering per erbjudande med Premium."
-                  : UNLOCK_DESCRIPTION
-              }
-              ctaLabel={hasPaid ? "Uppgradera till Premium" : UNLOCK_CTA}
+              description="Se visningar, inlösningar och konvertering per erbjudande med Premium."
               onUpgrade={goUnlock}
             />
           )}

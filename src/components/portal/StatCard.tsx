@@ -6,15 +6,16 @@ export function StatCard({
   value,
   trend,
   locked,
-  lockReason = "payment",
   onUpgrade,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   trend?: string;
+  /** Standard är gratis och aktivt för alla (se createCompany i
+   * db.ts), så det enda som längre kan göra en statistikruta låst är
+   * att Premium saknas. */
   locked?: boolean;
-  lockReason?: "payment" | "premium";
   onUpgrade?: () => void;
 }) {
   if (locked) {
@@ -37,7 +38,7 @@ export function StatCard({
             onClick={onUpgrade}
             className="mt-2 text-[11px] font-extrabold text-[var(--color-brand-primary)] hover:underline"
           >
-            {lockReason === "premium" ? "Uppgradera till Premium" : "Lås upp med ett paket"}
+            Uppgradera till Premium
           </button>
         )}
       </div>

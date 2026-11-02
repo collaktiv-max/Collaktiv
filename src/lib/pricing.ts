@@ -40,11 +40,11 @@ export const PLANS: PlanDefinition[] = [
     },
     features: [
       {
-        label: "Begränsad synlighet",
+        label: "Synlighet",
         detail: "Erbjudandet visas i appen med er logga.",
       },
       {
-        label: "Begränsad statistik",
+        label: "Statistik",
         detail: "Enbart antal visningar på era erbjudanden.",
       },
       {
