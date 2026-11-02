@@ -9,7 +9,7 @@ import {
   updateCompany,
 } from "./db";
 import { sendOfferReminderEmail, sendPaymentReminderEmail } from "./email";
-import { PAYMENTS_ENABLED, APP_LAUNCH_DATE } from "./config";
+import { PAYMENTS_ENABLED, REMINDERS_ENABLED, APP_LAUNCH_DATE } from "./config";
 import { computeComplimentaryUntil } from "./complimentary";
 
 // Körs av /api/cron/reminders (dagligt schema, se vercel.json).
@@ -55,8 +55,11 @@ export async function runReminderSweep() {
   // en betalknapp de ändå inte kan använda än, vilket bara förvirrar
   // dem. Räknas fortfarande i svaret så det syns i loggen att de
   // väntar, men skickas inte och markeras inte som skickat.
+  //
+  // REMINDERS_ENABLED är en separat, tillfällig paus av ALLA
+  // påminnelseutskick (se config.ts) – gäller oavsett PAYMENTS_ENABLED.
   let paymentRemindersSent = 0;
-  if (PAYMENTS_ENABLED) {
+  if (PAYMENTS_ENABLED && REMINDERS_ENABLED) {
     for (const company of paymentDue) {
       const { sent } = await sendPaymentReminderEmail(company);
       if (sent) {
@@ -67,11 +70,13 @@ export async function runReminderSweep() {
   }
 
   let offerRemindersSent = 0;
-  for (const company of offerDue) {
-    const { sent } = await sendOfferReminderEmail(company);
-    if (sent) {
-      await markOfferReminderSent(company.id);
-      offerRemindersSent++;
+  if (REMINDERS_ENABLED) {
+    for (const company of offerDue) {
+      const { sent } = await sendOfferReminderEmail(company);
+      if (sent) {
+        await markOfferReminderSent(company.id);
+        offerRemindersSent++;
+      }
     }
   }
 

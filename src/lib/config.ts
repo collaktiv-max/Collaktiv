@@ -25,3 +25,11 @@ export const APP_LAUNCH_DATE: string | undefined = undefined;
 // /portal/erbjudanden/[id]/publicera) och att påminnelsemejlet "välj
 // paket" skickas (se src/lib/reminders.ts).
 export const PAYMENTS_ENABLED = true;
+
+// TILLFÄLLIGT PAUSAT (2026-11-02): stänger av alla automatiska
+// påminnelsemejl (betalningspåminnelser "välj paket" OCH
+// erbjudandepåminnelser) som annars skickas dagligen av
+// /api/cron/reminders, se src/lib/reminders.ts. Cron-jobbet körs
+// fortfarande (behandlar t.ex. utgången kostnadsfri åtkomst), det är
+// bara själva utskicken som stoppas. Sätt till true för att återuppta.
+export const REMINDERS_ENABLED = false;
