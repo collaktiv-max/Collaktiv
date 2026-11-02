@@ -158,7 +158,12 @@ export default function AdminPage() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      {/* min-w-0 krävs här – utan den vägrar en flex-child krympa under
+          sitt innehålls naturliga bredd (t.ex. tabellens min-w-[980px]),
+          vilket gör att HELA sidan (body) blir bredare än fönstret och
+          kan scrolla/"röra sig" i sidled istället för att bara tabellens
+          egna overflow-x-auto gör det. */}
+      <main className="min-w-0 flex-1 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
         {activeTab === "oversikt" && (
           <OversiktSection
             companies={companies}
