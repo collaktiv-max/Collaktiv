@@ -33,11 +33,11 @@ export function Hero() {
           </span>
 
           <h1 className="mt-4 text-[2rem] font-extrabold leading-[1.08] tracking-tight text-[var(--color-brand-ink)] sm:text-4xl lg:text-[2.75rem]">
-            Nå tusentals{" "}
+            Gratis väg till{" "}
             <span className="text-[var(--color-brand-primary)]">
-              hållbara resenärer
+              nya kunder
             </span>{" "}
-            i {REGION} – gratis
+            i {REGION}
           </h1>
 
           <p className="mt-3.5 max-w-xl text-[15.5px] font-medium leading-relaxed text-[var(--color-brand-muted)] sm:text-base">
