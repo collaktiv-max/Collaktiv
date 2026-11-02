@@ -746,7 +746,7 @@ export function OversiktSection({
         />
         <KpiCard
           icon={Gift}
-          label="Tävlingsvärdar"
+          label="Tävlingspartner"
           value={contestHosts.length}
           iconBg="bg-[var(--color-brand-secondary)] text-[var(--color-brand-primary)]"
         />
@@ -1132,7 +1132,7 @@ export function CampaignsSection({
   );
 }
 
-// ---------- Tävlingsvärdar ----------
+// ---------- Tävlingspartner ----------
 
 export function ContestHostsSection({ companies }: { companies: CompanyProfile[] }) {
   const contestHosts = companies.filter((c) => c.contestHostInterested);
@@ -1140,11 +1140,11 @@ export function ContestHostsSection({ companies }: { companies: CompanyProfile[]
   return (
     <div>
       <SectionHeader
-        title="Tävlingsvärdar"
+        title="Tävlingspartner"
         description="Företag som anmält att de kan bidra med pris till en tävling i appen."
       />
       {contestHosts.length === 0 ? (
-        <EmptyRow text="Inga tävlingsvärdar anmälda än." />
+        <EmptyRow text="Inga tävlingspartner anmälda än." />
       ) : (
         <TableCard>
           <THead>

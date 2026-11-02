@@ -14,6 +14,10 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname.startsWith(href);
 }
 
+// Mobila bottom-tab-baren har bara plats för korta etiketter innan de
+// krockar (se nav-items.ts) – utelämnar punkter märkta bottomBar: false.
+const bottomBarItems = navItems.filter((item) => !("bottomBar" in item && item.bottomBar === false));
+
 export function PortalShell({ children }: { children: ReactNode }) {
   const { ready, currentCompany, impersonating, logout } = useAppState();
   const router = useRouter();
@@ -223,8 +227,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </main>
 
         {/* Mobile bottom tab bar */}
-        <nav className="sticky bottom-0 z-30 grid grid-cols-5 border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden">
-          {navItems.map((item) => {
+        <nav
+          className="sticky bottom-0 z-30 grid border-t border-[var(--color-brand-border)] bg-white/95 backdrop-blur lg:hidden"
+          style={{ gridTemplateColumns: `repeat(${bottomBarItems.length}, minmax(0, 1fr))` }}
+        >
+          {bottomBarItems.map((item) => {
             const active = isActive(pathname, item.href, "exact" in item && item.exact);
             const Icon = item.icon;
             const comingSoon = "comingSoon" in item && item.comingSoon;
@@ -232,7 +239,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[10.5px] font-bold ${
+                className={`flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-center text-[10px] font-bold leading-tight ${
                   active ? "text-[var(--color-brand-primary)]" : "text-[var(--color-brand-muted)]"
                 }`}
               >
@@ -242,7 +249,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
                     <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-[#e0432c]" />
                   )}
                 </span>
-                {item.label}
+                <span className="w-full truncate">{item.label}</span>
               </Link>
             );
           })}

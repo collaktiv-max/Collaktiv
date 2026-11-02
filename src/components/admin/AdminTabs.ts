@@ -21,6 +21,6 @@ export const ADMIN_TABS: { id: AdminTab; label: string; icon: LucideIcon }[] = [
   { id: "ansokningar", label: "Ansökningar", icon: ClipboardCheck },
   { id: "erbjudanden", label: "Erbjudanden", icon: Ticket },
   { id: "kampanjer", label: "Kampanjer", icon: Rocket },
-  { id: "tavlingsvardar", label: "Tävlingsvärdar", icon: Gift },
+  { id: "tavlingsvardar", label: "Tävlingspartner", icon: Gift },
   { id: "foretag", label: "Alla företag", icon: Building2 },
 ];

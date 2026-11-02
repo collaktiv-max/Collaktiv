@@ -1,13 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, Clock, Eye, Gift, Plus, Sparkles, Ticket, Trophy, TrendingUp } from "lucide-react";
+import { BarChart3, Clock, Eye, Plus, Sparkles, Ticket, Trophy, TrendingUp, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { PremiumGate } from "@/components/portal/PremiumGate";
 import { OnboardingChecklist } from "@/components/portal/OnboardingChecklist";
 import { RedemptionGuideCard } from "@/components/portal/RedemptionGuideCard";
-import { ReferralCard } from "@/components/portal/ReferralCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useAppState } from "@/lib/store";
@@ -29,10 +28,6 @@ export default function OversiktPage() {
 
   const goUnlock = () => router.push("/portal/paket");
 
-  const scrollToInvite = () => {
-    document.getElementById("bjud-in-foretag")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   return (
     <div>
       <PageHeader
@@ -43,7 +38,7 @@ export default function OversiktPage() {
             <Button href="/portal/erbjudanden/nytt" icon={<Plus className="h-4 w-4" />}>
               Nytt erbjudande
             </Button>
-            <Button variant="outline" size="sm" onClick={scrollToInvite} icon={<Gift className="h-4 w-4" />}>
+            <Button href="/portal/bjud-in" variant="outline" size="sm" icon={<UserPlus className="h-4 w-4" />}>
               Bjud in företag
             </Button>
           </div>
@@ -158,7 +153,6 @@ export default function OversiktPage() {
           {!isPremium && <PremiumUpsellCard />}
           <OnboardingChecklist company={currentCompany} />
           <RedemptionGuideCard />
-          <ReferralCard />
         </div>
       </div>
     </div>
