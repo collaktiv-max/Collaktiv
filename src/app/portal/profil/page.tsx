@@ -532,10 +532,15 @@ function BillingCard({ company }: { company: CompanyProfile }) {
   const latestPaid = payments?.find((p) => p.status === "paid");
   const pendingInvoice = payments?.find((p) => p.status === "pending");
 
-  // Standard är gratis och aktivt från dag ett för alla företag (se
-  // createCompany i db.ts), så "inget aktivt paket" kan inte längre
-  // inträffa – bara en väntande Premium-fakturabetalning kan göra det.
+  // Tre möjliga lägen numera (se createCompany/grantReferralBonus i
+  // db.ts): gratis Standard (allas baslinje, inget "beviljat"), admin-/
+  // referral-beviljad kostnadsfri Premium (ett genuint undantag), eller
+  // riktigt betald Premium. "Inget aktivt paket" kan inte längre
+  // inträffa.
   const plan = getPlan(company.packageTier);
+  const isFreeStandard = company.packageTier === "standard";
+  const isComplimentaryPremium = company.packageTier === "premium" && company.complimentary;
+  const isPaidPremium = company.packageTier === "premium" && !company.complimentary;
 
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-6 sm:p-7">
@@ -549,22 +554,24 @@ function BillingCard({ company }: { company: CompanyProfile }) {
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-extrabold text-[var(--color-brand-ink)]">{plan.name}</p>
-              <Badge variant="accent">{company.complimentary ? "Kostnadsfritt" : "Betalt"}</Badge>
+              <Badge variant="accent">{isPaidPremium ? "Betalt" : "Kostnadsfritt"}</Badge>
             </div>
             <p className="text-xs font-medium text-[var(--color-brand-muted)]">
-              {company.complimentary
-                ? company.complimentaryUntil
-                  ? `Ni har fått kostnadsfri åtkomst till och med ${formatDate(company.complimentaryUntil)}.`
-                  : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
-                    ? `Ni har fått kostnadsfri åtkomst i ${complimentaryDurationLabel(company.complimentaryDuration)}, som börjar räknas när appen lanseras för resenärer.`
-                    : "Ni har fått kostnadsfri åtkomst till det här paketet."
-                : latestPaid
-                  ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
-                  : plan.tagline}
+              {isFreeStandard
+                ? "Standard ingår alltid utan kostnad – inget att betala eller fakturera."
+                : isComplimentaryPremium
+                  ? company.complimentaryUntil
+                    ? `Ni har fått kostnadsfri åtkomst till Premium till och med ${formatDate(company.complimentaryUntil)}.`
+                    : company.complimentaryDuration && company.complimentaryDuration !== "indefinite"
+                      ? `Ni har fått kostnadsfri åtkomst till Premium i ${complimentaryDurationLabel(company.complimentaryDuration)}, som börjar räknas när appen lanseras för resenärer.`
+                      : "Ni har fått kostnadsfri åtkomst till Premium."
+                  : latestPaid
+                    ? `${formatKr(latestPaid.amount)} · ${BILLING_LABELS[latestPaid.period as BillingPeriod] ?? latestPaid.period} · betalat ${formatDate(latestPaid.createdAt)}`
+                    : plan.tagline}
             </p>
           </div>
         </div>
-        {company.packageTier === "standard" && (
+        {isFreeStandard && (
           <Button size="sm" variant="outline" onClick={goToPackages}>
             Uppgradera till Premium
           </Button>
@@ -589,23 +596,33 @@ function BillingCard({ company }: { company: CompanyProfile }) {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 border-t border-[var(--color-brand-border)] pt-5 sm:grid-cols-3">
-        <InfoRow
-          icon={ShieldCheck}
-          label="Ingen bindningstid"
-          description="Pausa erbjudandet när ni vill, utan extra kostnad – perioden ni betalat för återbetalas dock inte."
-        />
-        <InfoRow
-          icon={RefreshCcw}
-          label="Automatisk återbetalning"
-          description="Om er ansökan eller ett erbjudande nekas efter betalning återbetalas beloppet automatiskt till ert kort."
-        />
-        <InfoRow
-          icon={Mail}
-          label="Kvitto"
-          description="Ett kvitto för varje betalning skickas automatiskt till er e-post av Stripe."
-        />
-      </div>
+      {isPaidPremium ? (
+        <div className="mt-6 grid gap-4 border-t border-[var(--color-brand-border)] pt-5 sm:grid-cols-3">
+          <InfoRow
+            icon={ShieldCheck}
+            label="Ingen bindningstid"
+            description="Pausa erbjudandet när ni vill, utan extra kostnad – perioden ni betalat för återbetalas dock inte."
+          />
+          <InfoRow
+            icon={RefreshCcw}
+            label="Automatisk återbetalning"
+            description="Om er ansökan eller ett erbjudande nekas efter betalning återbetalas beloppet automatiskt till ert kort."
+          />
+          <InfoRow
+            icon={Mail}
+            label="Kvitto"
+            description="Ett kvitto för varje betalning skickas automatiskt till er e-post av Stripe."
+          />
+        </div>
+      ) : (
+        <div className="mt-6 border-t border-[var(--color-brand-border)] pt-5">
+          <InfoRow
+            icon={ShieldCheck}
+            label="Ingen bindningstid"
+            description="Pausa erbjudandet när ni vill, helt utan kostnad – inget att betala eller återbetala."
+          />
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col items-start gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-secondary)]/30 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
