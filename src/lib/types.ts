@@ -54,11 +54,18 @@ export interface CompanyProfile {
    * lanseringsdatumet ännu inte är känt (se complimentaryDuration då).
    * En daglig cron (src/lib/reminders.ts) återkallar automatiskt
    * åtkomsten när datumet passerat. */
-  complimentaryUntil?: string;
+  /** `| null` accepteras i en Partial-uppdatering för att uttryckligen
+   * rensa fältet över ett API-anrop – ett JS-objekt med `undefined`
+   * skickat via JSON.stringify tappar bort nyckeln helt (JSON saknar
+   * undefined), så servern aldrig skulle få veta att fältet ska
+   * nollställas. null serialiseras korrekt och hanteras identiskt med
+   * undefined i updateCompany (se src/lib/db.ts). */
+  complimentaryUntil?: string | null;
   /** Vald löptid, sparas även innan lanseringsdatumet är känt så
    * cron-sopningen vet vad den ska räkna ut complimentaryUntil till
-   * den dagen (se src/lib/complimentary.ts). */
-  complimentaryDuration?: ComplimentaryDuration;
+   * den dagen (se src/lib/complimentary.ts). Se complimentaryUntil ovan
+   * för varför `| null` behövs. */
+  complimentaryDuration?: ComplimentaryDuration | null;
   /** Satt när en kostnadsfri partner godkänner villkoren – första
    * gången de publicerar ett erbjudande, se handlePublish i
    * /portal/erbjudanden/[id]/publicera. Betalande företags

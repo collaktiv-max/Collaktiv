@@ -205,8 +205,11 @@ export function PaymentCell({
       packageTier: "standard",
       paymentConfirmed: true,
       complimentary: true,
-      complimentaryDuration: undefined,
-      complimentaryUntil: undefined,
+      // null, inte undefined – ett fält satt till undefined försvinner
+      // helt när JSON.stringify serialiserar det här över fetch, så
+      // servern skulle aldrig se att det ska rensas (se types.ts).
+      complimentaryDuration: null,
+      complimentaryUntil: null,
     });
   }
 
