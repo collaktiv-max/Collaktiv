@@ -131,6 +131,11 @@ create table if not exists offers (
   barcode_data_url text,
   discount_code    text,
   redirect_url     text,
+  -- Satt av företaget vid skapande – en resenär ska bara kunna lösa in
+  -- erbjudandet en gång. Spärren hålls av den framtida reseappen (den
+  -- har inga resenärskonton att räkna mot här), se limitedToOnePerUser
+  -- i src/lib/types.ts.
+  limited_to_one_per_user boolean not null default false,
   views            integer not null default 0,
   redemptions      integer not null default 0,
   -- Sätts automatiskt första gången admin publicerar erbjudandet.
@@ -166,6 +171,7 @@ alter table offers add constraint offers_redemption_method_check
 alter table offers add column if not exists barcode_data_url text;
 alter table offers add column if not exists discount_code text;
 alter table offers add column if not exists redirect_url text;
+alter table offers add column if not exists limited_to_one_per_user boolean not null default false;
 
 -- Extra butiker utöver företagets huvudadress (companies.address). De
 -- flesta företag har noll rader här – bara kedjor med flera fysiska

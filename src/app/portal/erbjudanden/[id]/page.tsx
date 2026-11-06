@@ -49,6 +49,7 @@ export default function RedigeraErbjudandePage() {
     barcodeDataUrl: offer.barcodeDataUrl,
     discountCode: offer.discountCode,
     redirectUrl: offer.redirectUrl,
+    limitedToOnePerUser: offer.limitedToOnePerUser,
   };
 
   async function handleSave(values: OfferFormValues) {
@@ -69,6 +70,7 @@ export default function RedigeraErbjudandePage() {
       barcodeDataUrl: values.barcodeDataUrl,
       discountCode: values.discountCode,
       redirectUrl: values.redirectUrl,
+      limitedToOnePerUser: values.limitedToOnePerUser,
     });
     setSaving(false);
     router.push("/portal/erbjudanden");

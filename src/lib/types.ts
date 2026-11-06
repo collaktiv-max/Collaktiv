@@ -152,6 +152,12 @@ export interface Offer {
   /** Webbplatsen resenären skickas till för att lösa in rabattkoden –
    * bara satt när redemptionMethod är "rabattkod". */
   redirectUrl?: string;
+  /** Satt av företaget vid skapande – en resenär får bara lösa in
+   * erbjudandet en gång, oavsett hur ofta det visas. Själva spärren
+   * kan inte hållas förrän den framtida reseappen har resenärskonton
+   * (se getPublishedOffersForApp i db.ts) – det här fältet exponeras
+   * via /api/public/offers så appen vet att den behöver hålla koll. */
+  limitedToOnePerUser: boolean;
   status: OfferStatus;
   /** Sätts automatiskt första gången admin publicerar erbjudandet –
    * ändras inte av senare paus/återuppta. Används som sorteringsnyckel

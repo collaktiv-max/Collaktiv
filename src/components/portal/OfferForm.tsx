@@ -51,6 +51,7 @@ export interface OfferFormValues {
   barcodeDataUrl?: string;
   discountCode?: string;
   redirectUrl?: string;
+  limitedToOnePerUser: boolean;
 }
 
 const EMOJI_OPTIONS = ["🛍️", "☕", "🍔", "💪", "🎬", "✂️", "🌿", "🎁", "✨", "🥗"];
@@ -433,6 +434,19 @@ export function OfferForm({
               value={values.validTo}
               onChange={(e) => update("validTo", e.target.value)}
             />
+          </Field>
+          <Field label="Begränsning">
+            <label className="flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] p-3.5 text-xs font-semibold text-[var(--color-brand-ink)]">
+              <input
+                type="checkbox"
+                checked={values.limitedToOnePerUser}
+                onChange={(e) => update("limitedToOnePerUser", e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-brand-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
+              />
+              <span>
+                Får bara användas en gång per resenär
+              </span>
+            </label>
           </Field>
         </div>
 

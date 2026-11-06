@@ -20,6 +20,7 @@ const emptyValues: OfferFormValues = {
   terms: "",
   imageEmoji: "🛍️",
   redemptionMethod: "app",
+  limitedToOnePerUser: false,
 };
 
 export default function NyttErbjudandePage() {
@@ -48,6 +49,7 @@ export default function NyttErbjudandePage() {
       barcodeDataUrl: values.barcodeDataUrl,
       discountCode: values.discountCode,
       redirectUrl: values.redirectUrl,
+      limitedToOnePerUser: values.limitedToOnePerUser,
       status: "utkast",
     });
     setSaving(false);

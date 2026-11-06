@@ -87,6 +87,7 @@ interface OfferRow {
   barcode_data_url: string | null;
   discount_code: string | null;
   redirect_url: string | null;
+  limited_to_one_per_user: boolean;
   views: number;
   redemptions: number;
   published_at: string | null;
@@ -183,6 +184,7 @@ function toOffer(row: OfferRow): Offer {
     barcodeDataUrl: row.barcode_data_url ?? undefined,
     discountCode: row.discount_code ?? undefined,
     redirectUrl: row.redirect_url ?? undefined,
+    limitedToOnePerUser: row.limited_to_one_per_user,
     publishedAt: row.published_at ?? undefined,
     createdAt: row.created_at,
     stats: { views: row.views, redemptions: row.redemptions },
@@ -452,6 +454,10 @@ export interface PublicOffer {
   barcodeDataUrl: string | null;
   discountCode: string | null;
   redirectUrl: string | null;
+  /** Resenären får bara lösa in erbjudandet en gång – appen måste hålla
+   * reda på det själv (ingen resenärsdata finns här), se Offer i
+   * src/lib/types.ts. */
+  limitedToOnePerUser: boolean;
   company: {
     id: string;
     name: string;
@@ -487,6 +493,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
       o.discount_value_kr, o.points_cost, o.valid_to, o.terms,
       o.image_emoji, o.image_data_url, o.published_at,
       o.redemption_method, o.barcode_data_url, o.discount_code, o.redirect_url,
+      o.limited_to_one_per_user,
       c.id as company_id, c.name as company_name, c.logo_data_url as company_logo_data_url,
       c.website as company_website, c.category as company_category,
       c.region as company_region, c.address as company_address,
@@ -522,6 +529,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
     barcode_data_url: string | null;
     discount_code: string | null;
     redirect_url: string | null;
+    limited_to_one_per_user: boolean;
     company_id: string;
     company_name: string;
     company_logo_data_url: string | null;
@@ -558,6 +566,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
     barcodeDataUrl: row.barcode_data_url,
     discountCode: row.discount_code,
     redirectUrl: row.redirect_url,
+    limitedToOnePerUser: row.limited_to_one_per_user,
     company: {
       id: row.company_id,
       name: row.company_name,
@@ -593,12 +602,14 @@ export async function createOffer(
     insert into offers (
       company_id, title, description, discount_type, discount_value,
       discount_value_kr, points_cost, valid_to, terms, image_emoji, image_data_url,
-      image_optimized, status, redemption_method, barcode_data_url, discount_code, redirect_url
+      image_optimized, status, redemption_method, barcode_data_url, discount_code, redirect_url,
+      limited_to_one_per_user
     ) values (
       ${offer.companyId}, ${offer.title}, ${offer.description}, ${offer.discountType},
       ${offer.discountValue}, ${offer.discountValueKr ?? 0}, ${offer.pointsCost}, ${offer.validTo ?? null}, ${offer.terms ?? null},
       ${offer.imageEmoji}, ${offer.imageDataUrl ?? null}, ${!!offer.imageOptimized}, ${offer.status},
-      ${offer.redemptionMethod ?? "app"}, ${offer.barcodeDataUrl ?? null}, ${offer.discountCode ?? null}, ${offer.redirectUrl ?? null}
+      ${offer.redemptionMethod ?? "app"}, ${offer.barcodeDataUrl ?? null}, ${offer.discountCode ?? null}, ${offer.redirectUrl ?? null},
+      ${!!offer.limitedToOnePerUser}
     )
     returning *
   `) as OfferRow[];
@@ -637,6 +648,7 @@ export async function updateOffer(id: string, partial: Partial<Offer>): Promise<
       barcode_data_url = ${next.barcodeDataUrl ?? null},
       discount_code = ${next.discountCode ?? null},
       redirect_url = ${next.redirectUrl ?? null},
+      limited_to_one_per_user = ${!!next.limitedToOnePerUser},
       views = ${stats.views},
       redemptions = ${stats.redemptions},
       published_at = ${publishedAt ?? null}
