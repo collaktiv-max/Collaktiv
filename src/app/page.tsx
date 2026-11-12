@@ -11,7 +11,11 @@ import { Footer } from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <>
+    // zoom (inte transform: scale) skalar upp hela innehållet - text,
+    // ikoner, mellanrum, allt - proportionerligt tillsammans på breda
+    // skärmar, istället för att bara sträcka ut samma innehåll över en
+    // bredare yta (vilket Container's max-width annars gör på egen hand).
+    <div className="xl:[zoom:1.08] 2xl:[zoom:1.18] 3xl:[zoom:1.3]">
       <PublicHeader />
       <main>
         <Hero />
@@ -24,6 +28,6 @@ export default function Home() {
         <CTABanner />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

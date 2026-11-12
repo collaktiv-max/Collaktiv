@@ -16,6 +16,14 @@
 }
 
 @theme inline {
+  /* Egen brytpunkt utöver Tailwinds standardskala (upp till 2xl=1536px) -
+     används för att skala upp (inte bara sträcka ut) innehåll på riktigt
+     breda skärmar, se startsidans zoom-klasser. En godtycklig
+     min-[1920px]-variant hamnar oförutsägbart i den genererade CSS:en
+     relativt 2xl, så den riktiga ordningen kräver en registrerad
+     brytpunkt här istället. */
+  --breakpoint-3xl: 120rem;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
