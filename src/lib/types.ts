@@ -84,6 +84,11 @@ export interface CompanyProfile {
    * själva utan vill att vi sköter paketval, erbjudande och
    * fakturering åt dem (se admins "Logga in som företag"). */
   fullServiceRequested: boolean;
+  /** Fritext ifylld vid registrering om fullServiceRequested är ikryssat
+   * – när på dagen/veckan företaget vill att vi hör av oss för att
+   * skapa erbjudanden åt dem. Visas i admin bredvid "Vill ha hjälp"-
+   * badgen, se FullServiceBadge i AdminSections.tsx. */
+  preferredContactTime?: string;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */
   referredByCompanyId?: string;
   /** Bonusåtkomst intjänad via inbjudningar – satt/förlängd 30 dagar

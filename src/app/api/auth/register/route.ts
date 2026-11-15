@@ -18,6 +18,7 @@ interface RegisterBody {
   password: string;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
+  preferredContactTime?: string;
   brandUsageConsent?: boolean;
 }
 
@@ -40,6 +41,14 @@ export async function POST(req: NextRequest) {
   if (!body.brandUsageConsent) {
     return NextResponse.json(
       { error: "Ni måste godkänna att vi får nämna er som partner för att registrera er." },
+      { status: 400 }
+    );
+  }
+  // Annars vet vi inte när vi faktiskt ska höra av oss för att skapa
+  // erbjudanden åt dem – kontrolleras även server-sidan, inte bara i UI:t.
+  if (body.fullServiceRequested && !body.preferredContactTime?.trim()) {
+    return NextResponse.json(
+      { error: "Fyll i när vi bör höra av oss, eftersom ni vill ha hjälp med allt." },
       { status: 400 }
     );
   }
@@ -68,6 +77,7 @@ export async function POST(req: NextRequest) {
       address: body.address,
       referredByCompanyId,
       fullServiceRequested: body.fullServiceRequested,
+      preferredContactTime: body.preferredContactTime,
       brandUsageConsent: body.brandUsageConsent,
       passwordHash,
     });

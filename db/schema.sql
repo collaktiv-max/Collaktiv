@@ -61,6 +61,10 @@ create table if not exists companies (
   -- fakturering åt dem. Visas som badge i admin och nämns i
   -- sendAdminNewCompanyEmail (se src/lib/email.ts).
   full_service_requested     boolean not null default false,
+  -- Fritext ifylld vid registrering om full_service_requested är satt -
+  -- när på dagen/veckan företaget vill bli kontaktat, se
+  -- preferredContactTime i types.ts.
+  preferred_contact_time     text,
   -- Sätts automatiskt när ansökan godkänns/första betalningen
   -- bekräftas – används för att räkna ut när påminnelsemejl ska gå ut.
   approved_at                timestamptz,
@@ -102,6 +106,7 @@ alter table companies add column if not exists complimentary_duration text;
 alter table companies add column if not exists terms_version text;
 alter table companies add column if not exists terms_accepted_at timestamptz;
 alter table companies add column if not exists full_service_requested boolean not null default false;
+alter table companies add column if not exists preferred_contact_time text;
 alter table companies add column if not exists brand_usage_consent_at timestamptz;
 
 create table if not exists offers (

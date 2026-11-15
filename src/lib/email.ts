@@ -171,6 +171,11 @@ export async function sendAdminNewCompanyEmail(company: CompanyProfile) {
          ⭐ Vill ha hjälp med allt – de vill inte logga in själva. Hör av er direkt istället för
          att vänta på att de loggar in, och använd "Logga in som företag" i admin för att skapa
          erbjudandet och skicka fakturan åt dem.
+         ${
+           company.preferredContactTime
+             ? `<br/><span style="font-weight:400;">Passande tid för kontakt: ${company.preferredContactTime}</span>`
+             : ""
+         }
        </p>`
     : "";
   const html = layout(

@@ -949,6 +949,17 @@ function CompanyRow({
                 </p>
                 <PaymentCell company={c} onUpdate={onUpdate} />
               </div>
+              {c.fullServiceRequested && c.preferredContactTime && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    Passande tid för kontakt
+                  </p>
+                  <p className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-brand-ink)]">
+                    <Headset className="h-3.5 w-3.5 shrink-0 text-[#8a5a00]" />
+                    {c.preferredContactTime}
+                  </p>
+                </div>
+              )}
               {children && (
                 <div>
                   <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">

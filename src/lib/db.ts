@@ -52,6 +52,7 @@ interface CompanyRow {
   contest_host_interested: boolean;
   contest_prize_description: string | null;
   full_service_requested: boolean;
+  preferred_contact_time: string | null;
   referred_by_company_id: string | null;
   bonus_access_until: string | null;
   approved_at: string | null;
@@ -139,6 +140,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     contestHostInterested: row.contest_host_interested,
     contestPrizeDescription: row.contest_prize_description ?? undefined,
     fullServiceRequested: row.full_service_requested,
+    preferredContactTime: row.preferred_contact_time ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
     bonusAccessUntil: row.bonus_access_until ?? undefined,
     approvedAt: row.approved_at ?? undefined,
@@ -249,6 +251,7 @@ export async function createCompany(input: {
   applicationStatus?: ApplicationStatus;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
+  preferredContactTime?: string;
   /** Krävs för att slutföra registreringen, se brandUsageConsentAt i
    * types.ts – servern (api/auth/register) avvisar annars anropet. */
   brandUsageConsent: boolean;
@@ -275,6 +278,7 @@ export async function createCompany(input: {
       package_tier, application_status, payment_confirmed, complimentary,
       payment_confirmed_at,
       password_hash, onboarding_logo, referred_by_company_id, full_service_requested,
+      preferred_contact_time,
       brand_usage_consent_at
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
@@ -284,6 +288,7 @@ export async function createCompany(input: {
       now(),
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
       ${input.fullServiceRequested ?? false},
+      ${input.preferredContactTime ?? null},
       ${input.brandUsageConsent ? new Date().toISOString() : null}
     )
     returning *
@@ -337,6 +342,7 @@ export async function updateCompany(
       contest_host_interested = ${next.contestHostInterested},
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       full_service_requested = ${next.fullServiceRequested ?? false},
+      preferred_contact_time = ${next.preferredContactTime ?? null},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
       approved_at = ${approvedAt ?? null},
       payment_confirmed_at = ${paymentConfirmedAt ?? null},

@@ -36,6 +36,7 @@ interface FormState {
   contactPhone: string;
   password: string;
   fullServiceRequested: boolean;
+  preferredContactTime: string;
   brandUsageConsent: boolean;
 }
 
@@ -51,6 +52,7 @@ const initialForm: FormState = {
   contactPhone: "",
   password: "",
   fullServiceRequested: false,
+  preferredContactTime: "",
   brandUsageConsent: false,
 };
 
@@ -90,7 +92,8 @@ function RegistreraForm() {
         /\S+@\S+\.\S+/.test(form.contactEmail) &&
         form.contactPhone.trim().length > 3 &&
         form.password.length >= 6 &&
-        form.brandUsageConsent
+        form.brandUsageConsent &&
+        (!form.fullServiceRequested || form.preferredContactTime.trim().length > 1)
       );
     return true;
   }
@@ -115,6 +118,7 @@ function RegistreraForm() {
       password: form.password,
       referredByCompanyId,
       fullServiceRequested: form.fullServiceRequested,
+      preferredContactTime: form.fullServiceRequested ? form.preferredContactTime : undefined,
       brandUsageConsent: form.brandUsageConsent,
     });
     setSubmitting(false);
@@ -266,11 +270,24 @@ function RegistreraForm() {
                       </span>
                     </label>
                     {form.fullServiceRequested && (
-                      <p className="-mt-2 rounded-xl bg-[var(--color-brand-secondary)] px-4 py-3 text-xs font-semibold leading-relaxed text-[var(--color-brand-ink)]">
-                        Standard (grundpaketet) är redan gratis och kräver ingen fakturering.
-                        Fakturering blir bara aktuellt om ni även vill att vi hjälper er
-                        uppgradera till Premium, som är det enda betalda paketet.
-                      </p>
+                      <>
+                        <p className="-mt-2 rounded-xl bg-[var(--color-brand-secondary)] px-4 py-3 text-xs font-semibold leading-relaxed text-[var(--color-brand-ink)]">
+                          Standard (grundpaketet) är redan gratis och kräver ingen fakturering.
+                          Fakturering blir bara aktuellt om ni även vill att vi hjälper er
+                          uppgradera till Premium, som är det enda betalda paketet.
+                        </p>
+                        <Field
+                          label="När passar det att vi hör av oss?"
+                          required
+                          hint="Vilken tid på dagen och vilken dag i veckan passar bäst för att vi ska kontakta er om erbjudanden?"
+                        >
+                          <Input
+                            placeholder="T.ex. vardagar eftermiddagar efter kl 14"
+                            value={form.preferredContactTime}
+                            onChange={(e) => update("preferredContactTime", e.target.value)}
+                          />
+                        </Field>
+                      </>
                     )}
                     <label className="flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] p-4 text-xs font-semibold text-[var(--color-brand-ink)]">
                       <input
@@ -371,6 +388,9 @@ function SummaryStep({
     { label: "Kontaktperson", value: form.contactName || "–", step: 1 },
     { label: "E-post (kontakt och inloggning)", value: form.contactEmail || "–", step: 1 },
     { label: "Telefon", value: form.contactPhone || "–", step: 1 },
+    ...(form.fullServiceRequested
+      ? [{ label: "Passande tid för kontakt", value: form.preferredContactTime || "–", step: 1 }]
+      : []),
   ];
 
   return (
