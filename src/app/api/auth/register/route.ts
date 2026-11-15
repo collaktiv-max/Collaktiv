@@ -15,6 +15,7 @@ interface RegisterBody {
   contactEmail: string;
   contactPhone?: string;
   address?: string;
+  city?: string;
   password: string;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       contactEmail: contactEmail.trim(),
       contactPhone: body.contactPhone,
       address: body.address,
+      city: body.city,
       referredByCompanyId,
       fullServiceRequested: body.fullServiceRequested,
       preferredContactTime: body.preferredContactTime,

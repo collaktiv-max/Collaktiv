@@ -31,6 +31,7 @@ interface FormState {
   description: string;
   category: Category;
   address: string;
+  city: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -47,6 +48,7 @@ const initialForm: FormState = {
   description: "",
   category: "mat-dryck",
   address: "",
+  city: "",
   contactName: "",
   contactEmail: "",
   contactPhone: "",
@@ -115,6 +117,7 @@ function RegistreraForm() {
       contactEmail: form.contactEmail,
       contactPhone: form.contactPhone,
       address: form.address,
+      city: form.city,
       password: form.password,
       referredByCompanyId,
       fullServiceRequested: form.fullServiceRequested,
@@ -200,13 +203,22 @@ function RegistreraForm() {
                         onChange={(v) => update("logoDataUrl", v)}
                       />
                     </Field>
-                    <Field label="Adress" hint="Valfritt – visar er för resenärer nära er i appen">
-                      <Input
-                        placeholder="Gatuadress, ort"
-                        value={form.address}
-                        onChange={(e) => update("address", e.target.value)}
-                      />
-                    </Field>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Field label="Adress" hint="Valfritt – visar er för resenärer nära er i appen">
+                        <Input
+                          placeholder="Gatuadress"
+                          value={form.address}
+                          onChange={(e) => update("address", e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Stad" hint="Valfritt">
+                        <Input
+                          placeholder="T.ex. Gävle"
+                          value={form.city}
+                          onChange={(e) => update("city", e.target.value)}
+                        />
+                      </Field>
+                    </div>
                     <Field label="Webbadress" hint="Valfritt">
                       <Input
                         placeholder="https://"
@@ -384,6 +396,7 @@ function SummaryStep({
     { label: "Företagsnamn", value: form.name || "–", step: 0 },
     { label: "Kategori", value: CATEGORY_LABELS[form.category], step: 0 },
     ...(form.address ? [{ label: "Adress", value: form.address, step: 0 }] : []),
+    ...(form.city ? [{ label: "Stad", value: form.city, step: 0 }] : []),
     ...(form.website ? [{ label: "Webbadress", value: form.website, step: 0 }] : []),
     { label: "Kontaktperson", value: form.contactName || "–", step: 1 },
     { label: "E-post (kontakt och inloggning)", value: form.contactEmail || "–", step: 1 },

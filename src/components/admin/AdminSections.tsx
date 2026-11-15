@@ -76,6 +76,59 @@ export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Räknar antal per grupp och sorterar flest-först - används för
+// fördelningarna (typ av företag, stad) i Översikt.
+function countBy<T>(items: T[], keyFn: (item: T) => string): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = keyFn(item);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Enkel stapel-lista (etikett, antal och en proportionell bakgrundsstapel)
+// - används för fördelningarna i Översikt. Visar inget om det inte finns
+// några poster alls, så en tom region inte renderar en tom ruta.
+function BreakdownCard({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; count: number }[];
+}) {
+  const max = Math.max(1, ...items.map((i) => i.count));
+  return (
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-white p-5">
+      <h3 className="text-sm font-extrabold text-[var(--color-brand-ink)]">{title}</h3>
+      {items.length === 0 ? (
+        <p className="mt-3 text-xs font-medium text-[var(--color-brand-muted)]">Inget att visa än.</p>
+      ) : (
+        <div className="mt-4 flex flex-col gap-2.5">
+          {items.map(({ label, count }) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className="w-28 shrink-0 truncate text-xs font-bold text-[var(--color-brand-ink)]">
+                {label}
+              </span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--color-brand-secondary)]">
+                <div
+                  className="h-full rounded-full bg-[var(--color-brand-primary)]"
+                  style={{ width: `${(count / max) * 100}%` }}
+                />
+              </div>
+              <span className="w-6 shrink-0 text-right text-xs font-extrabold text-[var(--color-brand-muted)]">
+                {count}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SectionHeader({ title, description }: { title: string; description: string }) {
   return (
     <div className="mb-6">
@@ -696,6 +749,15 @@ export function OversiktSection({
   const pendingCampaigns = campaigns.filter((c) => c.status === "intresseanmald");
   const contestHosts = companies.filter((c) => c.contestHostInterested);
 
+  // Avvisade räknas inte in i fördelningarna nedan - de är inte
+  // faktiska partners längre, och skulle bara skeva statistiken.
+  const activeCompanies = companies.filter((c) => c.applicationStatus !== "avvisad");
+  const categoryBreakdown = countBy(activeCompanies, (c) => CATEGORY_LABELS[c.category]);
+  // De flesta fyller bara i gatuadressen i "Adress" och utelämnar orten
+  // (se city i types.ts) - saknad stad grupperas separat istället för
+  // att bara försvinna ur statistiken.
+  const cityBreakdown = countBy(activeCompanies, (c) => c.city?.trim() || "Okänd stad");
+
   const actionItems = [
     {
       tab: "ansokningar" as AdminTab,
@@ -789,6 +851,11 @@ export function OversiktSection({
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <BreakdownCard title="Typ av företag" items={categoryBreakdown} />
+        <BreakdownCard title="Städer" items={cityBreakdown} />
       </div>
     </div>
   );

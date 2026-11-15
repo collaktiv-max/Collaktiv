@@ -39,6 +39,10 @@ export interface CompanyProfile {
   region: string;
   /** Adress/plats – används för att visa företag närmast användaren i appen. */
   address?: string;
+  /** Egen fält, separat från adress – de flesta fyller bara i gatuadressen
+   * i address och utelämnar orten där, så den går inte att lita på för
+   * statistik (se stadsfördelningen i adminöversikten). */
+  city?: string;
   /** Sätts av geokodning längre fram, inte av klienten. */
   latitude?: number;
   longitude?: number;

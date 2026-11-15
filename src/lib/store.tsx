@@ -22,6 +22,7 @@ interface RegisterInput {
   description?: string;
   logoDataUrl?: string;
   address?: string;
+  city?: string;
   referredByCompanyId?: string;
   fullServiceRequested?: boolean;
   preferredContactTime?: string;

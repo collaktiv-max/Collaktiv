@@ -38,6 +38,7 @@ interface CompanyRow {
   contact_phone: string;
   region: string;
   address: string | null;
+  city: string | null;
   latitude: number | null;
   longitude: number | null;
   package_tier: PackageTier;
@@ -126,6 +127,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     contactPhone: row.contact_phone,
     region: row.region,
     address: row.address ?? undefined,
+    city: row.city ?? undefined,
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
     packageTier: row.package_tier,
@@ -247,6 +249,7 @@ export async function createCompany(input: {
   contactPhone?: string;
   region?: string;
   address?: string;
+  city?: string;
   packageTier?: PackageTier;
   applicationStatus?: ApplicationStatus;
   referredByCompanyId?: string;
@@ -274,7 +277,7 @@ export async function createCompany(input: {
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
-      contact_name, contact_email, contact_phone, region, address,
+      contact_name, contact_email, contact_phone, region, address, city,
       package_tier, application_status, payment_confirmed, complimentary,
       payment_confirmed_at,
       password_hash, onboarding_logo, referred_by_company_id, full_service_requested,
@@ -283,7 +286,7 @@ export async function createCompany(input: {
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
-      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""},
+      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""}, ${input.city ?? ""},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
       now(),
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
@@ -328,6 +331,7 @@ export async function updateCompany(
       contact_phone = ${next.contactPhone},
       region = ${next.region},
       address = ${next.address ?? ""},
+      city = ${next.city ?? ""},
       latitude = ${next.latitude ?? null},
       longitude = ${next.longitude ?? null},
       package_tier = ${next.packageTier},

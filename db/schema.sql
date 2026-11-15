@@ -16,6 +16,9 @@ create table if not exists companies (
   contact_phone     text not null default '',
   region            text not null default 'Gävleborg',
   address           text default '',
+  -- Eget fält, separat från address - de flesta fyller bara i
+  -- gatuadressen där och utelämnar orten, se city i types.ts.
+  city              text default '',
   latitude          double precision,
   longitude         double precision,
   -- Vilket företag som bjöd in det här via sin delbara länk, om något.
@@ -108,6 +111,7 @@ alter table companies add column if not exists terms_accepted_at timestamptz;
 alter table companies add column if not exists full_service_requested boolean not null default false;
 alter table companies add column if not exists preferred_contact_time text;
 alter table companies add column if not exists brand_usage_consent_at timestamptz;
+alter table companies add column if not exists city text default '';
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

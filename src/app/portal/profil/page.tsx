@@ -96,6 +96,7 @@ function CompanyInfoCard({
     description?: string;
     category: Category;
     address?: string;
+    city?: string;
   };
   checklist: { logo: boolean; firstOffer: boolean; profileComplete: boolean; firstPublish: boolean };
   updateCompany: UpdateFn;
@@ -106,6 +107,7 @@ function CompanyInfoCard({
   const [description, setDescription] = useState(initial.description ?? "");
   const [category, setCategory] = useState<Category>(initial.category);
   const [address, setAddress] = useState(initial.address ?? "");
+  const [city, setCity] = useState(initial.city ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -118,6 +120,7 @@ function CompanyInfoCard({
       description,
       category,
       address,
+      city,
       onboardingChecklist: {
         ...checklist,
         logo: !!logo,
@@ -153,13 +156,22 @@ function CompanyInfoCard({
             </Select>
           </Field>
         </div>
-        <Field label="Adress" hint="Används för att visa er för resenärer nära er i appen">
-          <Input
-            placeholder="Gatuadress, ort"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Adress" hint="Används för att visa er för resenärer nära er i appen">
+            <Input
+              placeholder="Gatuadress"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </Field>
+          <Field label="Stad">
+            <Input
+              placeholder="T.ex. Gävle"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </Field>
+        </div>
         <Field label="Beskrivning">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
