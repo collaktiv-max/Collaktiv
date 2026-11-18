@@ -66,7 +66,9 @@ export default function ProfilPage() {
           updateCompany={updateCompany}
         />
         <LocationsCard
+          companyName={currentCompany.name}
           mainAddress={currentCompany.address}
+          mainCity={currentCompany.city}
           locations={companyLocations}
           addLocation={addLocation}
           updateLocation={updateLocation}
@@ -222,7 +224,13 @@ function LocationRow({
           {address || "Ingen adress angiven"}
         </p>
       </div>
-      {!isMain && (
+      {isMain ? (
+        <p className="shrink-0 text-right text-[11px] font-semibold leading-tight text-[var(--color-brand-muted)]">
+          Ändras under
+          <br />
+          Företagsinfo ovan
+        </p>
+      ) : (
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
@@ -246,14 +254,25 @@ function LocationRow({
   );
 }
 
+// Huvudbutikens adress och ort sparas i två separata fält på företaget
+// (address/city, se CompanyInfoCard) - slås ihop här bara för visning.
+// Övriga butiker har ett enda fritextfält som redan ska innehålla orten.
+function formatMainAddress(address?: string, city?: string): string {
+  return [address?.trim(), city?.trim()].filter(Boolean).join(", ");
+}
+
 function LocationsCard({
+  companyName,
   mainAddress,
+  mainCity,
   locations,
   addLocation,
   updateLocation,
   deleteLocation,
 }: {
+  companyName: string;
   mainAddress?: string;
+  mainCity?: string;
   locations: CompanyLocation[];
   addLocation: (input: { name?: string; address: string }) => Promise<void>;
   updateLocation: (id: string, partial: { name?: string; address?: string }) => Promise<void>;
@@ -329,7 +348,7 @@ function LocationsCard({
       </div>
 
       <div className="mt-5 flex flex-col gap-2.5">
-        <LocationRow name="Huvudbutik" address={mainAddress ?? ""} isMain />
+        <LocationRow name={companyName} address={formatMainAddress(mainAddress, mainCity)} isMain />
         {locations.map((location) => (
           <LocationRow
             key={location.id}
