@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -1270,14 +1270,37 @@ export function CompaniesSection({
 }) {
   const [showRejected, setShowRejected] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [cityFilter, setCityFilter] = useState("alla");
+  const [categoryFilter, setCategoryFilter] = useState("alla");
   const rejectedCount = companies.filter((c) => c.applicationStatus === "avvisad").length;
+
+  // Visas i stad-filtret, oavsett vilket av de andra filtren som är
+  // aktivt just nu - annars skulle valen i listan ändra sig under
+  // fötterna på admin medan de filtrerar.
+  const cities = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of companies) {
+      if (c.city?.trim()) set.add(c.city.trim());
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, "sv"));
+  }, [companies]);
+
   // Avvisade företag döljs som standard så de inte skräpar ner den
   // dagliga översikten – de finns kvar i databasen (betalnings-/
   // återbetalningshistorik rörs inte) och går att visa igen via
   // knappen nedan.
-  const visibleCompanies = showRejected
+  let visibleCompanies = showRejected
     ? companies
     : companies.filter((c) => c.applicationStatus !== "avvisad");
+  if (cityFilter === "okand") {
+    visibleCompanies = visibleCompanies.filter((c) => !c.city?.trim());
+  } else if (cityFilter !== "alla") {
+    visibleCompanies = visibleCompanies.filter((c) => c.city?.trim() === cityFilter);
+  }
+  if (categoryFilter !== "alla") {
+    visibleCompanies = visibleCompanies.filter((c) => c.category === categoryFilter);
+  }
+  const filterActive = cityFilter !== "alla" || categoryFilter !== "alla";
 
   return (
     <div>
@@ -1285,18 +1308,64 @@ export function CompaniesSection({
         title="Alla företag"
         description="Klicka på en rad för att ändra paket, status och betalning."
       />
-      {rejectedCount > 0 && (
-        <div className="mb-5 flex justify-end">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <select
+            value={cityFilter}
+            onChange={(e) => setCityFilter(e.target.value)}
+            className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+          >
+            <option value="alla">Alla städer</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+            <option value="okand">Okänd stad</option>
+          </select>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+          >
+            <option value="alla">Alla kategorier</option>
+            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {filterActive && (
+            <button
+              onClick={() => {
+                setCityFilter("alla");
+                setCategoryFilter("alla");
+              }}
+              className="text-xs font-extrabold text-[var(--color-brand-primary)] hover:underline"
+            >
+              Rensa filter
+            </button>
+          )}
+        </div>
+        {rejectedCount > 0 && (
           <button
             onClick={() => setShowRejected((v) => !v)}
             className="rounded-full border border-[var(--color-brand-border)] px-3.5 py-1.5 text-xs font-extrabold text-[var(--color-brand-muted)] transition hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-ink)]"
           >
             {showRejected ? "Dölj avvisade" : `Visa avvisade (${rejectedCount})`}
           </button>
-        </div>
-      )}
+        )}
+      </div>
       {visibleCompanies.length === 0 ? (
-        <EmptyRow text={showRejected ? "Inga företag registrerade ännu." : "Inga aktiva företag just nu."} />
+        <EmptyRow
+          text={
+            filterActive
+              ? "Inga företag matchar filtret."
+              : showRejected
+                ? "Inga företag registrerade ännu."
+                : "Inga aktiva företag just nu."
+          }
+        />
       ) : (
         <TableCard fixed>
           <THead>
