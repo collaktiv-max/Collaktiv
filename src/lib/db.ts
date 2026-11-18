@@ -16,6 +16,7 @@ import type {
   RedemptionMethod,
 } from "./types";
 import { TERMS_VERSION } from "./legal";
+import { geocodeAddress } from "./geocode";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -274,10 +275,18 @@ export async function createCompany(input: {
   // insättning, det finns ingen false->true-övergång att upptäcka i
   // efterhand), vilket tyst skulle göra getCompaniesNeedingOfferReminder
   // (kräver payment_confirmed_at) obrukbar för alla nya företag.
+  //
+  // Geokodas innan insättning, inte i efterhand – då finns koordinaterna
+  // direkt i första svaret istället för att dyka upp vid en senare
+  // laddning. Misslyckas den (ingen adress, tjänsten nere, ingen träff)
+  // sätts bara latitude/longitude till null, precis som innan den här
+  // funktionen fanns – se geocodeAddress i geocode.ts.
+  const geocoded = await geocodeAddress(input.address, input.city, input.region);
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
       contact_name, contact_email, contact_phone, region, address, city,
+      latitude, longitude,
       package_tier, application_status, payment_confirmed, complimentary,
       payment_confirmed_at,
       password_hash, onboarding_logo, referred_by_company_id, full_service_requested,
@@ -287,6 +296,7 @@ export async function createCompany(input: {
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
       ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""}, ${input.city ?? ""},
+      ${geocoded?.latitude ?? null}, ${geocoded?.longitude ?? null},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
       now(),
       ${input.passwordHash}, ${!!input.logoDataUrl}, ${input.referredByCompanyId ?? null},
@@ -319,6 +329,18 @@ export async function updateCompany(
       ? new Date().toISOString()
       : next.paymentConfirmedAt;
 
+  // Geokodas bara om adress eller stad faktiskt ändrats – inte vid varje
+  // sparning (t.ex. bara en ändrad beskrivning ska inte göra ett nytt
+  // nätverksanrop). Misslyckad geokodning (tom adress, ingen träff,
+  // tjänsten nere) nollställer koordinaterna istället för att låta en
+  // gammal, nu felaktig, koordinat ligga kvar – se geocodeAddress.
+  const addressChanged = next.address !== current.address || next.city !== current.city;
+  const geocoded = addressChanged
+    ? await geocodeAddress(next.address, next.city, next.region)
+    : null;
+  const latitude = addressChanged ? geocoded?.latitude ?? null : next.latitude ?? null;
+  const longitude = addressChanged ? geocoded?.longitude ?? null : next.longitude ?? null;
+
   const rows = (await sql`
     update companies set
       name = ${next.name},
@@ -332,8 +354,8 @@ export async function updateCompany(
       region = ${next.region},
       address = ${next.address ?? ""},
       city = ${next.city ?? ""},
-      latitude = ${next.latitude ?? null},
-      longitude = ${next.longitude ?? null},
+      latitude = ${latitude},
+      longitude = ${longitude},
       package_tier = ${next.packageTier},
       application_status = ${next.applicationStatus},
       payment_confirmed = ${next.paymentConfirmed},
@@ -476,6 +498,7 @@ export interface PublicOffer {
     category: Category;
     region: string;
     address: string;
+    city: string | null;
     latitude: number | null;
     longitude: number | null;
     packageTier: PackageTier;
@@ -506,7 +529,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
       o.limited_to_one_per_user,
       c.id as company_id, c.name as company_name, c.logo_data_url as company_logo_data_url,
       c.website as company_website, c.category as company_category,
-      c.region as company_region, c.address as company_address,
+      c.region as company_region, c.address as company_address, c.city as company_city,
       c.latitude as company_latitude, c.longitude as company_longitude,
       c.package_tier as company_package_tier,
       coalesce(loc.locations, '[]'::json) as company_additional_locations
@@ -547,6 +570,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
     company_category: Category;
     company_region: string;
     company_address: string;
+    company_city: string | null;
     company_latitude: number | null;
     company_longitude: number | null;
     company_package_tier: PackageTier;
@@ -585,6 +609,7 @@ export async function getPublishedOffersForApp(): Promise<PublicOffer[]> {
       category: row.company_category,
       region: row.company_region,
       address: row.company_address,
+      city: row.company_city,
       latitude: row.company_latitude,
       longitude: row.company_longitude,
       packageTier: row.company_package_tier,
@@ -947,9 +972,13 @@ export async function createLocation(input: {
   name?: string;
   address: string;
 }): Promise<CompanyLocation> {
+  // Platsens adressfält är redan en fullständig postadress (gata, postnr,
+  // ort), se placeholder i LocationsCard – ingen separat stad att slå
+  // ihop med, till skillnad från companies.address/city.
+  const geocoded = await geocodeAddress(input.address);
   const rows = (await sql`
-    insert into company_locations (company_id, name, address)
-    values (${input.companyId}, ${input.name ?? ""}, ${input.address})
+    insert into company_locations (company_id, name, address, latitude, longitude)
+    values (${input.companyId}, ${input.name ?? ""}, ${input.address}, ${geocoded?.latitude ?? null}, ${geocoded?.longitude ?? null})
     returning *
   `) as CompanyLocationRow[];
   return toLocation(rows[0]);
@@ -962,10 +991,16 @@ export async function updateLocation(
   const current = await getLocationById(id);
   if (!current) return null;
   const next = { ...current, ...partial };
+  const addressChanged = next.address !== current.address;
+  const geocoded = addressChanged ? await geocodeAddress(next.address) : null;
+  const latitude = addressChanged ? geocoded?.latitude ?? null : next.latitude ?? null;
+  const longitude = addressChanged ? geocoded?.longitude ?? null : next.longitude ?? null;
   const rows = (await sql`
     update company_locations set
       name = ${next.name ?? ""},
-      address = ${next.address}
+      address = ${next.address},
+      latitude = ${latitude},
+      longitude = ${longitude}
     where id = ${id}
     returning *
   `) as CompanyLocationRow[];

@@ -17,6 +17,7 @@ const ALLOWED_FIELDS = [
   "contactPhone",
   "region",
   "address",
+  "city",
   "packageTier",
   "contestHostInterested",
   "contestPrizeDescription",
