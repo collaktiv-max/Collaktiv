@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, Plus, Repeat, UserCog, X } from "lucide-react";
@@ -313,6 +313,36 @@ function CompanySwitcher({
 }) {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Knappen sitter inte alltid längst ut i sin rad (t.ex. har
+  // utloggningsknappen till höger om den i sidomenyn på desktop), så en
+  // ren CSS `absolute right-0` relativt knappens egen (smala) wrapper
+  // hamnar fel och kan hamna utanför skärmen. Mäter istället knappens
+  // riktiga skärmposition och positionerar menyn med `position: fixed`,
+  // klämd inom fönstret, så den alltid hamnar rätt oavsett var knappen
+  // råkar sitta i layouten.
+  const MENU_WIDTH = 224; // w-56
+  const MARGIN = 12;
+
+  function openMenu() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    const style: CSSProperties = { position: "fixed", width: MENU_WIDTH };
+    if (rect) {
+      style.left = Math.min(
+        Math.max(rect.right - MENU_WIDTH, MARGIN),
+        window.innerWidth - MENU_WIDTH - MARGIN
+      );
+      if (openUpward) {
+        style.bottom = window.innerHeight - rect.top + 8;
+      } else {
+        style.top = rect.bottom + 8;
+      }
+    }
+    setMenuStyle(style);
+    setOpen(true);
+  }
 
   async function handleSwitch(id: string) {
     setSwitching(true);
@@ -327,10 +357,11 @@ function CompanySwitcher({
   }
 
   return (
-    <div className="relative shrink-0">
+    <div className="shrink-0">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? setOpen(false) : openMenu())}
         aria-label="Växla företag"
         title="Växla företag"
         className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-brand-muted)] hover:bg-white hover:text-[var(--color-brand-primary)]"
@@ -341,9 +372,8 @@ function CompanySwitcher({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div
-            className={`absolute right-0 z-20 w-56 rounded-xl border border-[var(--color-brand-border)] bg-white p-1.5 shadow-lg ${
-              openUpward ? "bottom-full mb-2" : "top-full mt-2"
-            }`}
+            style={menuStyle}
+            className="z-20 rounded-xl border border-[var(--color-brand-border)] bg-white p-1.5 shadow-lg"
           >
             <p className="px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
               Växla till
