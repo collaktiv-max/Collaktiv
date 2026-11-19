@@ -23,6 +23,12 @@ create table if not exists companies (
   longitude         double precision,
   -- Vilket företag som bjöd in det här via sin delbara länk, om något.
   referred_by_company_id uuid references companies (id) on delete set null,
+  -- Länkar ihop konton med samma ägare (flera verksamheter, samma
+  -- person) - satt av admin, se linkCompanies i db.ts. Inget uuid mot
+  -- en annan rad, bara ett delat värde: alla företag med samma
+  -- owner_group_id kan växla mellan varandra i portalen, se
+  -- "Växla företag" i PortalShell.tsx.
+  owner_group_id    uuid,
   -- Sätts/förlängs med 30 dagar när ett företag man bjudit in betalar
   -- för sitt första paket. Rent informativt kvitto i Profil – appen
   -- har i övrigt ingen utgångshantering av betalda paket.
@@ -112,6 +118,8 @@ alter table companies add column if not exists full_service_requested boolean no
 alter table companies add column if not exists preferred_contact_time text;
 alter table companies add column if not exists brand_usage_consent_at timestamptz;
 alter table companies add column if not exists city text default '';
+alter table companies add column if not exists owner_group_id uuid;
+create index if not exists companies_owner_group_idx on companies (owner_group_id);
 
 create table if not exists offers (
   id               uuid primary key default gen_random_uuid(),

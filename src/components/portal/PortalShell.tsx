@@ -3,12 +3,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Plus, UserCog, X } from "lucide-react";
+import { LogOut, Menu, Plus, Repeat, UserCog, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { useAppState } from "@/lib/store";
 import { navItems } from "./nav-items";
-import { CATEGORY_LABELS } from "@/lib/types";
+import { CATEGORY_LABELS, type CompanyProfile } from "@/lib/types";
 
 function isActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname.startsWith(href);
@@ -19,7 +19,8 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 const bottomBarItems = navItems.filter((item) => !("bottomBar" in item && item.bottomBar === false));
 
 export function PortalShell({ children }: { children: ReactNode }) {
-  const { ready, currentCompany, impersonating, logout } = useAppState();
+  const { ready, currentCompany, impersonating, linkedCompanies, switchCompany, logout } =
+    useAppState();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -112,6 +113,13 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 {CATEGORY_LABELS[currentCompany.category]}
               </p>
             </div>
+            {linkedCompanies.length > 0 && (
+              <CompanySwitcher
+                linked={linkedCompanies}
+                onSwitch={switchCompany}
+                openUpward
+              />
+            )}
             <button
               onClick={async () => {
                 await logout();
@@ -165,7 +173,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               </div>
               <div className="mb-4 flex items-center gap-3 rounded-xl bg-[var(--color-brand-secondary)] p-3">
                 <CompanyAvatar name={currentCompany.name} logo={currentCompany.logoDataUrl} />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold text-[var(--color-brand-ink)]">
                     {currentCompany.name}
                   </p>
@@ -173,6 +181,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
                     {CATEGORY_LABELS[currentCompany.category]}
                   </p>
                 </div>
+                {linkedCompanies.length > 0 && (
+                  <CompanySwitcher linked={linkedCompanies} onSwitch={switchCompany} />
+                )}
               </div>
               <nav className="flex flex-1 flex-col gap-1">
                 {navItems.map((item) => {
@@ -260,20 +271,98 @@ export function PortalShell({ children }: { children: ReactNode }) {
   );
 }
 
-function CompanyAvatar({ name, logo }: { name: string; logo?: string }) {
+function CompanyAvatar({
+  name,
+  logo,
+  sizeClassName = "h-10 w-10 text-sm",
+}: {
+  name: string;
+  logo?: string;
+  sizeClassName?: string;
+}) {
   if (logo) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={logo}
         alt={name}
-        className="h-10 w-10 shrink-0 rounded-lg object-cover"
+        className={`${sizeClassName} shrink-0 rounded-lg object-cover`}
       />
     );
   }
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] text-sm font-extrabold text-white">
+    <div
+      className={`flex ${sizeClassName} shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] font-extrabold text-white`}
+    >
       {name.slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
+// Visar övriga konton i samma ägargrupp (länkade av admin, se
+// ownerGroupId i types.ts) och låter man byta session till ett av dem
+// utan att logga ut, se switchCompany i store.tsx.
+function CompanySwitcher({
+  linked,
+  onSwitch,
+  openUpward,
+}: {
+  linked: CompanyProfile[];
+  onSwitch: (targetCompanyId: string) => Promise<void>;
+  openUpward?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+
+  async function handleSwitch(id: string) {
+    setSwitching(true);
+    try {
+      await onSwitch(id);
+      setOpen(false);
+    } catch {
+      alert("Kunde inte växla företag. Försök igen.");
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Växla företag"
+        title="Växla företag"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-brand-muted)] hover:bg-white hover:text-[var(--color-brand-primary)]"
+      >
+        <Repeat className="h-4 w-4" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div
+            className={`absolute right-0 z-20 w-56 rounded-xl border border-[var(--color-brand-border)] bg-white p-1.5 shadow-lg ${
+              openUpward ? "bottom-full mb-2" : "top-full mt-2"
+            }`}
+          >
+            <p className="px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+              Växla till
+            </p>
+            {linked.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => handleSwitch(l.id)}
+                disabled={switching}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-bold text-[var(--color-brand-ink)] hover:bg-[var(--color-brand-secondary)] disabled:opacity-50"
+              >
+                <CompanyAvatar name={l.name} logo={l.logoDataUrl} sizeClassName="h-7 w-7 text-xs" />
+                <span className="min-w-0 flex-1 truncate">{l.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

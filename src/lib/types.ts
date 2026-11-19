@@ -95,6 +95,12 @@ export interface CompanyProfile {
   preferredContactTime?: string;
   /** Vilket företag som bjöd in det här via sin delbara länk, om något. */
   referredByCompanyId?: string;
+  /** Länkar ihop konton med samma ägare (t.ex. flera olika restauranger
+   * som drivs av samma person) – satt av admin, se linkCompanies i
+   * db.ts. Alla företag som delar samma värde kan växla mellan
+   * varandra i portalen utan att logga ut, se "Växla företag" i
+   * PortalShell.tsx, utan att behöva dela lösenord eller mejl. */
+  ownerGroupId?: string;
   /** Bonusåtkomst intjänad via inbjudningar – satt/förlängd 30 dagar
    * i taget när ett inbjudet företag betalar för sitt första paket. */
   bonusAccessUntil?: string;

@@ -56,6 +56,7 @@ interface CompanyRow {
   full_service_requested: boolean;
   preferred_contact_time: string | null;
   referred_by_company_id: string | null;
+  owner_group_id: string | null;
   bonus_access_until: string | null;
   approved_at: string | null;
   payment_confirmed_at: string | null;
@@ -145,6 +146,7 @@ function toCompany(row: CompanyRow): CompanyProfile & { passwordHash: string } {
     fullServiceRequested: row.full_service_requested,
     preferredContactTime: row.preferred_contact_time ?? undefined,
     referredByCompanyId: row.referred_by_company_id ?? undefined,
+    ownerGroupId: row.owner_group_id ?? undefined,
     bonusAccessUntil: row.bonus_access_until ?? undefined,
     approvedAt: row.approved_at ?? undefined,
     paymentConfirmedAt: row.payment_confirmed_at ?? undefined,
@@ -229,6 +231,41 @@ export async function getCompanyById(id: string): Promise<CompanyProfile | null>
   const rows = (await sql`select * from companies where id = ${id}`) as CompanyRow[];
   if (!rows[0]) return null;
   return stripPassword(toCompany(rows[0]));
+}
+
+// ---------- Länkade konton (samma ägare, flera verksamheter) ----------
+// Se ownerGroupId i types.ts – satt av admin (AdminSections.tsx), låter
+// t.ex. en restaurangägare med flera olika ställen växla mellan sina
+// konton i portalen (se "Växla företag" i PortalShell.tsx och
+// /api/company/switch) utan att dela lösenord eller mejl mellan dem.
+
+/** Övriga företag i samma ägargrupp som `companyId`, om något – tomt
+ * om företaget inte är länkat till något annat. */
+export async function getLinkedCompanies(companyId: string): Promise<CompanyProfile[]> {
+  const current = await getCompanyById(companyId);
+  if (!current?.ownerGroupId) return [];
+  const rows = (await sql`
+    select * from companies
+    where owner_group_id = ${current.ownerGroupId} and id != ${companyId}
+    order by name asc
+  `) as CompanyRow[];
+  return rows.map((r) => stripPassword(toCompany(r)));
+}
+
+/** Länkar två företag till samma ägargrupp. Om något av dem redan är
+ * länkat till en grupp sedan tidigare, ansluter det andra till DEN
+ * gruppen istället för att skapa en ny – annars skulle man kunna hamna
+ * med flera separata, oavsiktligt åtskilda grupper av samma ägare. */
+export async function linkCompanies(companyIdA: string, companyIdB: string): Promise<void> {
+  const [a, b] = await Promise.all([getCompanyById(companyIdA), getCompanyById(companyIdB)]);
+  if (!a || !b) throw new Error("Ett av företagen hittades inte.");
+  const groupId = a.ownerGroupId ?? b.ownerGroupId ?? crypto.randomUUID();
+  await sql`update companies set owner_group_id = ${groupId} where id in (${companyIdA}, ${companyIdB})`;
+}
+
+/** Tar bort företaget ur sin ägargrupp – rör inte övriga medlemmar. */
+export async function unlinkCompany(companyId: string): Promise<void> {
+  await sql`update companies set owner_group_id = null where id = ${companyId}`;
 }
 
 /** Inkluderar password_hash – används bara internt av login(). */
@@ -369,6 +406,7 @@ export async function updateCompany(
       contest_prize_description = ${next.contestPrizeDescription ?? ""},
       full_service_requested = ${next.fullServiceRequested ?? false},
       preferred_contact_time = ${next.preferredContactTime ?? null},
+      owner_group_id = ${next.ownerGroupId ?? null},
       bonus_access_until = ${next.bonusAccessUntil ?? null},
       approved_at = ${approvedAt ?? null},
       payment_confirmed_at = ${paymentConfirmedAt ?? null},

@@ -37,6 +37,10 @@ interface Ctx {
   companyCampaigns: Campaign[];
   companyLocations: CompanyLocation[];
   referralCount: number;
+  /** Andra konton med samma ägare (länkade av admin), se "Växla
+   * företag" i PortalShell.tsx och ownerGroupId i types.ts. */
+  linkedCompanies: CompanyProfile[];
+  switchCompany: (targetCompanyId: string) => Promise<void>;
   registerCompany: (input: RegisterInput) => Promise<{ ok: boolean; reason?: string }>;
   login: (email: string, password: string) => Promise<{ ok: boolean; reason?: string }>;
   logout: () => Promise<void>;
@@ -65,18 +69,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [companyLocations, setCompanyLocations] = useState<CompanyLocation[]>([]);
   const [referralCount, setReferralCount] = useState(0);
   const [impersonating, setImpersonating] = useState(false);
+  const [linkedCompanies, setLinkedCompanies] = useState<CompanyProfile[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { company, impersonating } = await fetchJson<{
+        const { company, impersonating, linkedCompanies } = await fetchJson<{
           company: CompanyProfile | null;
           impersonating: boolean;
+          linkedCompanies: CompanyProfile[];
         }>("/api/auth/me");
         if (cancelled) return;
         setCurrentCompany(company);
         setImpersonating(impersonating);
+        setLinkedCompanies(linkedCompanies);
         if (company) {
           const [{ offers }, { count }, { campaigns }, { locations }] = await Promise.all([
             fetchJson<{ offers: Offer[] }>("/api/offers"),
@@ -117,6 +124,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setCompanyLocations([]);
       setReferralCount(0);
       setImpersonating(false);
+      setLinkedCompanies([]);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -141,6 +149,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setCompanyCampaigns(campaigns);
       setCompanyLocations(locations);
       setImpersonating(false);
+      const { linkedCompanies } = await fetchJson<{ linkedCompanies: CompanyProfile[] }>(
+        "/api/auth/me"
+      );
+      setLinkedCompanies(linkedCompanies);
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : "Något gick fel." };
@@ -155,6 +167,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCompanyLocations([]);
     setReferralCount(0);
     setImpersonating(false);
+    setLinkedCompanies([]);
+  }, []);
+
+  // Växlar till ett annat länkat konto (se ownerGroupId i types.ts,
+  // länkat av admin) - laddar om precis som login()/registerCompany()
+  // gör, så offers/kampanjer/platser/referralCount stämmer med det nya
+  // företaget istället för att råka visa kvarvarande data från det
+  // gamla.
+  const switchCompany = useCallback(async (targetCompanyId: string) => {
+    const { company } = await fetchJson<{ company: CompanyProfile }>("/api/company/switch", {
+      method: "POST",
+      body: JSON.stringify({ targetCompanyId }),
+    });
+    setCurrentCompany(company);
+    const [{ offers }, { count }, { campaigns }, { locations }, me] = await Promise.all([
+      fetchJson<{ offers: Offer[] }>("/api/offers"),
+      fetchJson<{ count: number }>("/api/referrals"),
+      fetchJson<{ campaigns: Campaign[] }>("/api/campaigns"),
+      fetchJson<{ locations: CompanyLocation[] }>("/api/company/locations"),
+      fetchJson<{ linkedCompanies: CompanyProfile[] }>("/api/auth/me"),
+    ]);
+    setCompanyOffers(offers);
+    setReferralCount(count);
+    setCompanyCampaigns(campaigns);
+    setCompanyLocations(locations);
+    setLinkedCompanies(me.linkedCompanies);
   }, []);
 
   const updateCompany = useCallback(async (_id: string, partial: Partial<CompanyProfile>) => {
@@ -249,6 +287,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     companyCampaigns,
     companyLocations,
     referralCount,
+    linkedCompanies,
+    switchCompany,
     registerCompany,
     login,
     logout,

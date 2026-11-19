@@ -11,6 +11,7 @@ import {
   Clock,
   Gift,
   Headset,
+  Link2,
   Loader2,
   LogIn,
   Mail,
@@ -948,6 +949,9 @@ function CompanyRow({
   statusBadge,
   statusControl,
   children,
+  allCompanies,
+  onLink,
+  onUnlink,
 }: {
   company: CompanyProfile;
   /** Totalt antal kolumner i tabellen – avgör colSpan på den uppfällda panelen. */
@@ -961,6 +965,12 @@ function CompanyRow({
   statusControl?: ReactNode;
   /** Knappar specifika för den här tabellen (Godkänn/Avvisa, eller inget). */
   children?: ReactNode;
+  /** Alla företag – bara för att bygga listan av länkbara kandidater.
+   * Utelämnas (tillsammans med onLink/onUnlink) i Ansökningar, där
+   * länkning inte är relevant ännu. */
+  allCompanies?: CompanyProfile[];
+  onLink?: (id: string, targetCompanyId: string) => Promise<void>;
+  onUnlink?: (id: string) => Promise<void>;
 }) {
   return (
     <>
@@ -1027,6 +1037,19 @@ function CompanyRow({
                   </p>
                 </div>
               )}
+              {allCompanies && onLink && onUnlink && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                    Länkade konton
+                  </p>
+                  <LinkedAccountsControl
+                    company={c}
+                    allCompanies={allCompanies}
+                    onLink={onLink}
+                    onUnlink={onUnlink}
+                  />
+                </div>
+              )}
               {children && (
                 <div>
                   <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
@@ -1040,6 +1063,127 @@ function CompanyRow({
         </tr>
       )}
     </>
+  );
+}
+
+// Länkar flera konton med samma ägare (t.ex. flera olika verksamheter
+// som drivs av samma person) till en delad owner_group_id, se
+// linkCompanies i db.ts. Länkade konton kan växla mellan varandra i
+// portalen utan att dela lösenord/mejl, se "Växla företag" i
+// PortalShell.tsx.
+function LinkedAccountsControl({
+  company,
+  allCompanies,
+  onLink,
+  onUnlink,
+}: {
+  company: CompanyProfile;
+  allCompanies: CompanyProfile[];
+  onLink: (id: string, targetCompanyId: string) => Promise<void>;
+  onUnlink: (id: string) => Promise<void>;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [selected, setSelected] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const linked = allCompanies.filter(
+    (x) => x.id !== company.id && company.ownerGroupId && x.ownerGroupId === company.ownerGroupId
+  );
+  const candidates = allCompanies.filter(
+    (x) =>
+      x.id !== company.id &&
+      !(company.ownerGroupId && x.ownerGroupId === company.ownerGroupId)
+  );
+
+  async function handleLink() {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      await onLink(company.id, selected);
+      setAdding(false);
+      setSelected("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnlink(targetId: string) {
+    setBusy(true);
+    try {
+      await onUnlink(targetId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {linked.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {linked.map((l) => (
+            <div
+              key={l.id}
+              className="flex items-center gap-2 rounded-lg border border-[var(--color-brand-border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+            >
+              <Link2 className="h-3 w-3 shrink-0 text-[var(--color-brand-primary)]" />
+              <span className="min-w-0 flex-1 truncate">{l.name}</span>
+              <button
+                type="button"
+                onClick={() => handleUnlink(l.id)}
+                disabled={busy}
+                title="Ta bort länk"
+                className="shrink-0 text-[var(--color-brand-muted)] hover:text-[#c0392b] disabled:opacity-50"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="rounded-lg border border-[var(--color-brand-border)] bg-white px-2 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+          >
+            <option value="">Välj företag...</option>
+            {candidates.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleLink}
+            disabled={!selected || busy}
+            className="rounded-lg bg-[var(--color-brand-primary)] px-2.5 py-1.5 text-xs font-extrabold text-white disabled:opacity-50"
+          >
+            Länka
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAdding(false);
+              setSelected("");
+            }}
+            className="text-xs font-bold text-[var(--color-brand-muted)] hover:text-[var(--color-brand-ink)]"
+          >
+            Avbryt
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1.5 self-start text-xs font-extrabold text-[var(--color-brand-primary)] hover:underline"
+        >
+          <Link2 className="h-3 w-3" /> Länka till ett annat konto
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1263,10 +1407,14 @@ export function CompaniesSection({
   companies,
   onUpdate,
   onReject,
+  onLink,
+  onUnlink,
 }: {
   companies: CompanyProfile[];
   onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
   onReject: (company: CompanyProfile) => void;
+  onLink: (id: string, targetCompanyId: string) => Promise<void>;
+  onUnlink: (id: string) => Promise<void>;
 }) {
   const [showRejected, setShowRejected] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1387,6 +1535,9 @@ export function CompaniesSection({
                 expanded={expandedId === c.id}
                 onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
                 onUpdate={onUpdate}
+                allCompanies={companies}
+                onLink={onLink}
+                onUnlink={onUnlink}
                 statusBadge={
                   <Badge variant={APPLICATION_STATUS_VARIANT[c.applicationStatus]}>
                     {APPLICATION_STATUS_LABELS[c.applicationStatus]}

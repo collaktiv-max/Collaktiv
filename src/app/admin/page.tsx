@@ -42,6 +42,28 @@ export default function AdminPage() {
     };
   }, []);
 
+  // Länkning påverkar ownerGroupId på BÅDA företagen (eller fler, om
+  // någon redan var med i en grupp sedan tidigare) - enklast och
+  // säkrast att bara hämta om hela listan istället för att försöka
+  // patcha ihop det lokalt.
+  async function refreshCompanies() {
+    const { companies } = await fetchJson<{ companies: CompanyProfile[] }>("/api/admin/companies");
+    setCompanies(companies);
+  }
+
+  async function linkCompany(id: string, targetCompanyId: string) {
+    await fetchJson(`/api/admin/companies/${id}/link`, {
+      method: "POST",
+      body: JSON.stringify({ targetCompanyId }),
+    });
+    await refreshCompanies();
+  }
+
+  async function unlinkCompany(id: string) {
+    await fetchJson(`/api/admin/companies/${id}/link`, { method: "DELETE" });
+    await refreshCompanies();
+  }
+
   async function updateCompany(id: string, partial: Partial<CompanyProfile>) {
     const data = await fetchJson<{
       company: CompanyProfile;
@@ -191,7 +213,13 @@ export default function AdminPage() {
         )}
         {activeTab === "tavlingsvardar" && <ContestHostsSection companies={companies} />}
         {activeTab === "foretag" && (
-          <CompaniesSection companies={companies} onUpdate={updateCompany} onReject={handleReject} />
+          <CompaniesSection
+            companies={companies}
+            onUpdate={updateCompany}
+            onReject={handleReject}
+            onLink={linkCompany}
+            onUnlink={unlinkCompany}
+          />
         )}
       </main>
     </div>
