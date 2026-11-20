@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCompanyById, getLinkedCompanies, linkCompanies, unlinkCompany } from "@/lib/db";
+import { requireAdminSession } from "@/lib/adminAuth";
 
 // Länkar/avlänkar två företag med samma ägare (se ownerGroupId i
 // types.ts) - gör att de kan växla mellan varandra i portalen utan att
@@ -8,6 +9,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const body = (await req.json()) as { targetCompanyId?: string };
   if (!body.targetCompanyId) {
@@ -31,6 +35,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   await unlinkCompany(id);
   return NextResponse.json({ ok: true });

@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCompanyById, getOfferById, updateOffer } from "@/lib/db";
 import { sendOfferPublishedEmail, sendOfferReturnedEmail } from "@/lib/email";
+import { requireAdminSession } from "@/lib/adminAuth";
 import type { Offer } from "@/lib/types";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const partial = (await req.json()) as Partial<Offer>;
 

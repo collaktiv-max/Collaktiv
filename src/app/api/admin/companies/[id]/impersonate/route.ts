@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCompanyById } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { requireAdminSession } from "@/lib/adminAuth";
 
 // Admin loggar in SOM företaget – sätter samma session-cookie som en
 // vanlig företagsinloggning (se src/lib/session.ts), utan att röra
@@ -13,6 +14,9 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const company = await getCompanyById(id);
   if (!company) {

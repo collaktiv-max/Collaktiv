@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateCampaignStatus } from "@/lib/db";
+import { requireAdminSession } from "@/lib/adminAuth";
 import type { CampaignStatus } from "@/lib/types";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const body = (await req.json()) as { status?: CampaignStatus };
   if (!body.status) {

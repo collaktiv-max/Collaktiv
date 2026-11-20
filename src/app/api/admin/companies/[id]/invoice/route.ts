@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAndSendInvoice, type InvoiceBillingOverride } from "@/lib/invoice";
 import { sendAdminInvoiceEmail } from "@/lib/email";
 import { getCompanyById } from "@/lib/db";
+import { requireAdminSession } from "@/lib/adminAuth";
 import type { PlanId, BillingPeriod } from "@/lib/pricing";
 
 interface AdminInvoiceBody {
@@ -20,6 +21,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id: companyId } = await params;
   const body = (await req.json()) as Partial<AdminInvoiceBody>;
   const { planId, period, billingOverride } = body;

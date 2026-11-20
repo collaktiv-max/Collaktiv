@@ -8,12 +8,16 @@ import {
 } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { sendApprovalEmail, sendRejectionEmail } from "@/lib/email";
+import { requireAdminSession } from "@/lib/adminAuth";
 import type { CompanyProfile } from "@/lib/types";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requireAdminSession();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const partial = (await req.json()) as Partial<CompanyProfile>;
 
