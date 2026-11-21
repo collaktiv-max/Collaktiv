@@ -78,7 +78,7 @@ export const PLANS: PlanDefinition[] = [
       {
         label: "Extra synlighet",
         detail:
-          "Mer exklusiv design på ert erbjudande. Ni är med i belöningsvalen när resenärer når en ny nivå eller streak.",
+          "Mer exklusiv design på ert erbjudande. Skapar uppmärksamhet hos kunden och leder till fler visningar.",
       },
       {
         label: "Utökad erbjudandevy",
