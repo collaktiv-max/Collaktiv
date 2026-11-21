@@ -22,8 +22,10 @@ export default function OversiktPage() {
   const topOffer = [...companyOffers].sort((a, b) => b.stats.views - a.stats.views)[0];
 
   // Standard är gratis och aktivt för alla (se createCompany i db.ts),
-  // så Premium är det enda som längre avgör vad som är upplåst –
-  // antal visningar och visningar per veckodag ingår redan i Standard.
+  // så Premium är det enda som längre avgör vad som är upplåst – antal
+  // visningar, antal inlösningar och visningar per veckodag ingår redan
+  // i Standard. Konverteringsgrad, mest populära erbjudande/tider och
+  // nedbrytningen per erbjudande är kvar som Premium-exklusivt.
   const isPremium = currentCompany.packageTier === "premium";
 
   const goUnlock = () => router.push("/portal/paket");
@@ -74,8 +76,6 @@ export default function OversiktPage() {
           icon={Ticket}
           label="Inlösningar"
           value={totalRedemptions.toLocaleString("sv-SE")}
-          locked={!isPremium}
-          onUpgrade={goUnlock}
         />
         <StatCard
           icon={TrendingUp}

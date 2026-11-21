@@ -45,7 +45,7 @@ export const PLANS: PlanDefinition[] = [
       },
       {
         label: "Statistik",
-        detail: "Enbart antal visningar på era erbjudanden.",
+        detail: "Antal visningar och inlösningar på era erbjudanden.",
       },
       {
         label: "Max 2 erbjudanden",
@@ -92,7 +92,7 @@ export const PLANS: PlanDefinition[] = [
       {
         label: "Full tillgång till statistik",
         detail:
-          "Ni ser allt: inlösningar, konverteringsgrad, mest populära erbjudande och en fullständig nedbrytning per erbjudande. Även möjlighet till PDF-nedladdning.",
+          "Utöver visningar och inlösningar ser ni även konverteringsgrad, mest populära erbjudande och en fullständig nedbrytning per erbjudande. Även möjlighet till PDF-nedladdning.",
       },
       {
         label: "Större synlighet på sociala medier",
