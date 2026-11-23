@@ -1,4 +1,4 @@
-import { Smartphone, Store } from "lucide-react";
+import { Smartphone, Star, Store } from "lucide-react";
 
 export function RedemptionGuideCard() {
   return (
@@ -23,6 +23,20 @@ export function RedemptionGuideCard() {
   );
 }
 
+// Stjärnorna som tonar in/ut bakom ringen i resenärsappens riktiga
+// inlösensida - här som en alltid synlig, mjukt pulserande dekoration
+// (ingen video behövs) istället för att bara råka fångas i en enda
+// stillbild. Position/storlek/fördröjning är bara kosmetiska, inte
+// data - fasta värden räcker.
+const STARS = [
+  { top: "8%", left: "72%", size: 14, delay: "0s", opacity: "opacity-25" },
+  { top: "18%", left: "14%", size: 10, delay: "0.4s", opacity: "opacity-20" },
+  { top: "38%", left: "86%", size: 11, delay: "0.9s", opacity: "opacity-30" },
+  { top: "62%", left: "10%", size: 13, delay: "0.2s", opacity: "opacity-20" },
+  { top: "78%", left: "78%", size: 9, delay: "0.7s", opacity: "opacity-25" },
+  { top: "90%", left: "30%", size: 10, delay: "1.1s", opacity: "opacity-20" },
+];
+
 // Generisk, statisk återgivning av resenärsappens inlösensida (ett eget
 // projekt - collaktiv-lac.vercel.app - inte den här kodbasen) med
 // "Ditt företag"/"Ditt erbjudande" istället för ett riktigt exempel,
@@ -32,29 +46,44 @@ function RedemptionScreenPreview() {
   return (
     <div className="mt-4 flex justify-center">
       <div
-        className="flex w-full max-w-[220px] flex-col items-center gap-5 rounded-[1.75rem] px-5 py-7 text-center shadow-sm"
+        className="relative flex w-full max-w-[150px] flex-col items-center gap-2.5 overflow-hidden rounded-2xl px-3.5 py-4 text-center shadow-sm"
         style={{ backgroundColor: "var(--color-brand-primary)" }}
       >
-        <div className="flex items-center gap-2 self-start">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-            <Store className="h-3.5 w-3.5" />
+        {STARS.map((star, i) => (
+          <Star
+            key={i}
+            className={`pointer-events-none absolute animate-pulse fill-current text-white ${star.opacity}`}
+            style={{
+              top: star.top,
+              left: star.left,
+              width: star.size,
+              height: star.size,
+              animationDelay: star.delay,
+              animationDuration: "2.2s",
+            }}
+          />
+        ))}
+
+        <div className="relative flex items-center gap-1.5 self-start">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
+            <Store className="h-2.5 w-2.5" />
           </span>
-          <span className="text-[12px] font-extrabold text-white">Ditt företag</span>
+          <span className="text-[9.5px] font-extrabold text-white">Ditt företag</span>
         </div>
 
-        <div>
+        <div className="relative">
           <p
-            className="text-[26px] font-extrabold leading-[1.05]"
+            className="text-[16px] font-extrabold leading-[1.05]"
             style={{ color: "var(--color-brand-accent)" }}
           >
             Ditt erbjudande
           </p>
-          <p className="mt-1.5 text-[11.5px] font-bold text-white/85">
+          <p className="mt-1 text-[8.5px] font-bold text-white/85">
             Så ser det ut för kunden
           </p>
         </div>
 
-        <div className="relative flex h-[116px] w-[116px] items-center justify-center">
+        <div className="relative flex h-[66px] w-[66px] items-center justify-center">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
             <circle
               cx="60"
@@ -62,7 +91,7 @@ function RedemptionScreenPreview() {
               r="54"
               fill="none"
               stroke="rgba(255,255,255,0.18)"
-              strokeWidth="8"
+              strokeWidth="10"
             />
             <circle
               cx="60"
@@ -70,19 +99,19 @@ function RedemptionScreenPreview() {
               r="54"
               fill="none"
               stroke="var(--color-brand-accent)"
-              strokeWidth="8"
+              strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * 0.17}
             />
           </svg>
           <div className="absolute flex flex-col items-center">
-            <span className="text-[22px] font-extrabold leading-none text-white">08:40</span>
-            <span className="mt-1 text-[9.5px] font-bold text-white/70">kvar</span>
+            <span className="text-[12.5px] font-extrabold leading-none text-white">08:40</span>
+            <span className="mt-0.5 text-[7px] font-bold text-white/70">kvar</span>
           </div>
         </div>
 
-        <span className="w-full rounded-full border border-white/25 py-2 text-[12px] font-extrabold text-white">
+        <span className="relative w-full rounded-full border border-white/25 py-1 text-[9px] font-extrabold text-white">
           Klar
         </span>
       </div>
