@@ -20,6 +20,7 @@ import {
   Rocket,
   ShieldCheck,
   Ticket,
+  UserPlus,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -181,6 +182,37 @@ export function ContactCell({ name, email, phone }: { name: string; email: strin
         )}
       </div>
     </div>
+  );
+}
+
+// Visar om företaget hittade hit själva eller bjöds in via ett annat
+// företags delbara länk (referredByCompanyId, se /portal/bjud-in och
+// registreringsflödet i /api/auth/register) – så admin kan se varifrån
+// varje företag faktiskt kommer, inte bara att det finns.
+export function SourceCell({
+  company,
+  allCompanies,
+}: {
+  company: CompanyProfile;
+  allCompanies: CompanyProfile[];
+}) {
+  if (!company.referredByCompanyId) {
+    return (
+      <span className="text-xs font-medium text-[var(--color-brand-muted)]">
+        Egen registrering
+      </span>
+    );
+  }
+  const referrer = allCompanies.find((c) => c.id === company.referredByCompanyId);
+  return (
+    <span className="flex items-start gap-1.5 text-xs font-bold text-[var(--color-brand-ink)]">
+      <UserPlus className="mt-0.5 h-3 w-3 shrink-0 text-[var(--color-brand-primary)]" />
+      <span className="min-w-0">
+        Bjuden av
+        <br />
+        {referrer ? referrer.name : "ett borttaget företag"}
+      </span>
+    </span>
   );
 }
 
@@ -893,23 +925,25 @@ export function ApplicationsSection({
       ) : (
         <TableCard fixed>
           <THead>
-            <Th width="w-[18%]">Företag</Th>
-            <Th width="w-[24%]">Kontakt</Th>
-            <Th width="w-[10%]">Kategori</Th>
-            <Th width="w-[9%]">Paket</Th>
-            <Th width="w-[17%]">Betalning</Th>
-            <Th width="w-[12%]">Inskickad</Th>
-            <Th width="w-[10%]" />
+            <Th width="w-[15%]">Företag</Th>
+            <Th width="w-[19%]">Kontakt</Th>
+            <Th width="w-[14%]">Varifrån</Th>
+            <Th width="w-[9%]">Kategori</Th>
+            <Th width="w-[8%]">Paket</Th>
+            <Th width="w-[15%]">Betalning</Th>
+            <Th width="w-[11%]">Inskickad</Th>
+            <Th width="w-[9%]" />
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
             {pending.map((c) => (
               <CompanyRow
                 key={c.id}
                 company={c}
-                columns={7}
+                columns={8}
                 expanded={expandedId === c.id}
                 onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
                 onUpdate={onUpdate}
+                allCompanies={companies}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -965,10 +999,10 @@ function CompanyRow({
   statusControl?: ReactNode;
   /** Knappar specifika för den här tabellen (Godkänn/Avvisa, eller inget). */
   children?: ReactNode;
-  /** Alla företag – bara för att bygga listan av länkbara kandidater.
-   * Utelämnas (tillsammans med onLink/onUnlink) i Ansökningar, där
-   * länkning inte är relevant ännu. */
-  allCompanies?: CompanyProfile[];
+  /** Alla företag – för "Varifrån"-kolumnen (slå upp namnet på den som
+   * bjöd in) och för listan av länkbara kandidater i Alla företag. */
+  allCompanies: CompanyProfile[];
+  /** Utelämnas i Ansökningar, där länkning inte är relevant ännu. */
   onLink?: (id: string, targetCompanyId: string) => Promise<void>;
   onUnlink?: (id: string) => Promise<void>;
 }) {
@@ -986,6 +1020,9 @@ function CompanyRow({
         </td>
         <td className="px-5 py-3.5">
           <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
+        </td>
+        <td className="px-5 py-3.5">
+          <SourceCell company={c} allCompanies={allCompanies} />
         </td>
         <td className="px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
           {CATEGORY_LABELS[c.category]}
@@ -1037,7 +1074,7 @@ function CompanyRow({
                   </p>
                 </div>
               )}
-              {allCompanies && onLink && onUnlink && (
+              {onLink && onUnlink && (
                 <div>
                   <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
                     Länkade konton
@@ -1380,6 +1417,7 @@ export function ContestHostsSection({ companies }: { companies: CompanyProfile[]
           <THead>
             <Th>Företag</Th>
             <Th>Kontakt</Th>
+            <Th>Varifrån</Th>
             <Th>Erbjuder som pris</Th>
           </THead>
           <tbody className="divide-y divide-[var(--color-brand-border)]">
@@ -1388,6 +1426,9 @@ export function ContestHostsSection({ companies }: { companies: CompanyProfile[]
                 <td className="px-5 py-3.5 font-extrabold text-[var(--color-brand-ink)]">{c.name}</td>
                 <td className="px-5 py-3.5">
                   <ContactCell name={c.contactName} email={c.contactEmail} phone={c.contactPhone} />
+                </td>
+                <td className="px-5 py-3.5">
+                  <SourceCell company={c} allCompanies={companies} />
                 </td>
                 <td className="max-w-[320px] px-5 py-3.5 font-medium text-[var(--color-brand-muted)]">
                   {c.contestPrizeDescription || "–"}
@@ -1517,12 +1558,13 @@ export function CompaniesSection({
       ) : (
         <TableCard fixed>
           <THead>
-            <Th width="w-[13%]">Företag</Th>
-            <Th width="w-[21%]">Kontakt</Th>
-            <Th width="w-[9%]">Kategori</Th>
-            <Th width="w-[9%]">Paket</Th>
-            <Th width="w-[14%]">Status</Th>
-            <Th width="w-[17%]">Betalning</Th>
+            <Th width="w-[11%]">Företag</Th>
+            <Th width="w-[17%]">Kontakt</Th>
+            <Th width="w-[13%]">Varifrån</Th>
+            <Th width="w-[8%]">Kategori</Th>
+            <Th width="w-[8%]">Paket</Th>
+            <Th width="w-[12%]">Status</Th>
+            <Th width="w-[14%]">Betalning</Th>
             <Th width="w-[9%]">Registrerad</Th>
             <Th width="w-[8%]" />
           </THead>
@@ -1531,7 +1573,7 @@ export function CompaniesSection({
               <CompanyRow
                 key={c.id}
                 company={c}
-                columns={8}
+                columns={9}
                 expanded={expandedId === c.id}
                 onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
                 onUpdate={onUpdate}
