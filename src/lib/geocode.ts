@@ -3,6 +3,34 @@ import "server-only";
 export interface GeocodeResult {
   latitude: number;
   longitude: number;
+  /** Staden Nominatim själv tolkade adressen till, om någon - används
+   * som fallback när företaget/platsen inte fyllt i "Stad" separat
+   * (se createCompany/updateCompany i db.ts), så "Okänd stad" i admins
+   * städer-nedbrytning (OversiktSection) bara gäller rader som
+   * verkligen saknar användbar adress, inte bara ett tomt fält. */
+  city?: string;
+}
+
+interface NominatimAddress {
+  city?: string;
+  town?: string;
+  village?: string;
+  hamlet?: string;
+  municipality?: string;
+  suburb?: string;
+}
+
+// Prioritetsordning: de flesta svenska kommunsäten (Gävle, Bollnäs,
+// Hudiksvall, Sandviken...) taggas "city" eller "town" av OSM - faller
+// bara tillbaka till "municipality" (och städar bort ett eventuellt
+// " kommun"-suffix) eller "suburb" (storstädernas stadsdelar) om inget
+// av de mer specifika fälten finns.
+function pickCity(address: NominatimAddress | undefined): string | undefined {
+  if (!address) return undefined;
+  const direct = address.city || address.town || address.village || address.hamlet;
+  if (direct) return direct;
+  if (address.municipality) return address.municipality.replace(/\s*kommun$/i, "");
+  return address.suburb;
 }
 
 // Nominatim (OpenStreetMap) - gratis, kräver ingen API-nyckel/konto.
@@ -40,7 +68,7 @@ export async function geocodeAddress(
 
   try {
     await throttle();
-    const url = `${NOMINATIM_URL}?format=json&limit=1&countrycodes=se&q=${encodeURIComponent(query)}`;
+    const url = `${NOMINATIM_URL}?format=json&limit=1&countrycodes=se&addressdetails=1&q=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, "Accept-Language": "sv" },
     });
@@ -48,13 +76,17 @@ export async function geocodeAddress(
       console.error(`[geocode] Nominatim svarade ${res.status} för "${query}"`);
       return null;
     }
-    const results = (await res.json()) as { lat: string; lon: string }[];
+    const results = (await res.json()) as {
+      lat: string;
+      lon: string;
+      address?: NominatimAddress;
+    }[];
     const first = results[0];
     if (!first) return null;
     const latitude = Number.parseFloat(first.lat);
     const longitude = Number.parseFloat(first.lon);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-    return { latitude, longitude };
+    return { latitude, longitude, city: pickCity(first.address) };
   } catch (err) {
     console.error(`[geocode] Kunde inte geokoda "${query}":`, err);
     return null;

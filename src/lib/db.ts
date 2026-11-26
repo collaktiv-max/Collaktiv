@@ -319,6 +319,11 @@ export async function createCompany(input: {
   // sätts bara latitude/longitude till null, precis som innan den här
   // funktionen fanns – se geocodeAddress i geocode.ts.
   const geocoded = await geocodeAddress(input.address, input.city, input.region);
+  // Faller tillbaka till staden Nominatim själv tolkade adressen till
+  // om företaget lämnade "Stad" tomt - annars hamnar de felaktigt i
+  // "Okänd stad" i admins städer-nedbrytning trots en fullt
+  // användbar adress, se pickCity i geocode.ts.
+  const city = input.city?.trim() || geocoded?.city || "";
   const rows = (await sql`
     insert into companies (
       name, logo_data_url, website, description, category,
@@ -332,7 +337,7 @@ export async function createCompany(input: {
     ) values (
       ${input.name}, ${input.logoDataUrl ?? null}, ${input.website ?? ""}, ${input.description ?? ""},
       ${input.category ?? "ovrigt"}, ${input.contactName ?? ""}, ${input.contactEmail},
-      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""}, ${input.city ?? ""},
+      ${input.contactPhone ?? ""}, ${input.region ?? "Gävleborg"}, ${input.address ?? ""}, ${city},
       ${geocoded?.latitude ?? null}, ${geocoded?.longitude ?? null},
       ${input.packageTier ?? "standard"}, ${input.applicationStatus ?? "inskickad"}, true, true,
       now(),
@@ -377,6 +382,10 @@ export async function updateCompany(
     : null;
   const latitude = addressChanged ? geocoded?.latitude ?? null : next.latitude ?? null;
   const longitude = addressChanged ? geocoded?.longitude ?? null : next.longitude ?? null;
+  // Samma fallback som i createCompany - lämnar företaget "Stad" tomt
+  // men adressen faktiskt går att geokoda, används Nominatims egen
+  // tolkning istället för att raden hamnar i "Okänd stad".
+  const city = next.city?.trim() || (addressChanged ? geocoded?.city : undefined) || "";
 
   const rows = (await sql`
     update companies set
@@ -390,7 +399,7 @@ export async function updateCompany(
       contact_phone = ${next.contactPhone},
       region = ${next.region},
       address = ${next.address ?? ""},
-      city = ${next.city ?? ""},
+      city = ${city},
       latitude = ${latitude},
       longitude = ${longitude},
       package_tier = ${next.packageTier},

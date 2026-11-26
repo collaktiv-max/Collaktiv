@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node scripts/migrate.mjs",
-    "geocode:backfill": "node scripts/geocode-backfill.mjs"
+    "geocode:backfill": "node scripts/geocode-backfill.mjs",
+    "city:backfill": "node scripts/city-backfill.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
