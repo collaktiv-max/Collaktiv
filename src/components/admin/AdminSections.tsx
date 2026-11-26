@@ -216,6 +216,49 @@ export function SourceCell({
   );
 }
 
+// Fritextfält så admin kan rätta/fylla i stad manuellt - geokodningen
+// (se pickCity i geocode.ts) fyller i den automatiskt för de flesta,
+// men missar adresser med stavfel, ovanligt format, eller flera
+// adresser i samma fält (se SourceCell ovan för motsvarande mönster).
+// Sparar bara vid blur/Enter, inte vid varje tangenttryck.
+function CityControl({
+  company,
+  onUpdate,
+}: {
+  company: CompanyProfile;
+  onUpdate: (id: string, partial: Partial<CompanyProfile>) => void;
+}) {
+  const [value, setValue] = useState(company.city ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const trimmed = value.trim();
+    if (trimmed === (company.city ?? "")) return;
+    setSaving(true);
+    try {
+      await onUpdate(company.id, { city: trimmed });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        placeholder="T.ex. Gävle"
+        className="w-32 rounded-lg border border-[var(--color-brand-border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-ink)]"
+      />
+      {saving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--color-brand-muted)]" />}
+    </div>
+  );
+}
+
 // Standard är gratis för alla (se createCompany i db.ts) –
 // varje företag har alltså redan paymentConfirmed=true och
 // complimentary=true så fort de registrerat sig. Det enda som
@@ -1057,6 +1100,12 @@ function CompanyRow({
                   {statusControl}
                 </div>
               )}
+              <div>
+                <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
+                  Stad
+                </p>
+                <CityControl company={c} onUpdate={onUpdate} />
+              </div>
               <div>
                 <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-muted)]">
                   Betalning
